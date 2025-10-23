@@ -595,7 +595,10 @@
       <div class="saved-reports-section" id="savedReportsSection">
         <div class="saved-reports-header">
           <h2 class="saved-reports-title">📁 Saved Reports</h2>
-          <button id="deleteSelectedBtn" class="danger-btn" style="display: none;">Delete Selected</button>
+          <div class="button-group" style="margin-top: 0;">
+            <button id="combineSelectedBtn" class="secondary-btn" style="display: none;">🔗 Combine Selected</button>
+            <button id="deleteSelectedBtn" class="danger-btn" style="display: none;">Delete Selected</button>
+          </div>
         </div>
         <div class="saved-reports-list" id="savedReportsList">
           <div class="empty-state">No saved reports yet. Generate and save a report to get started.</div>
@@ -746,6 +749,7 @@
       const savedReportsSection = document.getElementById('savedReportsSection');
       const savedReportsList = document.getElementById('savedReportsList');
       const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
+      const combineSelectedBtn = document.getElementById('combineSelectedBtn');
 
       // State
       let savedReports = [];
@@ -1466,6 +1470,74 @@
         }
       }
 
+      // Combine selected reports
+      async function combineSelectedReports() {
+        const checkboxes = document.querySelectorAll('.saved-report-checkbox:checked');
+        if (checkboxes.length === 0) {
+          return;
+        }
+
+        if (checkboxes.length < 2) {
+          PluginAPI.showSnack({
+            msg: 'Please select at least 2 reports to combine',
+            type: 'ERROR',
+          });
+          return;
+        }
+
+        try {
+          const selectedIds = Array.from(checkboxes).map(cb => cb.dataset.id);
+          const selectedReports = savedReports.filter(r => selectedIds.includes(r.id));
+          
+          // Sort reports by their saved date (oldest first)
+          selectedReports.sort((a, b) => new Date(a.savedAt) - new Date(b.savedAt));
+          
+          // Combine the reports with separators
+          let combinedContent = `# Combined Report\n\n`;
+          combinedContent += `**Combined from ${selectedReports.length} reports**  \n`;
+          combinedContent += `**Generated:** ${new Date().toLocaleString()}  \n\n`;
+          combinedContent += `---\n\n`;
+          
+          selectedReports.forEach((report, index) => {
+            if (index > 0) {
+              combinedContent += `\n---\n\n`;
+            }
+            combinedContent += `## Report ${index + 1}: ${report.name}\n\n`;
+            // Remove the first line (header) from each report if it starts with "# "
+            const reportLines = report.content.split('\n');
+            let contentStartIndex = 0;
+            if (reportLines[0].startsWith('# ')) {
+              contentStartIndex = 1;
+            }
+            combinedContent += reportLines.slice(contentStartIndex).join('\n');
+          });
+
+          // Create a temporary report object for the combined report
+          currentReport = {
+            content: combinedContent,
+            startDate: selectedReports[0].startDate,
+            endDate: selectedReports[selectedReports.length - 1].endDate,
+            totalTasks: selectedReports.reduce((sum, r) => sum + (r.totalTasks || 0), 0),
+            generatedAt: new Date().toISOString(),
+            isCombined: true
+          };
+
+          isEditingExisting = false;
+          showReportModal(combinedContent, `Combined from ${selectedReports.length} reports`);
+
+          PluginAPI.showSnack({
+            msg: `Combined ${selectedReports.length} reports successfully`,
+            type: 'SUCCESS',
+          });
+        } catch (error) {
+          console.error('Error combining reports:', error);
+          PluginAPI.showSnack({
+            msg: 'Failed to combine reports',
+            type: 'ERROR',
+          });
+        }
+      }
+
       // Update delete selected button visibility
       function updateDeleteSelectedButton() {
         // Use event delegation for checkboxes
@@ -1473,6 +1545,7 @@
           if (e.target.classList.contains('saved-report-checkbox')) {
             const checkedCount = document.querySelectorAll('.saved-report-checkbox:checked').length;
             deleteSelectedBtn.style.display = checkedCount > 0 ? 'block' : 'none';
+            combineSelectedBtn.style.display = checkedCount > 0 ? 'block' : 'none';
           }
         });
       }
@@ -1488,6 +1561,7 @@
       modalCopyBtn.addEventListener('click', copyFromModal);
       modalSaveBtn.addEventListener('click', saveReport);
       deleteSelectedBtn.addEventListener('click', deleteSelectedReports);
+      combineSelectedBtn.addEventListener('click', combineSelectedReports);
 
       // Preferences modal event listeners
       settingsBtn.addEventListener('click', showPreferencesModal);
