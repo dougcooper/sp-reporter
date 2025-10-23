@@ -1276,5 +1276,218 @@ describe('Date Range Reporter', () => {
       expect(showProjectContainer).toBeTruthy();
       expect(showDateContainer).toBeTruthy();
     });
+
+    it('should hide time spent when showTimeSpent is unchecked (date grouping)', async () => {
+      const tasks = [
+        {
+          id: 'task-1',
+          title: 'Test Task',
+          isDone: true,
+          doneOn: new Date('2024-01-15T14:00:00').getTime(),
+          timeSpentOnDay: { '2024-01-15': 3600000 } // 60 minutes
+        }
+      ];
+
+      mockPluginAPI.getTasks.mockResolvedValue(tasks);
+
+      const startInput = document.getElementById('startDate');
+      const endInput = document.getElementById('endDate');
+      const showTimeSpent = document.getElementById('showTimeSpent');
+      
+      startInput.value = '2024-01-15';
+      endInput.value = '2024-01-15';
+      showTimeSpent.checked = false;
+
+      await window.generateReport();
+
+      const modalContent = document.getElementById('modalReportContent');
+      const reportText = modalContent.value;
+      
+      expect(reportText).toContain('Test Task');
+      expect(reportText).not.toContain('60 min');
+      expect(reportText).not.toContain('*(');
+    });
+
+    it('should show time spent when showTimeSpent is checked (date grouping)', async () => {
+      const tasks = [
+        {
+          id: 'task-1',
+          title: 'Test Task',
+          isDone: true,
+          doneOn: new Date('2024-01-15T14:00:00').getTime(),
+          timeSpentOnDay: { '2024-01-15': 3600000 } // 60 minutes
+        }
+      ];
+
+      mockPluginAPI.getTasks.mockResolvedValue(tasks);
+
+      const startInput = document.getElementById('startDate');
+      const endInput = document.getElementById('endDate');
+      const showTimeSpent = document.getElementById('showTimeSpent');
+      
+      startInput.value = '2024-01-15';
+      endInput.value = '2024-01-15';
+      showTimeSpent.checked = true;
+
+      await window.generateReport();
+
+      const modalContent = document.getElementById('modalReportContent');
+      const reportText = modalContent.value;
+      
+      expect(reportText).toContain('Test Task');
+      expect(reportText).toContain('60 min');
+    });
+
+    it('should hide time spent when showTimeSpent is unchecked (project grouping)', async () => {
+      const tasks = [
+        {
+          id: 'task-1',
+          title: 'Task A',
+          projectId: 'project-1',
+          isDone: true,
+          doneOn: new Date('2024-01-15T14:00:00').getTime(),
+          timeSpentOnDay: { '2024-01-15': 3600000 } // 60 minutes
+        }
+      ];
+
+      mockPluginAPI.getAllProjects.mockResolvedValue([
+        { id: 'project-1', title: 'Project Alpha' }
+      ]);
+      mockPluginAPI.getTasks.mockResolvedValue(tasks);
+
+      const startInput = document.getElementById('startDate');
+      const endInput = document.getElementById('endDate');
+      const groupBy = document.getElementById('groupBy');
+      const showTimeSpent = document.getElementById('showTimeSpent');
+      const showTotalTime = document.getElementById('showTotalTime');
+      
+      startInput.value = '2024-01-15';
+      endInput.value = '2024-01-15';
+      groupBy.value = 'project';
+      showTimeSpent.checked = false;
+      showTotalTime.checked = true; // Keep total time visible to test individual task time
+
+      await window.generateReport();
+
+      const modalContent = document.getElementById('modalReportContent');
+      const reportText = modalContent.value;
+      
+      expect(reportText).toContain('Task A');
+      expect(reportText).toContain('Project Alpha');
+      // Individual task time should not be shown
+      expect(reportText).not.toContain('- Task A *(');
+      // But total time should still be shown
+      expect(reportText).toContain('*(total:');
+    });
+
+    it('should hide total time when showTotalTime is unchecked (project grouping)', async () => {
+      const tasks = [
+        {
+          id: 'task-1',
+          title: 'Task A',
+          projectId: 'project-1',
+          isDone: true,
+          doneOn: new Date('2024-01-15T14:00:00').getTime(),
+          timeSpentOnDay: { '2024-01-15': 3600000 } // 60 minutes
+        },
+        {
+          id: 'task-2',
+          title: 'Task B',
+          projectId: 'project-1',
+          isDone: true,
+          doneOn: new Date('2024-01-15T14:00:00').getTime(),
+          timeSpentOnDay: { '2024-01-15': 1800000 } // 30 minutes
+        }
+      ];
+
+      mockPluginAPI.getAllProjects.mockResolvedValue([
+        { id: 'project-1', title: 'Project Alpha' }
+      ]);
+      mockPluginAPI.getTasks.mockResolvedValue(tasks);
+
+      const startInput = document.getElementById('startDate');
+      const endInput = document.getElementById('endDate');
+      const groupBy = document.getElementById('groupBy');
+      const showTotalTime = document.getElementById('showTotalTime');
+      
+      startInput.value = '2024-01-15';
+      endInput.value = '2024-01-15';
+      groupBy.value = 'project';
+      showTotalTime.checked = false;
+
+      await window.generateReport();
+
+      const modalContent = document.getElementById('modalReportContent');
+      const reportText = modalContent.value;
+      
+      expect(reportText).toContain('Task A');
+      expect(reportText).toContain('Task B');
+      expect(reportText).toContain('Project Alpha');
+      // Should not contain the total time display
+      expect(reportText).not.toContain('*(total:');
+    });
+
+    it('should show total time when showTotalTime is checked (project grouping)', async () => {
+      const tasks = [
+        {
+          id: 'task-1',
+          title: 'Task A',
+          projectId: 'project-1',
+          isDone: true,
+          doneOn: new Date('2024-01-15T14:00:00').getTime(),
+          timeSpentOnDay: { '2024-01-15': 3600000 } // 60 minutes
+        },
+        {
+          id: 'task-2',
+          title: 'Task B',
+          projectId: 'project-1',
+          isDone: true,
+          doneOn: new Date('2024-01-15T14:00:00').getTime(),
+          timeSpentOnDay: { '2024-01-15': 1800000 } // 30 minutes
+        }
+      ];
+
+      mockPluginAPI.getAllProjects.mockResolvedValue([
+        { id: 'project-1', title: 'Project Alpha' }
+      ]);
+      mockPluginAPI.getTasks.mockResolvedValue(tasks);
+
+      const startInput = document.getElementById('startDate');
+      const endInput = document.getElementById('endDate');
+      const groupBy = document.getElementById('groupBy');
+      const showTotalTime = document.getElementById('showTotalTime');
+      
+      startInput.value = '2024-01-15';
+      endInput.value = '2024-01-15';
+      groupBy.value = 'project';
+      showTotalTime.checked = true;
+
+      await window.generateReport();
+
+      const modalContent = document.getElementById('modalReportContent');
+      const reportText = modalContent.value;
+      
+      expect(reportText).toContain('Task A');
+      expect(reportText).toContain('Task B');
+      expect(reportText).toContain('Project Alpha');
+      // Should contain the total time display
+      expect(reportText).toContain('*(total: 1h 30m)*');
+    });
+
+    it('should save and load showTimeSpent and showTotalTime preferences', async () => {
+      // Set preferences and save them
+      const showTimeSpent = document.getElementById('showTimeSpent');
+      const showTotalTime = document.getElementById('showTotalTime');
+      
+      showTimeSpent.checked = false;
+      showTotalTime.checked = false;
+
+      await window.savePreferences();
+
+      expect(mockPluginAPI.persistDataSynced).toHaveBeenCalled();
+      const savedData = JSON.parse(mockPluginAPI.persistDataSynced.mock.calls[0][0]);
+      expect(savedData.preferences.showTimeSpent).toBe(false);
+      expect(savedData.preferences.showTotalTime).toBe(false);
+    });
   });
 });
