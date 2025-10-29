@@ -652,6 +652,14 @@
             <input type="checkbox" id="includeNotes" />
             <label for="includeNotes">Include notes for each task</label>
           </div>
+          <div class="checkbox-field">
+            <input type="checkbox" id="showTimeSpent" checked />
+            <label for="showTimeSpent">Show time spent on tasks</label>
+          </div>
+          <div class="checkbox-field">
+            <input type="checkbox" id="showTotalTime" checked />
+            <label for="showTotalTime">Show total time for projects</label>
+          </div>
           <div class="input-field" style="margin-top: 16px;">
             <label for="minTimeSpent">Minimum time to include (minutes)</label>
             <input type="number" id="minTimeSpent" min="0" max="60" value="5" style="width: 100px;" />
@@ -725,6 +733,8 @@
       const excludeEmptyDatesCheckbox = document.getElementById('excludeEmptyDates');
       const includeNotesCheckbox = document.getElementById('includeNotes');
       const minTimeSpentInput = document.getElementById('minTimeSpent');
+      const showTimeSpentCheckbox = document.getElementById('showTimeSpent');
+      const showTotalTimeCheckbox = document.getElementById('showTotalTime');
       
       // Modal elements
       const reportModal = document.getElementById('reportModal');
@@ -757,7 +767,9 @@
         showDate: false,
         excludeEmptyDates: true,
         includeNotes: false,
-        minTimeSpent: 5
+        minTimeSpent: 5,
+        showTimeSpent: true,
+        showTotalTime: true
       };
 
       // Set default dates to past seven days (including today)
@@ -937,7 +949,7 @@
             tasks.forEach((task, index) => {
               // Use workLogDate if available, otherwise use the date from the section
               const dateForTimeSpent = task.workLogDate || dateStr;
-              const timeSpent = task.timeSpentOnDay && task.timeSpentOnDay[dateForTimeSpent]
+              const timeSpent = (showTimeSpentCheckbox.checked && task.timeSpentOnDay && task.timeSpentOnDay[dateForTimeSpent])
                 ? ` *(${Math.round(task.timeSpentOnDay[dateForTimeSpent] / 60000)} min)*`
                 : '';
               // Show status indicator for in-progress tasks
@@ -1055,14 +1067,15 @@
           const totalMinutes = Math.round(project.totalTime / 60000);
           const formattedTime = formatTime(totalMinutes);
           
-          reportText += `## ${project.name} *(total: ${formattedTime})*\n\n`;
+          const totalTimeDisplay = showTotalTimeCheckbox.checked ? ` *(total: ${formattedTime})*` : '';
+          reportText += `## ${project.name}${totalTimeDisplay}\n\n`;
 
           if (project.tasks.length === 0) {
             reportText += `*No tasks*\n\n`;
           } else {
             project.tasks.forEach(task => {
               const timeMinutes = Math.round(task.totalTimeSpent / 60000);
-              const timeSpent = timeMinutes > 0 ? ` *(${formatTime(timeMinutes)})*` : '';
+              const timeSpent = (showTimeSpentCheckbox.checked && timeMinutes > 0) ? ` *(${formatTime(timeMinutes)})*` : '';
               const statusIndicator = task.isInProgress ? ' WIP' : '';
               
               // Optionally show completion date
@@ -1312,6 +1325,8 @@
         excludeEmptyDatesCheckbox.checked = preferences.excludeEmptyDates;
         includeNotesCheckbox.checked = preferences.includeNotes;
         minTimeSpentInput.value = preferences.minTimeSpent;
+        showTimeSpentCheckbox.checked = preferences.showTimeSpent;
+        showTotalTimeCheckbox.checked = preferences.showTotalTime;
         
         // Update visibility based on groupBy
         updateGroupByVisibility();
@@ -1349,6 +1364,8 @@
           preferences.excludeEmptyDates = excludeEmptyDatesCheckbox.checked;
           preferences.includeNotes = includeNotesCheckbox.checked;
           preferences.minTimeSpent = parseInt(minTimeSpentInput.value);
+          preferences.showTimeSpent = showTimeSpentCheckbox.checked;
+          preferences.showTotalTime = showTotalTimeCheckbox.checked;
 
           await persistReports();
           hidePreferencesModal();

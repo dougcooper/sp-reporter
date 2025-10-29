@@ -12,6 +12,8 @@ A plugin for [Super Productivity](https://super-productivity.com) that generates
 - ⏱️ Automatic time aggregation per project with totals
 - ⏳ Includes in-progress tasks that have work logs in the date range
 - 🔍 Exclude accidental or minimal time entries (default: 5 min threshold)
+- 👁️ Optionally hide time spent on individual tasks
+- 👁️ Optionally hide rolled-up time totals in project grouping
 - ✏️ Edit generated reports in a modal popup
 - 💾 Save reports for future reference
 - 📋 Copy report to clipboard with one click
@@ -35,11 +37,15 @@ A plugin for [Super Productivity](https://super-productivity.com) that generates
 
 1. Click the "Task Report" button in the header (calendar icon)
 2. Select your desired start and end dates
-3. **Choose grouping method:**
-   - **Group by Date** (default): Tasks organized by completion date, optionally showing project names
-   - **Group by Project**: Tasks organized by project with time totals, optionally showing completion dates
-4. **Set minimum time threshold** (default: 5 minutes) to filter out accidental or very short work logs
-5. Click "Generate Report"
+3. **Configure display options** (click the ⚙️ settings button):
+   - **Choose grouping method:**
+     - **Group by Date** (default): Tasks organized by completion date, optionally showing project names
+     - **Group by Project**: Tasks organized by project with time totals, optionally showing completion dates
+   - **Set minimum time threshold** (default: 5 minutes) to filter out accidental or very short work logs
+   - **Show/hide time spent** on individual tasks
+   - **Show/hide total time** for projects (when grouping by project)
+   - **Include task notes** in the report
+4. Click "Generate Report"
 6. The report will appear in a modal popup showing:
    - Tasks grouped by date (completed tasks and tasks with work logs)
    - In-progress tasks marked with WIP indicator
