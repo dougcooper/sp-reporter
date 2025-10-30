@@ -1490,4 +1490,256 @@ describe('Date Range Reporter', () => {
       expect(savedData.preferences.showTotalTime).toBe(false);
     });
   });
+
+  describe('Combine Reports', () => {
+    it('should have combine button', () => {
+      const combineBtn = document.getElementById('combineSelectedBtn');
+      expect(combineBtn).toBeTruthy();
+      expect(combineBtn.style.display).toBe('none'); // Hidden initially
+    });
+
+    it('should show combine button when reports are selected', async () => {
+      const mockReports = [
+        {
+          id: '1',
+          name: 'Report 1',
+          content: '# Task Completion Report\n\nContent 1',
+          startDate: '2024-01-15',
+          endDate: '2024-01-15',
+          totalTasks: 2,
+          savedAt: new Date('2024-01-18T10:00:00').toISOString()
+        },
+        {
+          id: '2',
+          name: 'Report 2',
+          content: '# Task Completion Report\n\nContent 2',
+          startDate: '2024-01-16',
+          endDate: '2024-01-16',
+          totalTasks: 3,
+          savedAt: new Date('2024-01-19T10:00:00').toISOString()
+        }
+      ];
+
+      mockPluginAPI.loadSyncedData.mockResolvedValue(JSON.stringify({ reports: mockReports }));
+      await window.loadReports();
+
+      // Select a checkbox
+      const checkbox = document.querySelector('.saved-report-checkbox');
+      checkbox.checked = true;
+      checkbox.dispatchEvent(new window.Event('change', { bubbles: true }));
+
+      const combineBtn = document.getElementById('combineSelectedBtn');
+      expect(combineBtn.style.display).toBe('block');
+    });
+
+    it('should combine multiple selected reports', async () => {
+      const mockReports = [
+        {
+          id: '1',
+          name: 'Report 1',
+          content: '# Task Completion Report\n\n**Date Range:** Monday, January 15, 2024 - Monday, January 15, 2024\n**Total Tasks:** 2\n\nContent for report 1',
+          startDate: '2024-01-15',
+          endDate: '2024-01-15',
+          totalTasks: 2,
+          savedAt: new Date('2024-01-18T10:00:00').toISOString()
+        },
+        {
+          id: '2',
+          name: 'Report 2',
+          content: '# Task Completion Report\n\n**Date Range:** Tuesday, January 16, 2024 - Tuesday, January 16, 2024\n**Total Tasks:** 3\n\nContent for report 2',
+          startDate: '2024-01-16',
+          endDate: '2024-01-16',
+          totalTasks: 3,
+          savedAt: new Date('2024-01-19T10:00:00').toISOString()
+        }
+      ];
+
+      mockPluginAPI.loadSyncedData.mockResolvedValue(JSON.stringify({ reports: mockReports }));
+      await window.loadReports();
+
+      // Select both checkboxes
+      const checkboxes = document.querySelectorAll('.saved-report-checkbox');
+      checkboxes[0].checked = true;
+      checkboxes[1].checked = true;
+
+      await window.combineSelectedReports();
+
+      // Verify modal is shown with combined content
+      const modal = document.getElementById('reportModal');
+      expect(modal.classList.contains('show')).toBe(true);
+
+      const modalContent = document.getElementById('modalReportContent');
+      const combinedText = modalContent.value;
+
+      // Verify combined report structure
+      expect(combinedText).toContain('# Combined Report');
+      expect(combinedText).toContain('**Combined from 2 reports**');
+      expect(combinedText).toContain('## Report 1: Report 1');
+      expect(combinedText).toContain('## Report 2: Report 2');
+      expect(combinedText).toContain('Content for report 1');
+      expect(combinedText).toContain('Content for report 2');
+
+      // Verify success message
+      expect(mockPluginAPI.showSnack).toHaveBeenCalledWith({
+        msg: 'Combined 2 reports successfully',
+        type: 'SUCCESS'
+      });
+    });
+
+    it('should require at least 2 reports to combine', async () => {
+      const mockReports = [
+        {
+          id: '1',
+          name: 'Report 1',
+          content: '# Task Completion Report\n\nContent 1',
+          startDate: '2024-01-15',
+          endDate: '2024-01-15',
+          totalTasks: 2,
+          savedAt: new Date('2024-01-18T10:00:00').toISOString()
+        }
+      ];
+
+      mockPluginAPI.loadSyncedData.mockResolvedValue(JSON.stringify({ reports: mockReports }));
+      await window.loadReports();
+
+      // Select only one checkbox
+      const checkbox = document.querySelector('.saved-report-checkbox');
+      checkbox.checked = true;
+
+      await window.combineSelectedReports();
+
+      // Verify error message
+      expect(mockPluginAPI.showSnack).toHaveBeenCalledWith({
+        msg: 'Please select at least 2 reports to combine',
+        type: 'ERROR'
+      });
+    });
+
+    it('should sort reports by saved date when combining', async () => {
+      const mockReports = [
+        {
+          id: '1',
+          name: 'Report 1 (Latest)',
+          content: '# Task Completion Report\n\nLatest content',
+          startDate: '2024-01-17',
+          endDate: '2024-01-17',
+          totalTasks: 1,
+          savedAt: new Date('2024-01-20T10:00:00').toISOString()
+        },
+        {
+          id: '2',
+          name: 'Report 2 (Oldest)',
+          content: '# Task Completion Report\n\nOldest content',
+          startDate: '2024-01-15',
+          endDate: '2024-01-15',
+          totalTasks: 2,
+          savedAt: new Date('2024-01-18T10:00:00').toISOString()
+        }
+      ];
+
+      mockPluginAPI.loadSyncedData.mockResolvedValue(JSON.stringify({ reports: mockReports }));
+      await window.loadReports();
+
+      // Select both checkboxes
+      const checkboxes = document.querySelectorAll('.saved-report-checkbox');
+      checkboxes.forEach(cb => cb.checked = true);
+
+      await window.combineSelectedReports();
+
+      const modalContent = document.getElementById('modalReportContent');
+      const combinedText = modalContent.value;
+
+      // Reports should be in order by saved date (oldest first)
+      const report1Index = combinedText.indexOf('Report 2 (Oldest)');
+      const report2Index = combinedText.indexOf('Report 1 (Latest)');
+      expect(report1Index).toBeLessThan(report2Index);
+    });
+
+    it('should allow saving combined report', async () => {
+      const mockReports = [
+        {
+          id: '1',
+          name: 'Report 1',
+          content: '# Task Completion Report\n\nContent 1',
+          startDate: '2024-01-15',
+          endDate: '2024-01-15',
+          totalTasks: 2,
+          savedAt: new Date('2024-01-18T10:00:00').toISOString()
+        },
+        {
+          id: '2',
+          name: 'Report 2',
+          content: '# Task Completion Report\n\nContent 2',
+          startDate: '2024-01-16',
+          endDate: '2024-01-16',
+          totalTasks: 3,
+          savedAt: new Date('2024-01-19T10:00:00').toISOString()
+        }
+      ];
+
+      mockPluginAPI.loadSyncedData.mockResolvedValue(JSON.stringify({ reports: mockReports }));
+      await window.loadReports();
+
+      // Select both checkboxes
+      const checkboxes = document.querySelectorAll('.saved-report-checkbox');
+      checkboxes.forEach(cb => cb.checked = true);
+
+      await window.combineSelectedReports();
+
+      // Set a name for the combined report
+      const reportNameInput = document.getElementById('reportNameInput');
+      reportNameInput.value = 'My Combined Report';
+
+      // Save the combined report
+      await window.saveReport();
+
+      // Verify it was saved
+      expect(mockPluginAPI.persistDataSynced).toHaveBeenCalled();
+      const savedData = JSON.parse(mockPluginAPI.persistDataSynced.mock.calls[0][0]);
+      expect(savedData.reports).toHaveLength(3); // Original 2 + new combined report
+      expect(savedData.reports[0].name).toBe('My Combined Report');
+    });
+
+    it('should allow copying combined report to clipboard', async () => {
+      const mockReports = [
+        {
+          id: '1',
+          name: 'Report 1',
+          content: '# Task Completion Report\n\nContent 1',
+          startDate: '2024-01-15',
+          endDate: '2024-01-15',
+          totalTasks: 2,
+          savedAt: new Date('2024-01-18T10:00:00').toISOString()
+        },
+        {
+          id: '2',
+          name: 'Report 2',
+          content: '# Task Completion Report\n\nContent 2',
+          startDate: '2024-01-16',
+          endDate: '2024-01-16',
+          totalTasks: 3,
+          savedAt: new Date('2024-01-19T10:00:00').toISOString()
+        }
+      ];
+
+      mockPluginAPI.loadSyncedData.mockResolvedValue(JSON.stringify({ reports: mockReports }));
+      await window.loadReports();
+
+      // Select both checkboxes
+      const checkboxes = document.querySelectorAll('.saved-report-checkbox');
+      checkboxes.forEach(cb => cb.checked = true);
+
+      await window.combineSelectedReports();
+
+      // Copy the combined report
+      const copyBtn = document.getElementById('modalCopyBtn');
+      await copyBtn.click();
+
+      // Verify clipboard was called
+      expect(window.navigator.clipboard.writeText).toHaveBeenCalled();
+      const copiedText = window.navigator.clipboard.writeText.mock.calls[0][0];
+      expect(copiedText).toContain('# Combined Report');
+      expect(copiedText).toContain('**Combined from 2 reports**');
+    });
+  });
 });

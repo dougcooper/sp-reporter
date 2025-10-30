@@ -19,6 +19,7 @@ A plugin for [Super Productivity](https://super-productivity.com) that generates
 - 📋 Copy report to clipboard with one click
 - 📁 View and manage saved reports
 - 🗑️ Delete individual or multiple saved reports
+- 🔗 Combine multiple saved reports into a single document
 - ⏱️ Shows time spent on tasks (when available)
 - 📈 Displays task statistics including excluded work log counts
 - 📝 Optional inclusion of task notes in reports
@@ -59,6 +60,7 @@ A plugin for [Super Productivity](https://super-productivity.com) that generates
    - Click on a saved report to view/edit it
    - Delete individual reports with the 🗑️ button
    - Select multiple reports and delete them all at once
+   - Select multiple reports and combine them into a single document with the 🔗 button
 
 ## Report Format
 
@@ -136,6 +138,47 @@ The generated report is formatted in Markdown and includes:
 ```
 
 The Markdown format makes it easy to paste into documentation, notes, or any Markdown-compatible application.
+```
+
+## Combining Reports
+
+You can combine multiple saved reports into a single document:
+
+1. Select two or more saved reports using the checkboxes
+2. Click the "🔗 Combine Selected" button
+3. The combined report will open in a modal with all selected reports merged together
+4. Each report is clearly labeled with its original name and metadata
+5. Reports are sorted by their saved date (oldest first) in the combined document
+6. Edit the combined report as needed
+7. Save it with a custom name or copy it to clipboard
+
+### Example Combined Report
+
+```markdown
+# Combined Report
+
+**Combined from 2 reports**  
+**Generated:** 10/23/2025, 12:35:05 AM  
+
+---
+
+## Report 1: Weekly Tasks - Oct 17-23
+
+**Date Range:** Friday, October 17, 2025 - Thursday, October 23, 2025  
+**Generated:** 10/23/2025, 10:00:00 AM  
+**Total Tasks:** 5
+
+[Report 1 content here...]
+
+---
+
+## Report 2: Sprint Review - Oct 20-21
+
+**Date Range:** Monday, October 20, 2025 - Tuesday, October 21, 2025  
+**Generated:** 10/23/2025, 11:00:00 AM  
+**Total Tasks:** 3
+
+[Report 2 content here...]
 ```
 
 ## Requirements
