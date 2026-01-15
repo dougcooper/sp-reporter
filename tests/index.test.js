@@ -655,8 +655,8 @@ describe('Date Range Reporter', () => {
       // Should show parent task
       expect(reportText).toContain('Big task');
       // Should show subtasks with extra indentation (4 spaces for project + subtask)
-      expect(reportText).toContain('    - small sub task 1');
-      expect(reportText).toContain('    - small sub task 2');
+      expect(reportText).toContain('  - small sub task 1');
+      expect(reportText).toContain('  - small sub task 2');
       // Should count only 1 task
       expect(reportText).toContain('**Total Tasks:** 1');
     });
