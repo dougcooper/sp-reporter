@@ -875,9 +875,9 @@
       }
 
       // Process subtasks and return them with aggregated data
-      function processSubtasks(parentId, parentChildren, startDateStr, endDateStr, minTimeMs) {
+      function processSubtasks(parentId, parentChildren, startDateStr, endDateStr, minTimeMs, excludedCountRef) {
         const subtasksForProject = parentChildren[parentId] ? parentChildren[parentId].map(subtask => {
-          const { totalTimeSpent, taskDates } = aggregateTaskTime(subtask, startDateStr, endDateStr, minTimeMs);
+          const { totalTimeSpent, taskDates } = aggregateTaskTime(subtask, startDateStr, endDateStr, minTimeMs, excludedCountRef);
           return {
             ...subtask,
             totalTimeSpent: totalTimeSpent,
