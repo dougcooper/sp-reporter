@@ -502,6 +502,257 @@ describe('Date Range Reporter', () => {
       // Task should be counted even though completed outside range
       expect(reportText).toContain('**Total Tasks:** 1');
     });
+
+    it('should nest subtasks under parent tasks in date-grouped report', async () => {
+      const parentTask = {
+        id: 'parent-1',
+        title: 'Big task',
+        isDone: true,
+        doneOn: new Date('2024-01-15T14:00:00').getTime(),
+        timeSpentOnDay: { '2024-01-15': 10800000 } // 3h parent task
+      };
+
+      const subtask1 = {
+        id: 'sub-1',
+        parentId: 'parent-1',
+        title: 'small sub task 1',
+        isDone: true,
+        doneOn: new Date('2024-01-15T14:00:00').getTime(),
+        timeSpentOnDay: { '2024-01-15': 3600000 } // 1h
+      };
+
+      const subtask2 = {
+        id: 'sub-2',
+        parentId: 'parent-1',
+        title: 'small sub task 2',
+        isDone: true,
+        doneOn: new Date('2024-01-15T14:00:00').getTime(),
+        timeSpentOnDay: { '2024-01-15': 7200000 } // 2h
+      };
+
+      mockPluginAPI.getTasks.mockResolvedValue([parentTask, subtask1, subtask2]);
+
+      const startInput = document.getElementById('startDate');
+      const endInput = document.getElementById('endDate');
+      
+      startInput.value = '2024-01-15';
+      endInput.value = '2024-01-15';
+
+      await window.generateReport();
+
+      const modalContent = document.getElementById('modalReportContent');
+      const reportText = modalContent.value;
+      
+      // Should show parent task
+      expect(reportText).toContain('Big task');
+      // Should show subtasks indented
+      expect(reportText).toContain('small sub task 1');
+      expect(reportText).toContain('small sub task 2');
+      // Should show proper indentation (two spaces for subtasks)
+      expect(reportText).toContain('  - small sub task 1');
+      expect(reportText).toContain('  - small sub task 2');
+      // Should count only 1 task (the parent), not 3
+      expect(reportText).toContain('**Total Tasks:** 1');
+    });
+
+    it('should not double-count subtask time in date-grouped report', async () => {
+      const parentTask = {
+        id: 'parent-1',
+        title: 'Big task',
+        isDone: true,
+        doneOn: new Date('2024-01-15T14:00:00').getTime(),
+        timeSpentOnDay: { '2024-01-15': 10800000 } // 3h
+      };
+
+      const subtask1 = {
+        id: 'sub-1',
+        parentId: 'parent-1',
+        title: 'small sub task 1',
+        isDone: true,
+        doneOn: new Date('2024-01-15T14:00:00').getTime(),
+        timeSpentOnDay: { '2024-01-15': 3600000 } // 1h
+      };
+
+      const subtask2 = {
+        id: 'sub-2',
+        parentId: 'parent-1',
+        title: 'small sub task 2',
+        isDone: true,
+        doneOn: new Date('2024-01-15T14:00:00').getTime(),
+        timeSpentOnDay: { '2024-01-15': 7200000 } // 2h
+      };
+
+      mockPluginAPI.getTasks.mockResolvedValue([parentTask, subtask1, subtask2]);
+
+      const startInput = document.getElementById('startDate');
+      const endInput = document.getElementById('endDate');
+      
+      startInput.value = '2024-01-15';
+      endInput.value = '2024-01-15';
+
+      await window.generateReport();
+
+      const modalContent = document.getElementById('modalReportContent');
+      const reportText = modalContent.value;
+      
+      // Should show individual times for subtasks
+      expect(reportText).toContain('(60 min)'); // subtask 1 time
+      expect(reportText).toContain('(120 min)'); // subtask 2 time
+      // Should NOT double-count by also showing 180 min for parent
+      // When grouped by date, parent times shown separately from subtask times
+    });
+
+    it('should nest subtasks under parent tasks in project-grouped report', async () => {
+      const parentTask = {
+        id: 'parent-1',
+        title: 'Big task',
+        projectId: 'proj-1',
+        isDone: true,
+        doneOn: new Date('2024-01-15T14:00:00').getTime(),
+        timeSpentOnDay: { '2024-01-15': 10800000 } // 3h
+      };
+
+      const subtask1 = {
+        id: 'sub-1',
+        parentId: 'parent-1',
+        title: 'small sub task 1',
+        projectId: 'proj-1',
+        isDone: true,
+        doneOn: new Date('2024-01-15T14:00:00').getTime(),
+        timeSpentOnDay: { '2024-01-15': 3600000 } // 1h
+      };
+
+      const subtask2 = {
+        id: 'sub-2',
+        parentId: 'parent-1',
+        title: 'small sub task 2',
+        projectId: 'proj-1',
+        isDone: true,
+        doneOn: new Date('2024-01-15T14:00:00').getTime(),
+        timeSpentOnDay: { '2024-01-15': 7200000 } // 2h
+      };
+
+      mockPluginAPI.getTasks.mockResolvedValue([parentTask, subtask1, subtask2]);
+      mockPluginAPI.getAllProjects.mockResolvedValue([
+        { id: 'proj-1', title: 'Super Project' }
+      ]);
+
+      const startInput = document.getElementById('startDate');
+      const endInput = document.getElementById('endDate');
+      const groupBySelect = document.getElementById('groupBy');
+      
+      startInput.value = '2024-01-15';
+      endInput.value = '2024-01-15';
+      groupBySelect.value = 'project';
+
+      await window.generateReport();
+
+      const modalContent = document.getElementById('modalReportContent');
+      const reportText = modalContent.value;
+      
+      // Should show project header
+      expect(reportText).toContain('Super Project');
+      // Should show parent task
+      expect(reportText).toContain('Big task');
+      // Should show subtasks with extra indentation (4 spaces for project + subtask)
+      expect(reportText).toContain('    - small sub task 1');
+      expect(reportText).toContain('    - small sub task 2');
+      // Should count only 1 task
+      expect(reportText).toContain('**Total Tasks:** 1');
+    });
+
+    it('should calculate correct total time including subtasks in project-grouped report', async () => {
+      const parentTask = {
+        id: 'parent-1',
+        title: 'Big task',
+        projectId: 'proj-1',
+        isDone: true,
+        doneOn: new Date('2024-01-15T14:00:00').getTime(),
+        timeSpentOnDay: { '2024-01-15': 10800000 } // 3h
+      };
+
+      const subtask1 = {
+        id: 'sub-1',
+        parentId: 'parent-1',
+        title: 'small sub task 1',
+        projectId: 'proj-1',
+        isDone: true,
+        doneOn: new Date('2024-01-15T14:00:00').getTime(),
+        timeSpentOnDay: { '2024-01-15': 3600000 } // 1h
+      };
+
+      const subtask2 = {
+        id: 'sub-2',
+        parentId: 'parent-1',
+        title: 'small sub task 2',
+        projectId: 'proj-1',
+        isDone: true,
+        doneOn: new Date('2024-01-15T14:00:00').getTime(),
+        timeSpentOnDay: { '2024-01-15': 7200000 } // 2h
+      };
+
+      mockPluginAPI.getTasks.mockResolvedValue([parentTask, subtask1, subtask2]);
+      mockPluginAPI.getAllProjects.mockResolvedValue([
+        { id: 'proj-1', title: 'Super Project' }
+      ]);
+
+      const startInput = document.getElementById('startDate');
+      const endInput = document.getElementById('endDate');
+      const groupBySelect = document.getElementById('groupBy');
+      
+      startInput.value = '2024-01-15';
+      endInput.value = '2024-01-15';
+      groupBySelect.value = 'project';
+
+      await window.generateReport();
+
+      const modalContent = document.getElementById('modalReportContent');
+      const reportText = modalContent.value;
+      
+      // Project total should be 3h (only subtasks: 1h sub1 + 2h sub2, parent's time not counted)
+      expect(reportText).toContain('*(total: 3h)*');
+      // Parent task should show only its own time (3h)
+      expect(reportText).toContain('Big task *(3h)*');
+      // Individual subtask times should be shown
+      expect(reportText).toContain('(1h)');
+      expect(reportText).toContain('(2h)');
+    });
+
+    it('should handle subtasks without parent in date-grouped report', async () => {
+      const normalTask = {
+        id: 'task-1',
+        title: 'Normal Task',
+        isDone: true,
+        doneOn: new Date('2024-01-15T14:00:00').getTime(),
+        timeSpentOnDay: { '2024-01-15': 3600000 } // 1h
+      };
+
+      const subtaskWithoutParent = {
+        id: 'orphan-sub',
+        title: 'Orphan Subtask',
+        isDone: true,
+        doneOn: new Date('2024-01-15T14:00:00').getTime(),
+        timeSpentOnDay: { '2024-01-15': 1800000 } // 30m
+      };
+
+      mockPluginAPI.getTasks.mockResolvedValue([normalTask, subtaskWithoutParent]);
+
+      const startInput = document.getElementById('startDate');
+      const endInput = document.getElementById('endDate');
+      
+      startInput.value = '2024-01-15';
+      endInput.value = '2024-01-15';
+
+      await window.generateReport();
+
+      const modalContent = document.getElementById('modalReportContent');
+      const reportText = modalContent.value;
+      
+      // Both tasks should be shown at same level (no parent)
+      expect(reportText).toContain('Normal Task');
+      expect(reportText).toContain('Orphan Subtask');
+      expect(reportText).toContain('**Total Tasks:** 2');
+    });
   });
 
   describe('Saved Reports Management', () => {

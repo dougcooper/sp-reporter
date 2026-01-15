@@ -832,14 +832,43 @@
           tasksByDate[date] = [];
         });
 
+        // Build parent-child relationships map and identify which tasks are parents with subtasks
+        const parentChildren = {}; // Map of parentId -> [subtasks]
+        const tasksWithParent = new Set(); // Set of task IDs that have a parent
+        
+        allTasks.forEach(task => {
+          if (task.parentId) {
+            tasksWithParent.add(task.id);
+            if (!parentChildren[task.parentId]) {
+              parentChildren[task.parentId] = [];
+            }
+            parentChildren[task.parentId].push(task);
+          }
+        });
+
         // Process all tasks (both archived and active)
         const processedTasks = new Set(); // Track tasks to avoid duplicates
         const minTimeMs = parseInt(minTimeSpentInput.value) * 60000; // Convert minutes to milliseconds
         let excludedWorkLogCount = 0; // Track excluded work logs
         
         allTasks.forEach(task => {
+          // Skip tasks that have a parent (they're shown nested under parent)
+          if (task.parentId) {
+            return;
+          }
+
           // Check if task has work logs
           const hasWorkLogs = task.timeSpentOnDay && Object.keys(task.timeSpentOnDay).length > 0;
+          
+          // Check if task has subtasks in the date range
+          const subtasks = parentChildren[task.id] || [];
+          const subtasksWithLogsInRange = subtasks.filter(subtask => {
+            if (!subtask.timeSpentOnDay) return false;
+            return Object.keys(subtask.timeSpentOnDay).some(date => {
+              const isInRange = date >= formatDate(startDate) && date <= formatDate(endDate);
+              return isInRange && subtask.timeSpentOnDay[date] >= minTimeMs;
+            });
+          });
           
           if (task.isDone && task.doneOn) {
             const taskDate = new Date(task.doneOn);
@@ -872,7 +901,8 @@
                 const taskEntry = { 
                   ...task, 
                   isInProgress: isWorkLogBeforeCompletion,
-                  workLogDate: workLogDate
+                  workLogDate: workLogDate,
+                  subtasks: parentChildren[task.id] || []
                 };
                 tasksByDate[workLogDate].push(taskEntry);
               });
@@ -883,11 +913,15 @@
               }
             }
             // Task with one or no work logs - show normally on completion date if in range
-            else if (isCompletionInRange) {
+            else if (isCompletionInRange || subtasksWithLogsInRange.length > 0) {
               if (!tasksByDate[taskDateStr]) {
                 tasksByDate[taskDateStr] = [];
               }
-              tasksByDate[taskDateStr].push(task);
+              const taskEntry = {
+                ...task,
+                subtasks: parentChildren[task.id] || []
+              };
+              tasksByDate[taskDateStr].push(taskEntry);
               if (!processedTasks.has(task.id)) {
                 totalTasks++;
                 processedTasks.add(task.id);
@@ -895,30 +929,55 @@
             }
           }
           // Include tasks with work logs in the date range (even if not completed)
-          else if (hasWorkLogs) {
+          else if (hasWorkLogs || subtasksWithLogsInRange.length > 0) {
             // Check each date in the task's work logs
-            Object.keys(task.timeSpentOnDay).forEach(workLogDate => {
-              // Check if work log date is in the report date range
-              const isInRange = workLogDate >= formatDate(startDate) && workLogDate <= formatDate(endDate);
-              const meetsMinTime = task.timeSpentOnDay[workLogDate] >= minTimeMs;
-              
-              if (isInRange && !meetsMinTime) {
-                excludedWorkLogCount++;
-              }
-              
-              if (isInRange && meetsMinTime) {
-                if (!tasksByDate[workLogDate]) {
-                  tasksByDate[workLogDate] = [];
+            const datesToProcess = new Set();
+            
+            if (hasWorkLogs) {
+              Object.keys(task.timeSpentOnDay).forEach(workLogDate => {
+                const isInRange = workLogDate >= formatDate(startDate) && workLogDate <= formatDate(endDate);
+                const meetsMinTime = task.timeSpentOnDay[workLogDate] >= minTimeMs;
+                
+                if (isInRange && !meetsMinTime) {
+                  excludedWorkLogCount++;
                 }
-                // Mark task as in-progress to differentiate from completed tasks
-                const taskWithStatus = { ...task, isInProgress: true, workLogDate: workLogDate };
-                tasksByDate[workLogDate].push(taskWithStatus);
-                if (!processedTasks.has(task.id)) {
-                  totalTasks++;
-                  processedTasks.add(task.id);
+                
+                if (isInRange && meetsMinTime) {
+                  datesToProcess.add(workLogDate);
                 }
-              }
+              });
+            }
+            
+            // Also add dates from subtasks
+            subtasksWithLogsInRange.forEach(subtask => {
+              Object.keys(subtask.timeSpentOnDay).forEach(date => {
+                const isInRange = date >= formatDate(startDate) && date <= formatDate(endDate);
+                const meetsMinTime = subtask.timeSpentOnDay[date] >= minTimeMs;
+                if (isInRange && meetsMinTime) {
+                  datesToProcess.add(date);
+                }
+              });
             });
+            
+            // Process each date
+            datesToProcess.forEach(dateForTask => {
+              if (!tasksByDate[dateForTask]) {
+                tasksByDate[dateForTask] = [];
+              }
+              // Mark task as in-progress to differentiate from completed tasks
+              const taskWithStatus = { 
+                ...task, 
+                isInProgress: true, 
+                workLogDate: dateForTask,
+                subtasks: parentChildren[task.id] || []
+              };
+              tasksByDate[dateForTask].push(taskWithStatus);
+            });
+            
+            if (!processedTasks.has(task.id)) {
+              totalTasks++;
+              processedTasks.add(task.id);
+            }
           }
         });
 
@@ -930,7 +989,7 @@
         if (excludedWorkLogCount > 0) {
           reportText += `**Excluded Work Logs:** ${excludedWorkLogCount} (below ${minTimeSpentInput.value} min threshold)\n`;
         }
-        reportText += `*Note: Individual work log entries are shown for tasks with multiple work logs. WIP indicates work in progress.*\n\n`;
+        reportText += `*Note: Individual work log entries are shown for tasks with multiple work logs. WIP indicates work in progress. Subtasks are nested under parent tasks.*\n\n`;
         reportText += `---\n\n`;
 
         // Sort dates
@@ -966,6 +1025,28 @@
               
               reportText += `- ${task.title}${projectName}${timeSpent}${statusIndicator}\n`;
               
+              // Include subtasks indented under parent task
+              if (task.subtasks && task.subtasks.length > 0) {
+                task.subtasks.forEach(subtask => {
+                  const subtaskDateForTimeSpent = subtask.workLogDate || dateStr;
+                  const subtaskTimeSpent = (showTimeSpentCheckbox.checked && subtask.timeSpentOnDay && subtask.timeSpentOnDay[subtaskDateForTimeSpent])
+                    ? ` *(${Math.round(subtask.timeSpentOnDay[subtaskDateForTimeSpent] / 60000)} min)*`
+                    : '';
+                  const subtaskStatusIndicator = subtask.isInProgress ? ' WIP' : '';
+                  const subtaskProjectName = showProject && subtask.projectId && projects[subtask.projectId]
+                    ? ` [${projects[subtask.projectId]}]`
+                    : '';
+                  
+                  reportText += `  - ${subtask.title}${subtaskProjectName}${subtaskTimeSpent}${subtaskStatusIndicator}\n`;
+                  
+                  // Include notes for subtask if applicable
+                  if (includeNotes && subtask.notes && subtask.notes.trim()) {
+                    const indentedNotes = subtask.notes.trim().split('\n').map(line => `    ${line}`).join('\n');
+                    reportText += `${indentedNotes}\n`;
+                  }
+                });
+              }
+              
               // Include notes if checkbox is checked and task has notes
               if (includeNotes && task.notes && task.notes.trim()) {
                 // Indent the notes for better formatting
@@ -988,8 +1069,25 @@
         const minTimeMs = parseInt(minTimeSpentInput.value) * 60000;
         let excludedWorkLogCount = 0;
 
+        // Build parent-child relationships map
+        const parentChildren = {}; // Map of parentId -> [subtasks]
+        
+        allTasks.forEach(task => {
+          if (task.parentId) {
+            if (!parentChildren[task.parentId]) {
+              parentChildren[task.parentId] = [];
+            }
+            parentChildren[task.parentId].push(task);
+          }
+        });
+
         // Process all tasks
         allTasks.forEach(task => {
+          // Skip tasks that have a parent (they're shown nested under parent)
+          if (task.parentId) {
+            return;
+          }
+
           const hasWorkLogs = task.timeSpentOnDay && Object.keys(task.timeSpentOnDay).length > 0;
           
           // Aggregate time spent on this task within the date range
@@ -1016,7 +1114,17 @@
             formatDate(new Date(task.doneOn)) >= formatDate(startDate) && 
             formatDate(new Date(task.doneOn)) <= formatDate(endDate);
           
-          if ((totalTimeSpent > 0 || isCompletedInRange) && !processedTasks.has(task.id)) {
+          // Check if task has subtasks with time in range
+          const subtasks = parentChildren[task.id] || [];
+          const subtasksWithLogsInRange = subtasks.filter(subtask => {
+            if (!subtask.timeSpentOnDay) return false;
+            return Object.keys(subtask.timeSpentOnDay).some(date => {
+              const isInRange = date >= formatDate(startDate) && date <= formatDate(endDate);
+              return isInRange && subtask.timeSpentOnDay[date] >= minTimeMs;
+            });
+          });
+          
+          if ((totalTimeSpent > 0 || isCompletedInRange || subtasksWithLogsInRange.length > 0) && !processedTasks.has(task.id)) {
             const projectId = task.projectId || 'no-project';
             const projectName = projects[projectId] || 'No Project';
             
@@ -1028,16 +1136,63 @@
               };
             }
             
+            // Include subtasks in the task object
+            const subtasksForProject = parentChildren[task.id] ? parentChildren[task.id].map(subtask => {
+              let subtaskTimeSpent = 0;
+              let subtaskDates = [];
+              
+              if (subtask.timeSpentOnDay) {
+                Object.keys(subtask.timeSpentOnDay).forEach(workLogDate => {
+                  const isInRange = workLogDate >= formatDate(startDate) && workLogDate <= formatDate(endDate);
+                  if (isInRange) {
+                    const timeSpent = subtask.timeSpentOnDay[workLogDate];
+                    if (timeSpent >= minTimeMs) {
+                      subtaskTimeSpent += timeSpent;
+                      subtaskDates.push(workLogDate);
+                    }
+                  }
+                });
+              }
+              
+              return {
+                ...subtask,
+                totalTimeSpent: subtaskTimeSpent,
+                dates: subtaskDates,
+                isInProgress: !subtask.isDone
+              };
+            }) : [];
+            
+            // Calculate total time for project
+            // Only add parent's own time if it has no subtasks
+            // If it has subtasks, only the subtasks' time counts (parent time is not double-counted)
+            let projectContributionTime = 0;
+            
+            if (subtasksForProject.length > 0) {
+              // Has subtasks: only count subtask times in project total
+              subtasksForProject.forEach(subtask => {
+                projectContributionTime += subtask.totalTimeSpent;
+              });
+            } else {
+              // No subtasks: count parent's own time
+              projectContributionTime = totalTimeSpent;
+            }
+            
             tasksByProject[projectId].tasks.push({
               ...task,
-              totalTimeSpent,
+              totalTimeSpent: totalTimeSpent, // Parent shows only its own time
               dates: taskDates,
-              isInProgress: !task.isDone
+              isInProgress: !task.isDone,
+              subtasks: subtasksForProject
             });
-            tasksByProject[projectId].totalTime += totalTimeSpent;
+            tasksByProject[projectId].totalTime += projectContributionTime;
             
             processedTasks.add(task.id);
             totalTasks++;
+            
+            // Mark all subtasks as processed to avoid double-counting
+            subtasksForProject.forEach(subtask => {
+              processedTasks.add(subtask.id);
+            });
           }
         });
 
@@ -1049,7 +1204,7 @@
         if (excludedWorkLogCount > 0) {
           reportText += `**Excluded Work Logs:** ${excludedWorkLogCount} (below ${minTimeSpentInput.value} min threshold)\n`;
         }
-        reportText += `*Note: Tasks are grouped by project. Time shown is the total across all days in the date range.*\n\n`;
+        reportText += `*Note: Tasks are grouped by project. Time shown is the total across all days in the date range. Subtasks are nested under parent tasks.*\n\n`;
         reportText += `---\n\n`;
 
         // Sort projects by name
@@ -1102,6 +1257,34 @@
                 // Indent the notes for better formatting (extra indent for project grouping)
                 const indentedNotes = task.notes.trim().split('\n').map(line => `    ${line}`).join('\n');
                 reportText += `${indentedNotes}\n`;
+              }
+              
+              // Include subtasks indented under parent task
+              if (task.subtasks && task.subtasks.length > 0) {
+                task.subtasks.forEach(subtask => {
+                  const subtaskTimeMinutes = Math.round(subtask.totalTimeSpent / 60000);
+                  const subtaskTimeSpent = (showTimeSpentCheckbox.checked && subtaskTimeMinutes > 0) ? ` *(${formatTime(subtaskTimeMinutes)})*` : '';
+                  const subtaskStatusIndicator = subtask.isInProgress ? ' WIP' : '';
+                  
+                  let subtaskDateInfo = '';
+                  if (showDate) {
+                    if (subtask.isDone && subtask.doneOn) {
+                      const completionDate = formatDate(new Date(subtask.doneOn));
+                      subtaskDateInfo = ` [${formatDateDisplay(completionDate)}]`;
+                    } else if (subtask.dates && subtask.dates.length > 0) {
+                      const latestDate = subtask.dates.sort().pop();
+                      subtaskDateInfo = ` [Last worked: ${formatDateDisplay(latestDate)}]`;
+                    }
+                  }
+                  
+                  reportText += `    - ${subtask.title}${subtaskDateInfo}${subtaskTimeSpent}${subtaskStatusIndicator}\n`;
+                  
+                  // Include notes for subtask if applicable
+                  if (includeNotes && subtask.notes && subtask.notes.trim()) {
+                    const indentedNotes = subtask.notes.trim().split('\n').map(line => `      ${line}`).join('\n');
+                    reportText += `${indentedNotes}\n`;
+                  }
+                });
               }
             });
             reportText += `\n`;
