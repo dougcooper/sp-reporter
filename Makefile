@@ -81,6 +81,9 @@ release: release-check build
 	@echo ""
 	@echo "View at: https://github.com/$$(git config --get remote.origin.url | sed 's/.*github.com[:/]\(.*\)\.git/\1/')/releases/tag/v$(VERSION)"
 
+pr:
+	gh pr create --fill
+
 # Show help
 help:
 	@echo "Date Range Reporter Plugin - Build System"
