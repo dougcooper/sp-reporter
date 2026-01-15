@@ -1245,7 +1245,7 @@
                 }
               }
               
-              reportText += `  - ${task.title}${dateInfo}${timeSpent}${statusIndicator}\n`;
+              reportText += `- ${task.title}${dateInfo}${timeSpent}${statusIndicator}\n`;
               
               // Include notes if checkbox is checked and task has notes
               if (includeNotes && task.notes && task.notes.trim()) {
@@ -1272,7 +1272,7 @@
                     }
                   }
                   
-                  reportText += `    - ${subtask.title}${subtaskDateInfo}${subtaskTimeSpent}${subtaskStatusIndicator}\n`;
+                  reportText += `  - ${subtask.title}${subtaskDateInfo}${subtaskTimeSpent}${subtaskStatusIndicator}\n`;
                   
                   // Include notes for subtask if applicable
                   if (includeNotes && subtask.notes && subtask.notes.trim()) {
