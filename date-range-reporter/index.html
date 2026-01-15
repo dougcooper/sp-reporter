@@ -667,6 +667,14 @@
             <label for="minTimeSpent">Minimum time to include (minutes)</label>
             <input type="number" id="minTimeSpent" min="0" max="60" value="5" style="width: 100px;" />
           </div>
+          <div class="checkbox-field" style="margin-top: 16px;">
+            <input type="checkbox" id="excludeProjects" />
+            <label for="excludeProjects">Exclude specific projects</label>
+          </div>
+          <div id="projectExclusionList" style="display: none; margin-top: 12px; padding: 12px; background: var(--bg-tertiary); border-radius: 4px; max-height: 200px; overflow-y: auto;">
+            <p style="margin: 0 0 8px 0; font-size: 12px; color: var(--text-secondary);">Select projects to exclude:</p>
+            <div id="projectCheckboxes" style="display: flex; flex-direction: column; gap: 8px;"></div>
+          </div>
         </div>
         <div class="modal-footer">
           <button id="cancelPreferencesBtn" class="secondary-btn">Cancel</button>
@@ -765,6 +773,7 @@
       let savedReports = [];
       let currentReport = null;
       let isEditingExisting = false;
+      let allProjects = {}; // Track all available projects
       let preferences = {
         groupBy: 'date',
         showProject: false,
@@ -773,7 +782,9 @@
         includeNotes: false,
         minTimeSpent: 5,
         showTimeSpent: true,
-        showTotalTime: true
+        showTotalTime: true,
+        excludeProjects: false,
+        excludedProjects: []
       };
 
       // Set default dates to past seven days (including today)
@@ -888,6 +899,14 @@
         return subtasksForProject;
       }
 
+      // Check if a project should be excluded from the report
+      function isProjectExcluded(projectId) {
+        if (!preferences.excludeProjects) {
+          return false;
+        }
+        return preferences.excludedProjects.includes(projectId || 'no-project');
+      }
+
       // Generate report grouped by date
       function generateReportByDate(allTasks, startDate, endDate, projects, showProject) {
         const tasksByDate = {};
@@ -910,6 +929,11 @@
         allTasks.forEach(task => {
           // Skip tasks that have a parent (they're shown nested under parent)
           if (task.parentId) {
+            return;
+          }
+
+          // Skip tasks from excluded projects
+          if (isProjectExcluded(task.projectId)) {
             return;
           }
 
@@ -1128,6 +1152,11 @@
             return;
           }
 
+          // Skip tasks from excluded projects
+          if (isProjectExcluded(task.projectId)) {
+            return;
+          }
+
           const hasWorkLogs = task.timeSpentOnDay && Object.keys(task.timeSpentOnDay).length > 0;
           
           // Aggregate time spent on this task within the date range
@@ -1313,10 +1342,12 @@
           // Get all projects to map projectId to project name
           const projects = {};
           try {
-            const allProjects = await PluginAPI.getAllProjects();
-            allProjects.forEach(project => {
+            const allProjectsList = await PluginAPI.getAllProjects();
+            allProjectsList.forEach(project => {
               projects[project.id] = project.title;
             });
+            // Store all projects in global state for preferences modal
+            allProjects = projects;
           } catch (e) {
             console.warn('Could not load projects:', e);
           }
@@ -1509,9 +1540,18 @@
         minTimeSpentInput.value = preferences.minTimeSpent;
         showTimeSpentCheckbox.checked = preferences.showTimeSpent;
         showTotalTimeCheckbox.checked = preferences.showTotalTime;
+        document.getElementById('excludeProjects').checked = preferences.excludeProjects;
         
         // Update visibility based on groupBy
         updateGroupByVisibility();
+        
+        // Render project exclusion list if feature is enabled
+        if (preferences.excludeProjects) {
+          renderProjectExclusionList();
+          document.getElementById('projectExclusionList').style.display = 'block';
+        } else {
+          document.getElementById('projectExclusionList').style.display = 'none';
+        }
       }
 
       // Update visibility of checkboxes based on groupBy selection
@@ -1527,9 +1567,64 @@
         }
       }
 
+      // Render project exclusion list
+      function renderProjectExclusionList() {
+        const projectCheckboxesContainer = document.getElementById('projectCheckboxes');
+        projectCheckboxesContainer.innerHTML = '';
+        
+        // Sort projects alphabetically
+        const sortedProjects = Object.entries(allProjects).sort((a, b) => 
+          a[1].toLowerCase().localeCompare(b[1].toLowerCase())
+        );
+        
+        if (sortedProjects.length === 0) {
+          projectCheckboxesContainer.innerHTML = '<p style="font-size: 12px; color: var(--text-tertiary); margin: 0;">No projects available</p>';
+          return;
+        }
+        
+        sortedProjects.forEach(([projectId, projectName]) => {
+          const label = document.createElement('label');
+          label.style.cssText = 'display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px;';
+          
+          const checkbox = document.createElement('input');
+          checkbox.type = 'checkbox';
+          checkbox.value = projectId;
+          checkbox.checked = preferences.excludedProjects.includes(projectId);
+          checkbox.style.cssText = 'width: 16px; height: 16px; cursor: pointer; accent-color: var(--accent-color);';
+          
+          const span = document.createElement('span');
+          span.textContent = projectName;
+          span.style.cssText = 'color: var(--text-primary);';
+          
+          label.appendChild(checkbox);
+          label.appendChild(span);
+          projectCheckboxesContainer.appendChild(label);
+        });
+      }
+
       // Show preferences modal
       function showPreferencesModal() {
+        // Load projects if not already loaded
+        if (Object.keys(allProjects).length === 0) {
+          loadProjectsForPreferences();
+        }
         preferencesModal.classList.add('show');
+      }
+
+      // Load projects for the preferences modal
+      async function loadProjectsForPreferences() {
+        try {
+          const allProjectsList = await PluginAPI.getAllProjects();
+          allProjectsList.forEach(project => {
+            allProjects[project.id] = project.title;
+          });
+          // Render the project list if the modal is open and exclude projects is checked
+          if (document.getElementById('excludeProjects').checked && document.getElementById('projectExclusionList').style.display !== 'none') {
+            renderProjectExclusionList();
+          }
+        } catch (e) {
+          console.warn('Could not load projects for preferences:', e);
+        }
       }
 
       // Hide preferences modal
@@ -1548,6 +1643,13 @@
           preferences.minTimeSpent = parseInt(minTimeSpentInput.value);
           preferences.showTimeSpent = showTimeSpentCheckbox.checked;
           preferences.showTotalTime = showTotalTimeCheckbox.checked;
+          preferences.excludeProjects = document.getElementById('excludeProjects').checked;
+          
+          // Collect selected excluded projects
+          const projectCheckboxes = document.querySelectorAll('#projectCheckboxes input[type="checkbox"]');
+          preferences.excludedProjects = Array.from(projectCheckboxes)
+            .filter(cb => cb.checked)
+            .map(cb => cb.value);
 
           await persistReports();
           hidePreferencesModal();
@@ -1766,6 +1868,22 @@
 
       // Handle groupBy change to show/hide appropriate checkboxes
       groupBySelect.addEventListener('change', updateGroupByVisibility);
+
+      // Handle exclude projects checkbox
+      document.getElementById('excludeProjects').addEventListener('change', (e) => {
+        const projectExclusionList = document.getElementById('projectExclusionList');
+        if (e.target.checked) {
+          // Load projects if not already loaded
+          if (Object.keys(allProjects).length === 0) {
+            loadProjectsForPreferences();
+          } else {
+            renderProjectExclusionList();
+          }
+          projectExclusionList.style.display = 'block';
+        } else {
+          projectExclusionList.style.display = 'none';
+        }
+      });
 
       // Close modals on overlay click
       reportModal.addEventListener('click', (e) => {
