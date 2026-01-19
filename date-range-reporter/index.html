@@ -980,6 +980,8 @@
       let currentReport = null;
       let isEditingExisting = false;
       let allProjects = {}; // Track all available projects
+      let preferencesHasChanges = false; // Track unsaved preference changes
+      let originalExcludedProjects = []; // Track original excluded projects for cancel/discard
       let preferences = {
         groupBy: 'date',
         showProject: false,
@@ -1769,8 +1771,14 @@
             tag.className = 'project-tag';
             tag.innerHTML = `
               ${projectName}
-              <button type="button" onclick="this.parentElement.remove(); preferences.excludedProjects = preferences.excludedProjects.filter(id => id !== '${projectId}'); renderProjectExclusionList();">×</button>
+              <button type="button">×</button>
             `;
+            const removeBtn = tag.querySelector('button');
+            removeBtn.addEventListener('click', () => {
+              preferences.excludedProjects = preferences.excludedProjects.filter(id => id !== projectId);
+              preferencesHasChanges = true;
+              renderProjectExclusionList();
+            });
             selectedContainer.appendChild(tag);
           }
         });
@@ -1799,6 +1807,7 @@
             } else {
               preferences.excludedProjects = preferences.excludedProjects.filter(id => id !== projectId);
             }
+            preferencesHasChanges = true;
             renderProjectExclusionList();
           });
           
@@ -1818,6 +1827,14 @@
 
       // Show preferences modal
       function showPreferencesModal() {
+        // Save the original state before any changes
+        originalExcludedProjects = [...preferences.excludedProjects];
+        
+        // Apply current saved preferences to UI
+        applyPreferences();
+        // Reset change tracking when opening modal
+        preferencesHasChanges = false;
+        
         // Load projects if not already loaded
         if (Object.keys(allProjects).length === 0) {
           loadProjectsForPreferences();
@@ -1852,7 +1869,15 @@
 
       // Hide preferences modal
       function hidePreferencesModal() {
+        if (preferencesHasChanges) {
+          if (!confirm('You have unsaved changes. Are you sure you want to discard them?')) {
+            return;
+          }
+          // Restore original state if user confirms discard
+          preferences.excludedProjects = [...originalExcludedProjects];
+        }
         preferencesModal.classList.remove('show');
+        preferencesHasChanges = false;
       }
 
       // Save preferences
@@ -1869,6 +1894,7 @@
           // excludeProjects flag is automatically true if any projects are excluded
 
           await persistReports();
+          preferencesHasChanges = false;
           hidePreferencesModal();
 
           PluginAPI.showSnack({
@@ -1887,7 +1913,10 @@
 
       // Cancel preferences (restore previous values)
       function cancelPreferences() {
+        // Restore original excluded projects state
+        preferences.excludedProjects = [...originalExcludedProjects];
         applyPreferences();
+        preferencesHasChanges = false;
         hidePreferencesModal();
       }
 
@@ -2082,6 +2111,29 @@
       closePreferencesBtn.addEventListener('click', hidePreferencesModal);
       cancelPreferencesBtn.addEventListener('click', cancelPreferences);
       savePreferencesBtn.addEventListener('click', savePreferences);
+
+      // Track preference changes
+      const preferenceElements = [
+        'groupBy',
+        'showDate',
+        'excludeEmptyDates',
+        'includeNotes',
+        'minTimeSpent',
+        'showTimeSpent',
+        'showTotalTime'
+      ];
+
+      preferenceElements.forEach(elementId => {
+        const element = document.getElementById(elementId);
+        if (element) {
+          element.addEventListener('change', () => {
+            preferencesHasChanges = true;
+          });
+          element.addEventListener('input', () => {
+            preferencesHasChanges = true;
+          });
+        }
+      });
 
       // Handle project search/filter
       const projectSearch = document.getElementById('projectExclusionSearch');
