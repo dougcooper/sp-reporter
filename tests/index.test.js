@@ -1367,8 +1367,8 @@ describe('Date Range Reporter', () => {
     it('should have preferences modal elements', () => {
       expect(document.getElementById('preferencesModal')).toBeTruthy();
       expect(document.getElementById('groupBy')).toBeTruthy();
-      expect(document.getElementById('showProject')).toBeTruthy();
       expect(document.getElementById('showDate')).toBeTruthy();
+      expect(document.getElementById('includeNotes')).toBeTruthy();
       expect(document.getElementById('minTimeSpent')).toBeTruthy();
     });
 
@@ -1404,9 +1404,9 @@ describe('Date Range Reporter', () => {
         reports: [],
         preferences: {
           groupBy: 'project',
-          showProject: true,
           excludeEmptyDates: false,
-          minTimeSpent: 10
+          minTimeSpent: 10,
+          showTimeSpent: true
         }
       };
 
@@ -1415,11 +1415,11 @@ describe('Date Range Reporter', () => {
 
       // Preferences should be applied to UI
       const groupBy = document.getElementById('groupBy');
-      const showProject = document.getElementById('showProject');
+      const showTimeSpent = document.getElementById('showTimeSpent');
       const minTimeSpent = document.getElementById('minTimeSpent');
       
       expect(groupBy.value).toBe('project');
-      expect(showProject.checked).toBe(true);
+      expect(showTimeSpent.checked).toBe(true);
       expect(parseInt(minTimeSpent.value)).toBe(10);
     });
 
@@ -1512,20 +1512,16 @@ describe('Date Range Reporter', () => {
 
     it('should toggle groupBy options visibility', () => {
       const groupBy = document.getElementById('groupBy');
-      const showProjectContainer = document.getElementById('showProjectCheckbox');
-      const showDateContainer = document.getElementById('showDateCheckbox');
-
-      // When groupBy is 'date', showProject should be visible
+      
+      // When groupBy is 'date', report should show date-based grouping
       groupBy.value = 'date';
       groupBy.dispatchEvent(new window.Event('change', { bubbles: true }));
+      expect(groupBy.value).toBe('date');
       
-      // When groupBy is 'project', showDate should be visible
+      // When groupBy is 'project', report should show project-based grouping
       groupBy.value = 'project';
       groupBy.dispatchEvent(new window.Event('change', { bubbles: true }));
-      
-      // Both containers should exist
-      expect(showProjectContainer).toBeTruthy();
-      expect(showDateContainer).toBeTruthy();
+      expect(groupBy.value).toBe('project');
     });
 
     it('should hide time spent when showTimeSpent is unchecked (date grouping)', async () => {

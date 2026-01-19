@@ -373,6 +373,179 @@
         padding: 24px;
         overflow-y: auto;
         flex: 1;
+        max-height: calc(90vh - 140px);
+      }
+
+      .settings-section {
+        margin-bottom: 24px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid var(--border-light);
+      }
+
+      .settings-section:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+        padding-bottom: 0;
+      }
+
+      .settings-section-title {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin: 0 0 12px 0;
+        opacity: 0.8;
+      }
+
+      .toggle-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 0;
+        gap: 16px;
+      }
+
+      .toggle-content {
+        display: flex;
+        align-items: center;
+        flex: 1;
+      }
+
+      .toggle-content label {
+        font-size: 14px;
+        color: var(--text-primary);
+        margin: 0;
+        cursor: pointer;
+      }
+
+      .toggle-switch {
+        display: inline-flex;
+        align-items: center;
+        cursor: pointer;
+        position: relative;
+        flex-shrink: 0;
+      }
+
+      .toggle-switch input:checked + .toggle-slider {
+        background-color: var(--accent-color);
+      }
+
+      .toggle-switch input:checked + .toggle-slider:before {
+        transform: translateX(20px);
+      }
+
+      .toggle-slider {
+        position: relative;
+        display: inline-block;
+        width: 44px;
+        height: 24px;
+        background-color: var(--border-light);
+        border-radius: 12px;
+        transition: background-color 0.3s;
+      }
+
+      .toggle-slider:before {
+        content: '';
+        position: absolute;
+        height: 20px;
+        width: 20px;
+        left: 2px;
+        bottom: 2px;
+        background-color: white;
+        border-radius: 50%;
+        transition: transform 0.3s;
+      }
+
+      .dark-theme .toggle-slider:before {
+        background-color: var(--bg-secondary);
+      }
+
+      .project-exclusion-input {
+        position: relative;
+        margin-bottom: 12px;
+      }
+
+      .project-exclusion-input label {
+        font-size: 13px;
+        color: var(--text-secondary);
+        display: block;
+        margin-bottom: 8px;
+      }
+
+      #selectedProjectsContainer {
+        margin-bottom: 8px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+
+      .project-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 8px;
+        background-color: var(--accent-color);
+        color: white;
+        border-radius: 16px;
+        font-size: 12px;
+        font-weight: 500;
+      }
+
+      .project-tag button {
+        background: none;
+        border: none;
+        color: white;
+        cursor: pointer;
+        padding: 0;
+        font-size: 16px;
+        line-height: 1;
+        opacity: 0.7;
+        transition: opacity 0.2s;
+      }
+
+      .project-tag button:hover {
+        opacity: 1;
+      }
+
+      #projectDropdown {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-light);
+        border-radius: 4px;
+        max-height: 200px;
+        overflow-y: auto;
+        position: absolute;
+        bottom: 100%;
+        left: 0;
+        right: 0;
+        z-index: 100;
+        margin-bottom: 2px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      .dark-theme #projectDropdown {
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+      }
+
+      .project-option {
+        padding: 10px 12px;
+        cursor: pointer;
+        font-size: 13px;
+        border-bottom: 1px solid var(--border-light);
+        transition: background-color 0.2s;
+      }
+
+      .project-option:last-child {
+        border-bottom: none;
+      }
+
+      .project-option:hover {
+        background-color: var(--bg-tertiary);
+      }
+
+      .project-option input[type="checkbox"] {
+        margin-right: 8px;
+        cursor: pointer;
       }
 
       .modal-footer {
@@ -631,49 +804,92 @@
           <h3 class="modal-title">⚙️ Filter Settings</h3>
           <button class="modal-close" id="closePreferencesBtn">×</button>
         </div>
-        <div class="modal-body">
-          <div class="input-field" style="margin-bottom: 16px;">
-            <label for="groupBy">Group by</label>
-            <select id="groupBy" style="width: 200px; padding: 8px; border-radius: 4px; border: 1px solid var(--border-light); background: var(--bg-secondary); color: var(--text-primary);">
-              <option value="date">Date</option>
-              <option value="project">Project</option>
-            </select>
+        <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+          <!-- View Organization Section -->
+          <div class="settings-section">
+            <h4 class="settings-section-title">View Organization</h4>
+            <div class="input-field" style="margin-bottom: 16px;">
+              <label for="groupBy">Group by</label>
+              <select id="groupBy" style="width: 200px; padding: 8px; border-radius: 4px; border: 1px solid var(--border-light); background: var(--bg-secondary); color: var(--text-primary);">
+                <option value="date">Date</option>
+                <option value="project">Project</option>
+              </select>
+            </div>
           </div>
-          <div class="checkbox-field" id="showProjectCheckbox">
-            <input type="checkbox" id="showProject" />
-            <label for="showProject">Show project name with tasks</label>
+
+          <!-- Display Options Section -->
+          <div class="settings-section">
+            <h4 class="settings-section-title">Display Options</h4>
+            <div class="toggle-row">
+              <div class="toggle-content">
+                <label for="showDate">Show completion date</label>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="showDate" style="display: none;" />
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="toggle-row">
+              <div class="toggle-content">
+                <label for="includeNotes">Show task notes</label>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="includeNotes" style="display: none;" />
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="toggle-row">
+              <div class="toggle-content">
+                <label for="showTimeSpent">Show time spent</label>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="showTimeSpent" checked style="display: none;" />
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="toggle-row">
+              <div class="toggle-content">
+                <label for="showTotalTime">Show total project time</label>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="showTotalTime" checked style="display: none;" />
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
           </div>
-          <div class="checkbox-field" id="showDateCheckbox" style="display: none;">
-            <input type="checkbox" id="showDate" />
-            <label for="showDate">Show completion date with tasks</label>
+
+          <!-- Filtering Logic Section -->
+          <div class="settings-section">
+            <h4 class="settings-section-title">Filtering Logic</h4>
+            <div class="toggle-row">
+              <div class="toggle-content">
+                <label id="hideEmptyLabel" for="excludeEmptyDates">Hide empty projects</label>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="excludeEmptyDates" checked style="display: none;" />
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="toggle-row" style="align-items: center; gap: 12px;">
+              <div class="toggle-content" style="flex: 1;">
+                <label for="minTimeSpent">Minimum duration to include: </label>
+              </div>
+              <input type="number" id="minTimeSpent" min="0" max="60" value="5" style="width: 60px; padding: 8px; border: 1px solid var(--border-light); border-radius: 4px; background: var(--bg-secondary); color: var(--text-primary);" />
+              <span style="color: var(--text-secondary);">minutes</span>
+            </div>
           </div>
-          <div class="checkbox-field">
-            <input type="checkbox" id="excludeEmptyDates" checked />
-            <label for="excludeEmptyDates">Exclude dates with no tasks</label>
-          </div>
-          <div class="checkbox-field">
-            <input type="checkbox" id="includeNotes" />
-            <label for="includeNotes">Include notes for each task</label>
-          </div>
-          <div class="checkbox-field">
-            <input type="checkbox" id="showTimeSpent" checked />
-            <label for="showTimeSpent">Show time spent on tasks</label>
-          </div>
-          <div class="checkbox-field">
-            <input type="checkbox" id="showTotalTime" checked />
-            <label for="showTotalTime">Show total time for projects</label>
-          </div>
-          <div class="input-field" style="margin-top: 16px;">
-            <label for="minTimeSpent">Minimum time to include (minutes)</label>
-            <input type="number" id="minTimeSpent" min="0" max="60" value="5" style="width: 100px;" />
-          </div>
-          <div class="checkbox-field" style="margin-top: 16px;">
-            <input type="checkbox" id="excludeProjects" />
-            <label for="excludeProjects">Exclude specific projects</label>
-          </div>
-          <div id="projectExclusionList" style="display: none; margin-top: 12px; padding: 12px; background: var(--bg-tertiary); border-radius: 4px; max-height: 200px; overflow-y: auto;">
-            <p style="margin: 0 0 8px 0; font-size: 12px; color: var(--text-secondary);">Select projects to exclude:</p>
-            <div id="projectCheckboxes" style="display: flex; flex-direction: column; gap: 8px;"></div>
+
+          <!-- Exclusions Section -->
+          <div class="settings-section">
+            <h4 class="settings-section-title">Exclusions</h4>
+            <div id="projectExclusionContainer" style="display: none;">
+              <div class="project-exclusion-input" style="position: relative;">
+                <label for="projectExclusionSearch">Exclude projects:</label>
+                <div id="projectDropdown" style="display: none;"></div>
+                <input type="text" id="projectExclusionSearch" placeholder="Search or select projects..." style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-light); border-radius: 4px; background: var(--bg-secondary); color: var(--text-primary); font-size: 14px;" />
+                <div id="selectedProjectsContainer" style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px;"></div>
+              </div>
+            </div>
           </div>
         </div>
         <div class="modal-footer">
@@ -736,16 +952,6 @@
       const startDateInput = document.getElementById('startDate');
       const endDateInput = document.getElementById('endDate');
       const generateBtn = document.getElementById('generateBtn');
-      const groupBySelect = document.getElementById('groupBy');
-      const showProjectCheckbox = document.getElementById('showProject');
-      const showDateCheckbox = document.getElementById('showDate');
-      const showProjectCheckboxContainer = document.getElementById('showProjectCheckbox');
-      const showDateCheckboxContainer = document.getElementById('showDateCheckbox');
-      const excludeEmptyDatesCheckbox = document.getElementById('excludeEmptyDates');
-      const includeNotesCheckbox = document.getElementById('includeNotes');
-      const minTimeSpentInput = document.getElementById('minTimeSpent');
-      const showTimeSpentCheckbox = document.getElementById('showTimeSpent');
-      const showTotalTimeCheckbox = document.getElementById('showTotalTime');
       
       // Modal elements
       const reportModal = document.getElementById('reportModal');
@@ -908,7 +1114,7 @@
       }
 
       // Generate report grouped by date
-      function generateReportByDate(allTasks, startDate, endDate, projects, showProject) {
+      function generateReportByDate(allTasks, startDate, endDate, projects) {
         const tasksByDate = {};
         let totalTasks = 0;
 
@@ -923,7 +1129,7 @@
 
         // Process all tasks (both archived and active)
         const processedTasks = new Set(); // Track tasks to avoid duplicates
-        const minTimeMs = parseInt(minTimeSpentInput.value) * 60000; // Convert minutes to milliseconds
+        const minTimeMs = parseInt(document.getElementById('minTimeSpent').value) * 60000; // Convert minutes to milliseconds
         const excludedCountRef = { count: 0 };
         
         allTasks.forEach(task => {
@@ -1060,7 +1266,7 @@
         reportText += `**Generated:** ${new Date().toLocaleString()}  \n`;
         reportText += `**Total Tasks:** ${totalTasks}\n`;
         if (excludedCountRef.count > 0) {
-          reportText += `**Excluded Work Logs:** ${excludedCountRef.count} (below ${minTimeSpentInput.value} min threshold)\n`;
+          reportText += `**Excluded Work Logs:** ${excludedCountRef.count} (below ${document.getElementById('minTimeSpent').value} min threshold)\n`;
         }
         reportText += `*Note: Individual work log entries are shown for tasks with multiple work logs. WIP indicates work in progress. Subtasks are nested under parent tasks.*\n\n`;
         reportText += `---\n\n`;
@@ -1069,8 +1275,8 @@
         const sortedDates = Object.keys(tasksByDate).sort();
 
         // Filter out empty dates if checkbox is checked
-        const excludeEmpty = excludeEmptyDatesCheckbox.checked;
-        const includeNotes = includeNotesCheckbox.checked;
+        const excludeEmpty = document.getElementById('excludeEmptyDates').checked;
+        const includeNotes = document.getElementById('includeNotes').checked;
         const datesToShow = excludeEmpty 
           ? sortedDates.filter(dateStr => tasksByDate[dateStr].length > 0)
           : sortedDates;
@@ -1085,14 +1291,14 @@
             tasks.forEach((task, index) => {
               // Use workLogDate if available, otherwise use the date from the section
               const dateForTimeSpent = task.workLogDate || dateStr;
-              const timeSpent = (showTimeSpentCheckbox.checked && task.timeSpentOnDay && task.timeSpentOnDay[dateForTimeSpent])
+              const timeSpent = (document.getElementById('showTimeSpent').checked && task.timeSpentOnDay && task.timeSpentOnDay[dateForTimeSpent])
                 ? ` *(${Math.round(task.timeSpentOnDay[dateForTimeSpent] / 60000)} min)*`
                 : '';
               // Show status indicator for in-progress tasks
               const statusIndicator = task.isInProgress ? ' WIP' : '';
               
               // Optionally show project name
-              const projectName = showProject && task.projectId && projects[task.projectId] 
+              const projectName = task.projectId && projects[task.projectId] 
                 ? ` [${projects[task.projectId]}]` 
                 : '';
               
@@ -1102,11 +1308,11 @@
               if (task.subtasks && task.subtasks.length > 0) {
                 task.subtasks.forEach(subtask => {
                   const subtaskDateForTimeSpent = subtask.workLogDate || dateStr;
-                  const subtaskTimeSpent = (showTimeSpentCheckbox.checked && subtask.timeSpentOnDay && subtask.timeSpentOnDay[subtaskDateForTimeSpent])
+                  const subtaskTimeSpent = (document.getElementById('showTimeSpent').checked && subtask.timeSpentOnDay && subtask.timeSpentOnDay[subtaskDateForTimeSpent])
                     ? ` *(${Math.round(subtask.timeSpentOnDay[subtaskDateForTimeSpent] / 60000)} min)*`
                     : '';
                   const subtaskStatusIndicator = subtask.isInProgress ? ' WIP' : '';
-                  const subtaskProjectName = showProject && subtask.projectId && projects[subtask.projectId]
+                  const subtaskProjectName = subtask.projectId && projects[subtask.projectId]
                     ? ` [${projects[subtask.projectId]}]`
                     : '';
                   
@@ -1135,11 +1341,11 @@
       }
 
       // Generate report grouped by project
-      function generateReportByProject(allTasks, startDate, endDate, projects, showDate) {
+      function generateReportByProject(allTasks, startDate, endDate, projects) {
         const tasksByProject = {};
         const processedTasks = new Set();
         let totalTasks = 0;
-        const minTimeMs = parseInt(minTimeSpentInput.value) * 60000;
+        const minTimeMs = parseInt(document.getElementById('minTimeSpent').value) * 60000;
         const excludedCountRef = { count: 0 };
 
         // Build parent-child relationships map
@@ -1226,7 +1432,7 @@
         reportText += `**Generated:** ${new Date().toLocaleString()}  \n`;
         reportText += `**Total Tasks:** ${totalTasks}\n`;
         if (excludedCountRef.count > 0) {
-          reportText += `**Excluded Work Logs:** ${excludedCountRef.count} (below ${minTimeSpentInput.value} min threshold)\n`;
+          reportText += `**Excluded Work Logs:** ${excludedCountRef.count} (below ${document.getElementById('minTimeSpent').value} min threshold)\n`;
         }
         reportText += `*Note: Tasks are grouped by project. Time shown is the total across all days in the date range. Subtasks are nested under parent tasks.*\n\n`;
         reportText += `---\n\n`;
@@ -1239,8 +1445,8 @@
         });
 
         // Filter out empty projects if checkbox is checked
-        const excludeEmpty = excludeEmptyDatesCheckbox.checked;
-        const includeNotes = includeNotesCheckbox.checked;
+        const excludeEmpty = document.getElementById('excludeEmptyDates').checked;
+        const includeNotes = document.getElementById('includeNotes').checked;
         const projectsToShow = excludeEmpty 
           ? sortedProjects.filter(projectId => tasksByProject[projectId].tasks.length > 0)
           : sortedProjects;
@@ -1250,7 +1456,7 @@
           const totalMinutes = Math.round(project.totalTime / 60000);
           const formattedTime = formatTime(totalMinutes);
           
-          const totalTimeDisplay = showTotalTimeCheckbox.checked ? ` *(total: ${formattedTime})*` : '';
+          const totalTimeDisplay = document.getElementById('showTotalTime').checked ? ` *(total: ${formattedTime})*` : '';
           reportText += `## ${project.name}${totalTimeDisplay}\n\n`;
 
           if (project.tasks.length === 0) {
@@ -1258,23 +1464,11 @@
           } else {
             project.tasks.forEach(task => {
               const timeMinutes = Math.round(task.totalTimeSpent / 60000);
-              const timeSpent = (showTimeSpentCheckbox.checked && timeMinutes > 0) ? ` *(${formatTime(timeMinutes)})*` : '';
+              const timeSpent = (document.getElementById('showTimeSpent').checked && timeMinutes > 0) ? ` *(${formatTime(timeMinutes)})*` : '';
               const statusIndicator = task.isInProgress ? ' WIP' : '';
               
-              // Optionally show completion date
-              let dateInfo = '';
-              if (showDate) {
-                if (task.isDone && task.doneOn) {
-                  const completionDate = formatDate(new Date(task.doneOn));
-                  dateInfo = ` [${formatDateDisplay(completionDate)}]`;
-                } else if (task.dates && task.dates.length > 0) {
-                  // Show the latest work log date for WIP tasks
-                  const latestDate = task.dates.sort().pop();
-                  dateInfo = ` [Last worked: ${formatDateDisplay(latestDate)}]`;
-                }
-              }
-              
-              reportText += `- ${task.title}${dateInfo}${timeSpent}${statusIndicator}\n`;
+              // For project grouping, don't show dates
+              reportText += `- ${task.title}${timeSpent}${statusIndicator}\n`;
               
               // Include notes if checkbox is checked and task has notes
               if (includeNotes && task.notes && task.notes.trim()) {
@@ -1287,21 +1481,11 @@
               if (task.subtasks && task.subtasks.length > 0) {
                 task.subtasks.forEach(subtask => {
                   const subtaskTimeMinutes = Math.round(subtask.totalTimeSpent / 60000);
-                  const subtaskTimeSpent = (showTimeSpentCheckbox.checked && subtaskTimeMinutes > 0) ? ` *(${formatTime(subtaskTimeMinutes)})*` : '';
+                  const subtaskTimeSpent = (document.getElementById('showTimeSpent').checked && subtaskTimeMinutes > 0) ? ` *(${formatTime(subtaskTimeMinutes)})*` : '';
                   const subtaskStatusIndicator = subtask.isInProgress ? ' WIP' : '';
                   
-                  let subtaskDateInfo = '';
-                  if (showDate) {
-                    if (subtask.isDone && subtask.doneOn) {
-                      const completionDate = formatDate(new Date(subtask.doneOn));
-                      subtaskDateInfo = ` [${formatDateDisplay(completionDate)}]`;
-                    } else if (subtask.dates && subtask.dates.length > 0) {
-                      const latestDate = subtask.dates.sort().pop();
-                      subtaskDateInfo = ` [Last worked: ${formatDateDisplay(latestDate)}]`;
-                    }
-                  }
                   
-                  reportText += `  - ${subtask.title}${subtaskDateInfo}${subtaskTimeSpent}${subtaskStatusIndicator}\n`;
+                  reportText += `  - ${subtask.title}${subtaskTimeSpent}${subtaskStatusIndicator}\n`;
                   
                   // Include notes for subtask if applicable
                   if (includeNotes && subtask.notes && subtask.notes.trim()) {
@@ -1355,21 +1539,19 @@
           // Combine all tasks
           const allTasks = [...archivedTasks, ...activeTasks];
 
-          const groupBy = groupBySelect.value;
-          const showProject = showProjectCheckbox.checked;
-          const showDate = showDateCheckbox.checked;
+          const groupBy = document.getElementById('groupBy').value;
           
           let reportText = '';
           let totalTasks = 0;
           
           if (groupBy === 'date') {
-            // Group by date logic (existing logic with optional project display)
-            const result = generateReportByDate(allTasks, startDate, endDate, projects, showProject);
+            // Group by date logic
+            const result = generateReportByDate(allTasks, startDate, endDate, projects);
             reportText = result.reportText;
             totalTasks = result.totalTasks;
           } else {
             // Group by project logic
-            const result = generateReportByProject(allTasks, startDate, endDate, projects, showDate);
+            const result = generateReportByProject(allTasks, startDate, endDate, projects);
             reportText = result.reportText;
             totalTasks = result.totalTasks;
           }
@@ -1532,45 +1714,43 @@
 
       // Load preferences and apply to UI
       function applyPreferences() {
-        groupBySelect.value = preferences.groupBy;
-        showProjectCheckbox.checked = preferences.showProject;
-        showDateCheckbox.checked = preferences.showDate;
-        excludeEmptyDatesCheckbox.checked = preferences.excludeEmptyDates;
-        includeNotesCheckbox.checked = preferences.includeNotes;
-        minTimeSpentInput.value = preferences.minTimeSpent;
-        showTimeSpentCheckbox.checked = preferences.showTimeSpent;
-        showTotalTimeCheckbox.checked = preferences.showTotalTime;
-        document.getElementById('excludeProjects').checked = preferences.excludeProjects;
+        const groupByEl = document.getElementById('groupBy');
+        const showDateEl = document.getElementById('showDate');
+        const excludeEmptyDatesEl = document.getElementById('excludeEmptyDates');
+        const includeNotesEl = document.getElementById('includeNotes');
+        const minTimeSpentEl = document.getElementById('minTimeSpent');
+        const showTimeSpentEl = document.getElementById('showTimeSpent');
+        const showTotalTimeEl = document.getElementById('showTotalTime');
+        const projectExclusionContainerEl = document.getElementById('projectExclusionContainer');
         
-        // Update visibility based on groupBy
-        updateGroupByVisibility();
+        if (groupByEl) groupByEl.value = preferences.groupBy;
+        if (showDateEl) showDateEl.checked = preferences.showDate;
+        if (excludeEmptyDatesEl) excludeEmptyDatesEl.checked = preferences.excludeEmptyDates;
+        if (includeNotesEl) includeNotesEl.checked = preferences.includeNotes;
+        if (minTimeSpentEl) minTimeSpentEl.value = preferences.minTimeSpent;
+        if (showTimeSpentEl) showTimeSpentEl.checked = preferences.showTimeSpent;
+        if (showTotalTimeEl) showTotalTimeEl.checked = preferences.showTotalTime;
         
-        // Render project exclusion list if feature is enabled
-        if (preferences.excludeProjects) {
+        // Show project exclusion container if projects are loaded
+        if (Object.keys(allProjects).length > 0 && projectExclusionContainerEl) {
+          projectExclusionContainerEl.style.display = 'block';
           renderProjectExclusionList();
-          document.getElementById('projectExclusionList').style.display = 'block';
-        } else {
-          document.getElementById('projectExclusionList').style.display = 'none';
-        }
-      }
-
-      // Update visibility of checkboxes based on groupBy selection
-      function updateGroupByVisibility() {
-        if (groupBySelect.value === 'date') {
-          showProjectCheckboxContainer.style.display = 'flex';
-          showDateCheckboxContainer.style.display = 'none';
-          excludeEmptyDatesCheckbox.parentElement.querySelector('label').textContent = 'Exclude dates with no tasks';
-        } else {
-          showProjectCheckboxContainer.style.display = 'none';
-          showDateCheckboxContainer.style.display = 'flex';
-          excludeEmptyDatesCheckbox.parentElement.querySelector('label').textContent = 'Exclude projects with no tasks';
+        } else if (projectExclusionContainerEl) {
+          projectExclusionContainerEl.style.display = 'none';
         }
       }
 
       // Render project exclusion list
       function renderProjectExclusionList() {
-        const projectCheckboxesContainer = document.getElementById('projectCheckboxes');
-        projectCheckboxesContainer.innerHTML = '';
+        const selectedContainer = document.getElementById('selectedProjectsContainer');
+        const projectDropdown = document.getElementById('projectDropdown');
+        const projectSearch = document.getElementById('projectExclusionSearch');
+        
+        // Preserve the current search term
+        const currentSearchTerm = projectSearch ? projectSearch.value.toLowerCase() : '';
+        
+        selectedContainer.innerHTML = '';
+        projectDropdown.innerHTML = '';
         
         // Sort projects alphabetically
         const sortedProjects = Object.entries(allProjects).sort((a, b) => 
@@ -1578,28 +1758,62 @@
         );
         
         if (sortedProjects.length === 0) {
-          projectCheckboxesContainer.innerHTML = '<p style="font-size: 12px; color: var(--text-tertiary); margin: 0;">No projects available</p>';
+          projectDropdown.innerHTML = '<div style="padding: 10px 12px; color: var(--text-secondary); font-size: 13px;">No projects available</div>';
           return;
         }
         
+        // Render selected projects as tags
         sortedProjects.forEach(([projectId, projectName]) => {
-          const label = document.createElement('label');
-          label.style.cssText = 'display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px;';
+          if (preferences.excludedProjects.includes(projectId)) {
+            const tag = document.createElement('div');
+            tag.className = 'project-tag';
+            tag.innerHTML = `
+              ${projectName}
+              <button type="button" onclick="this.parentElement.remove(); preferences.excludedProjects = preferences.excludedProjects.filter(id => id !== '${projectId}'); renderProjectExclusionList();">×</button>
+            `;
+            selectedContainer.appendChild(tag);
+          }
+        });
+        
+        // Render dropdown options
+        sortedProjects.forEach(([projectId, projectName]) => {
+          const option = document.createElement('div');
+          option.className = 'project-option';
           
           const checkbox = document.createElement('input');
           checkbox.type = 'checkbox';
           checkbox.value = projectId;
           checkbox.checked = preferences.excludedProjects.includes(projectId);
-          checkbox.style.cssText = 'width: 16px; height: 16px; cursor: pointer; accent-color: var(--accent-color);';
+          checkbox.style.marginRight = '8px';
           
-          const span = document.createElement('span');
-          span.textContent = projectName;
-          span.style.cssText = 'color: var(--text-primary);';
-          
+          const label = document.createElement('label');
+          label.style.cssText = 'cursor: pointer; display: flex; align-items: center;';
           label.appendChild(checkbox);
-          label.appendChild(span);
-          projectCheckboxesContainer.appendChild(label);
+          label.appendChild(document.createTextNode(projectName));
+          
+          checkbox.addEventListener('change', () => {
+            if (checkbox.checked) {
+              if (!preferences.excludedProjects.includes(projectId)) {
+                preferences.excludedProjects.push(projectId);
+              }
+            } else {
+              preferences.excludedProjects = preferences.excludedProjects.filter(id => id !== projectId);
+            }
+            renderProjectExclusionList();
+          });
+          
+          option.appendChild(label);
+          projectDropdown.appendChild(option);
         });
+        
+        // Reapply the search filter if there was one
+        if (currentSearchTerm) {
+          const options = document.querySelectorAll('.project-option');
+          options.forEach(option => {
+            const text = option.textContent.toLowerCase();
+            option.style.display = text.includes(currentSearchTerm) ? 'block' : 'none';
+          });
+        }
       }
 
       // Show preferences modal
@@ -1607,6 +1821,13 @@
         // Load projects if not already loaded
         if (Object.keys(allProjects).length === 0) {
           loadProjectsForPreferences();
+        } else {
+          // Show project exclusion if projects are already loaded
+          const container = document.getElementById('projectExclusionContainer');
+          if (container) {
+            container.style.display = 'block';
+            renderProjectExclusionList();
+          }
         }
         preferencesModal.classList.add('show');
       }
@@ -1618,8 +1839,10 @@
           allProjectsList.forEach(project => {
             allProjects[project.id] = project.title;
           });
-          // Render the project list if the modal is open and exclude projects is checked
-          if (document.getElementById('excludeProjects').checked && document.getElementById('projectExclusionList').style.display !== 'none') {
+          // Show the project exclusion container and render projects
+          const container = document.getElementById('projectExclusionContainer');
+          if (container && Object.keys(allProjects).length > 0) {
+            container.style.display = 'block';
             renderProjectExclusionList();
           }
         } catch (e) {
@@ -1635,21 +1858,15 @@
       // Save preferences
       async function savePreferences() {
         try {
-          preferences.groupBy = groupBySelect.value;
-          preferences.showProject = showProjectCheckbox.checked;
-          preferences.showDate = showDateCheckbox.checked;
-          preferences.excludeEmptyDates = excludeEmptyDatesCheckbox.checked;
-          preferences.includeNotes = includeNotesCheckbox.checked;
-          preferences.minTimeSpent = parseInt(minTimeSpentInput.value);
-          preferences.showTimeSpent = showTimeSpentCheckbox.checked;
-          preferences.showTotalTime = showTotalTimeCheckbox.checked;
-          preferences.excludeProjects = document.getElementById('excludeProjects').checked;
-          
-          // Collect selected excluded projects
-          const projectCheckboxes = document.querySelectorAll('#projectCheckboxes input[type="checkbox"]');
-          preferences.excludedProjects = Array.from(projectCheckboxes)
-            .filter(cb => cb.checked)
-            .map(cb => cb.value);
+          preferences.groupBy = document.getElementById('groupBy').value;
+          preferences.showDate = document.getElementById('showDate').checked;
+          preferences.excludeEmptyDates = document.getElementById('excludeEmptyDates').checked;
+          preferences.includeNotes = document.getElementById('includeNotes').checked;
+          preferences.minTimeSpent = parseInt(document.getElementById('minTimeSpent').value);
+          preferences.showTimeSpent = document.getElementById('showTimeSpent').checked;
+          preferences.showTotalTime = document.getElementById('showTotalTime').checked;
+          // excludedProjects is already updated in real-time by renderProjectExclusionList
+          // excludeProjects flag is automatically true if any projects are excluded
 
           await persistReports();
           hidePreferencesModal();
@@ -1866,24 +2083,39 @@
       cancelPreferencesBtn.addEventListener('click', cancelPreferences);
       savePreferencesBtn.addEventListener('click', savePreferences);
 
-      // Handle groupBy change to show/hide appropriate checkboxes
-      groupBySelect.addEventListener('change', updateGroupByVisibility);
+      // Handle project search/filter
+      const projectSearch = document.getElementById('projectExclusionSearch');
+      if (projectSearch) {
+        projectSearch.addEventListener('focus', () => {
+          document.getElementById('projectDropdown').style.display = 'block';
+        });
 
-      // Handle exclude projects checkbox
-      document.getElementById('excludeProjects').addEventListener('change', (e) => {
-        const projectExclusionList = document.getElementById('projectExclusionList');
-        if (e.target.checked) {
-          // Load projects if not already loaded
-          if (Object.keys(allProjects).length === 0) {
-            loadProjectsForPreferences();
-          } else {
-            renderProjectExclusionList();
-          }
-          projectExclusionList.style.display = 'block';
-        } else {
-          projectExclusionList.style.display = 'none';
+        projectSearch.addEventListener('blur', (e) => {
+          // Delay to allow click on dropdown items before closing
+          setTimeout(() => {
+            document.getElementById('projectDropdown').style.display = 'none';
+          }, 200);
+        });
+
+        projectSearch.addEventListener('input', (e) => {
+          const searchTerm = e.target.value.toLowerCase();
+          const options = document.querySelectorAll('.project-option');
+          
+          options.forEach(option => {
+            const text = option.textContent.toLowerCase();
+            option.style.display = text.includes(searchTerm) ? 'block' : 'none';
+          });
+        });
+        
+        // Prevent blur when clicking on dropdown
+        const projectDropdown = document.getElementById('projectDropdown');
+        if (projectDropdown) {
+          projectDropdown.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            projectSearch.focus();
+          });
         }
-      });
+      }
 
       // Close modals on overlay click
       reportModal.addEventListener('click', (e) => {
@@ -1921,6 +2153,9 @@
       // Make functions globally accessible for onclick handlers
       window.viewReport = viewReport;
       window.deleteReport = deleteReport;
+      window.renderSavedReports = renderSavedReports;
+      window.loadReports = loadReports;
+      window.generateReport = generateReport;
 
       document.addEventListener("DOMContentLoaded", function() {
         // Load saved reports on initialization
