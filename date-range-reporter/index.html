@@ -1056,9 +1056,13 @@
         return parentChildren;
       }
 
-      // Filter subtasks that have work logs in the date range
-      function getSubtasksWithLogsInRange(subtasks, startDateStr, endDateStr, minTimeMs) {
+      // Filter subtasks that have work logs in the date range or are completed
+      function getSubtasksForInclusion(subtasks, startDateStr, endDateStr, minTimeMs) {
         return subtasks.filter(subtask => {
+          // Include if subtask is completed
+          if (subtask.isDone) return true;
+          
+          // Include if subtask has time logs in the date range
           if (!subtask.timeSpentOnDay) return false;
           return Object.keys(subtask.timeSpentOnDay).some(date => {
             const isInRange = date >= startDateStr && date <= endDateStr;
@@ -1170,7 +1174,7 @@
           
           // Check if task has subtasks in the date range
           const subtasks = parentChildren[task.id] || [];
-          const subtasksWithLogsInRange = getSubtasksWithLogsInRange(subtasks, formatDate(startDate), formatDate(endDate), minTimeMs);
+          const subtasksWithLogsInRange = getSubtasksForInclusion(subtasks, formatDate(startDate), formatDate(endDate), minTimeMs);
           
           if (task.isDone && task.doneOn) {
             const taskDate = new Date(task.doneOn);
@@ -1252,13 +1256,23 @@
             
             // Also add dates from subtasks
             subtasksWithLogsInRange.forEach(subtask => {
-              Object.keys(subtask.timeSpentOnDay).forEach(date => {
-                const isInRange = date >= formatDate(startDate) && date <= formatDate(endDate);
-                const meetsMinTime = subtask.timeSpentOnDay[date] >= minTimeMs;
-                if (isInRange && meetsMinTime) {
-                  datesToProcess.add(date);
+              if (subtask.timeSpentOnDay) {
+                Object.keys(subtask.timeSpentOnDay).forEach(date => {
+                  const isInRange = date >= formatDate(startDate) && date <= formatDate(endDate);
+                  const meetsMinTime = subtask.timeSpentOnDay[date] >= minTimeMs;
+                  if (isInRange && meetsMinTime) {
+                    datesToProcess.add(date);
+                  }
+                });
+              }
+              // Also add completion dates for completed subtasks
+              if (subtask.isDone && subtask.doneOn) {
+                const subtaskCompletionDate = formatDate(new Date(subtask.doneOn));
+                const isInRange = subtaskCompletionDate >= formatDate(startDate) && subtaskCompletionDate <= formatDate(endDate);
+                if (isInRange) {
+                  datesToProcess.add(subtaskCompletionDate);
                 }
-              });
+              }
             });
             
             // Process each date
@@ -1398,7 +1412,7 @@
           
           // Check if task has subtasks with time in range
           const subtasks = parentChildren[task.id] || [];
-          const subtasksWithLogsInRange = getSubtasksWithLogsInRange(subtasks, formatDate(startDate), formatDate(endDate), minTimeMs);
+          const subtasksWithLogsInRange = getSubtasksForInclusion(subtasks, formatDate(startDate), formatDate(endDate), minTimeMs);
           
           if ((totalTimeSpent > 0 || isCompletedInRange || subtasksWithLogsInRange.length > 0) && !processedTasks.has(task.id)) {
             const projectId = task.projectId || 'no-project';
