@@ -1225,6 +1225,226 @@ describe('Date Range Reporter', () => {
         type: 'ERROR'
       });
     });
+
+    it('should warn when closing modal with unsaved changes', async () => {
+      // Setup a saved report
+      const mockReport = {
+        id: '1',
+        name: 'Test Report',
+        content: '# Original Content',
+        startDate: '2024-01-15',
+        endDate: '2024-01-15',
+        totalTasks: 1,
+        savedAt: new Date().toISOString()
+      };
+
+      mockPluginAPI.loadSyncedData.mockResolvedValue(JSON.stringify({ reports: [mockReport] }));
+      await window.loadReports();
+
+      // View the report (this sets up currentReport properly)
+      window.viewReport('1');
+      
+      const modal = document.getElementById('reportModal');
+      expect(modal.classList.contains('show')).toBe(true);
+
+      // Edit the content
+      const modalContent = document.getElementById('modalReportContent');
+      modalContent.value = '# Modified Content';
+      
+      // Trigger input event to mark as changed
+      const inputEvent = new window.Event('input', { bubbles: true });
+      modalContent.dispatchEvent(inputEvent);
+
+      // Try to close - should show confirm dialog
+      window.confirm.mockReturnValue(false); // User cancels
+      window.hideReportModal();
+
+      // Modal should still be open
+      expect(modal.classList.contains('show')).toBe(true);
+      expect(window.confirm).toHaveBeenCalledWith('You have unsaved changes to the report. Are you sure you want to discard them?');
+    });
+
+    it('should allow closing modal with unsaved changes when confirmed', async () => {
+      // Setup a saved report
+      const mockReport = {
+        id: '1',
+        name: 'Test Report',
+        content: '# Original Content',
+        startDate: '2024-01-15',
+        endDate: '2024-01-15',
+        totalTasks: 1,
+        savedAt: new Date().toISOString()
+      };
+
+      mockPluginAPI.loadSyncedData.mockResolvedValue(JSON.stringify({ reports: [mockReport] }));
+      await window.loadReports();
+
+      // View the report
+      window.viewReport('1');
+      
+      const modal = document.getElementById('reportModal');
+      
+      // Edit the content
+      const modalContent = document.getElementById('modalReportContent');
+      modalContent.value = '# Modified Content';
+      
+      // Trigger input event to mark as changed
+      const inputEvent = new window.Event('input', { bubbles: true });
+      modalContent.dispatchEvent(inputEvent);
+
+      // Try to close - user confirms discard
+      window.confirm.mockReturnValue(true);
+      window.hideReportModal();
+
+      // Modal should be closed
+      expect(modal.classList.contains('show')).toBe(false);
+      expect(window.confirm).toHaveBeenCalledWith('You have unsaved changes to the report. Are you sure you want to discard them?');
+    });
+
+    it('should not warn when closing modal without changes', async () => {
+      // Setup a saved report
+      const mockReport = {
+        id: '1',
+        name: 'Test Report',
+        content: '# Original Content',
+        startDate: '2024-01-15',
+        endDate: '2024-01-15',
+        totalTasks: 1,
+        savedAt: new Date().toISOString()
+      };
+
+      mockPluginAPI.loadSyncedData.mockResolvedValue(JSON.stringify({ reports: [mockReport] }));
+      await window.loadReports();
+
+      // View the report
+      window.viewReport('1');
+      
+      const modal = document.getElementById('reportModal');
+      
+      // Don't edit the content
+      
+      // Close modal - should not show confirm dialog
+      window.confirm.mockClear();
+      window.hideReportModal();
+
+      // Modal should be closed without confirmation
+      expect(modal.classList.contains('show')).toBe(false);
+      expect(window.confirm).not.toHaveBeenCalled();
+    });
+
+    it('should warn when clicking overlay with unsaved changes', async () => {
+      // Setup a saved report
+      const mockReport = {
+        id: '1',
+        name: 'Test Report',
+        content: '# Original Content',
+        startDate: '2024-01-15',
+        endDate: '2024-01-15',
+        totalTasks: 1,
+        savedAt: new Date().toISOString()
+      };
+
+      mockPluginAPI.loadSyncedData.mockResolvedValue(JSON.stringify({ reports: [mockReport] }));
+      await window.loadReports();
+
+      // View the report
+      window.viewReport('1');
+      
+      const modal = document.getElementById('reportModal');
+      
+      // Edit the content
+      const modalContent = document.getElementById('modalReportContent');
+      modalContent.value = '# Modified Content';
+      
+      // Trigger input event to mark as changed
+      const inputEvent = new window.Event('input', { bubbles: true });
+      modalContent.dispatchEvent(inputEvent);
+
+      // Try to close by clicking overlay - user cancels
+      window.confirm.mockReturnValue(false);
+      const clickEvent = new window.MouseEvent('click', { bubbles: true });
+      Object.defineProperty(clickEvent, 'target', { value: modal, enumerable: true });
+      modal.dispatchEvent(clickEvent);
+
+      // Modal should still be open
+      expect(modal.classList.contains('show')).toBe(true);
+      expect(window.confirm).toHaveBeenCalled();
+    });
+
+    it('should warn when pressing Escape with unsaved changes', async () => {
+      // Setup a saved report
+      const mockReport = {
+        id: '1',
+        name: 'Test Report',
+        content: '# Original Content',
+        startDate: '2024-01-15',
+        endDate: '2024-01-15',
+        totalTasks: 1,
+        savedAt: new Date().toISOString()
+      };
+
+      mockPluginAPI.loadSyncedData.mockResolvedValue(JSON.stringify({ reports: [mockReport] }));
+      await window.loadReports();
+
+      // View the report
+      window.viewReport('1');
+      
+      const modal = document.getElementById('reportModal');
+      
+      // Edit the content
+      const modalContent = document.getElementById('modalReportContent');
+      modalContent.value = '# Modified Content';
+      
+      // Trigger input event to mark as changed
+      const inputEvent = new window.Event('input', { bubbles: true });
+      modalContent.dispatchEvent(inputEvent);
+
+      // Try to close by pressing Escape - user cancels
+      window.confirm.mockReturnValue(false);
+      const escapeEvent = new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true });
+      document.dispatchEvent(escapeEvent);
+
+      // Modal should still be open
+      expect(modal.classList.contains('show')).toBe(true);
+      expect(window.confirm).toHaveBeenCalled();
+    });
+
+    it('should not warn after saving report', async () => {
+      // Setup mock data
+      mockPluginAPI.getTasks.mockResolvedValue([
+        {
+          id: 'task-1',
+          title: 'Test Task',
+          isDone: true,
+          doneOn: new Date('2024-01-15T14:00:00').getTime(),
+          timeSpentOnDay: { '2024-01-15': 3600000 }
+        }
+      ]);
+      mockPluginAPI.getArchivedTasks.mockResolvedValue([]);
+
+      const startInput = document.getElementById('startDate');
+      const endInput = document.getElementById('endDate');
+      startInput.value = '2024-01-15';
+      endInput.value = '2024-01-15';
+
+      // Generate report
+      await window.generateReport();
+
+      const modal = document.getElementById('reportModal');
+      const modalContent = document.getElementById('modalReportContent');
+      
+      // Edit the content
+      modalContent.value = '# Modified Content';
+      const inputEvent = new window.Event('input', { bubbles: true });
+      modalContent.dispatchEvent(inputEvent);
+
+      // Save the report
+      await window.saveReport();
+
+      // Modal should be closed without confirmation (because save resets the flag)
+      expect(modal.classList.contains('show')).toBe(false);
+      expect(window.confirm).not.toHaveBeenCalled();
+    });
   });
 
   describe('Report Content Format', () => {

@@ -982,6 +982,8 @@
       let allProjects = {}; // Track all available projects
       let preferencesHasChanges = false; // Track unsaved preference changes
       let originalExcludedProjects = []; // Track original excluded projects for cancel/discard
+      let reportHasChanges = false; // Track unsaved report content changes
+      let originalReportContent = ''; // Track original report content for comparison
       let preferences = {
         groupBy: 'date',
         showProject: false,
@@ -1595,15 +1597,24 @@
         }
         modalReportContent.value = reportText;
         reportNameInput.value = currentReport.name || '';
+        originalReportContent = reportText; // Store original content for comparison
+        reportHasChanges = false; // Reset change tracking when opening modal
         reportModal.classList.add('show');
       }
 
       // Hide report modal
       function hideReportModal() {
+        if (reportHasChanges) {
+          if (!confirm('You have unsaved changes to the report. Are you sure you want to discard them?')) {
+            return;
+          }
+        }
         reportModal.classList.remove('show');
         reportNameInput.value = '';
         currentReport = null;
         isEditingExisting = false;
+        reportHasChanges = false;
+        originalReportContent = '';
       }
 
       // Copy to clipboard from modal
@@ -1661,6 +1672,7 @@
 
           await persistReports();
           renderSavedReports();
+          reportHasChanges = false; // Reset change tracking after successful save
           hideReportModal();
 
           PluginAPI.showSnack({
@@ -2105,6 +2117,11 @@
       modalSaveBtn.addEventListener('click', saveReport);
       deleteSelectedBtn.addEventListener('click', deleteSelectedReports);
       combineSelectedBtn.addEventListener('click', combineSelectedReports);
+
+      // Track report content changes
+      modalReportContent.addEventListener('input', () => {
+        reportHasChanges = modalReportContent.value !== originalReportContent;
+      });
 
       // Preferences modal event listeners
       settingsBtn.addEventListener('click', showPreferencesModal);
