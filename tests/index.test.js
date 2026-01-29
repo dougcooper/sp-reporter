@@ -753,6 +753,135 @@ describe('Date Range Reporter', () => {
       expect(reportText).toContain('Orphan Subtask');
       expect(reportText).toContain('**Total Tasks:** 2');
     });
+
+    it('should only show subtasks that are completed or have time logs in date-grouped report', async () => {
+      const parentTask = {
+        id: 'parent-1',
+        title: 'Big task',
+        isDone: true,
+        doneOn: new Date('2024-01-15T14:00:00').getTime(),
+        timeSpentOnDay: { '2024-01-15': 10800000 } // 3h
+      };
+
+      // Subtask with time logs but not completed
+      const subtaskWithTime = {
+        id: 'sub-1',
+        parentId: 'parent-1',
+        title: 'subtask with time',
+        isDone: false,
+        timeSpentOnDay: { '2024-01-15': 3600000 } // 1h
+      };
+
+      // Subtask completed but no time logs
+      const subtaskCompleted = {
+        id: 'sub-2',
+        parentId: 'parent-1',
+        title: 'subtask completed',
+        isDone: true,
+        doneOn: new Date('2024-01-15T14:00:00').getTime()
+      };
+
+      // Subtask not completed and no time logs - should NOT be shown
+      const subtaskNotWorked = {
+        id: 'sub-3',
+        parentId: 'parent-1',
+        title: 'subtask not worked',
+        isDone: false
+      };
+
+      mockPluginAPI.getTasks.mockResolvedValue([parentTask, subtaskWithTime, subtaskCompleted, subtaskNotWorked]);
+
+      const startInput = document.getElementById('startDate');
+      const endInput = document.getElementById('endDate');
+      
+      startInput.value = '2024-01-15';
+      endInput.value = '2024-01-15';
+
+      await window.generateReport();
+
+      const modalContent = document.getElementById('modalReportContent');
+      const reportText = modalContent.value;
+      
+      // Should show parent task
+      expect(reportText).toContain('Big task');
+      // Should show subtask with time logs
+      expect(reportText).toContain('subtask with time');
+      // Should show completed subtask
+      expect(reportText).toContain('subtask completed');
+      // Should NOT show subtask that wasn't worked on
+      expect(reportText).not.toContain('subtask not worked');
+      // Should count only 1 task (the parent)
+      expect(reportText).toContain('**Total Tasks:** 1');
+    });
+
+    it('should only show subtasks that are completed or have time logs in project-grouped report', async () => {
+      const parentTask = {
+        id: 'parent-1',
+        title: 'Big task',
+        projectId: 'proj-1',
+        isDone: true,
+        doneOn: new Date('2024-01-15T14:00:00').getTime(),
+        timeSpentOnDay: { '2024-01-15': 10800000 } // 3h
+      };
+
+      // Subtask with time logs but not completed
+      const subtaskWithTime = {
+        id: 'sub-1',
+        parentId: 'parent-1',
+        title: 'subtask with time',
+        projectId: 'proj-1',
+        isDone: false,
+        timeSpentOnDay: { '2024-01-15': 3600000 } // 1h
+      };
+
+      // Subtask completed but no time logs
+      const subtaskCompleted = {
+        id: 'sub-2',
+        parentId: 'parent-1',
+        title: 'subtask completed',
+        projectId: 'proj-1',
+        isDone: true,
+        doneOn: new Date('2024-01-15T14:00:00').getTime()
+      };
+
+      // Subtask not completed and no time logs - should NOT be shown
+      const subtaskNotWorked = {
+        id: 'sub-3',
+        parentId: 'parent-1',
+        title: 'subtask not worked',
+        projectId: 'proj-1',
+        isDone: false
+      };
+
+      mockPluginAPI.getTasks.mockResolvedValue([parentTask, subtaskWithTime, subtaskCompleted, subtaskNotWorked]);
+      mockPluginAPI.getAllProjects.mockResolvedValue([
+        { id: 'proj-1', title: 'Super Project' }
+      ]);
+
+      const startInput = document.getElementById('startDate');
+      const endInput = document.getElementById('endDate');
+      const groupBySelect = document.getElementById('groupBy');
+      
+      startInput.value = '2024-01-15';
+      endInput.value = '2024-01-15';
+      groupBySelect.value = 'project';
+
+      await window.generateReport();
+
+      const modalContent = document.getElementById('modalReportContent');
+      const reportText = modalContent.value;
+      
+      // Should show parent task
+      expect(reportText).toContain('Big task');
+      // Should show subtask with time logs
+      expect(reportText).toContain('subtask with time');
+      // Should show completed subtask
+      expect(reportText).toContain('subtask completed');
+      // Should NOT show subtask that wasn't worked on
+      expect(reportText).not.toContain('subtask not worked');
+      // Should count only 1 task (the parent)
+      expect(reportText).toContain('**Total Tasks:** 1');
+    });
   });
 
   describe('Saved Reports Management', () => {

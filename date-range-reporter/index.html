@@ -1067,6 +1067,24 @@
         });
       }
 
+      // Filter subtasks to only include those that are completed or have time logs in the date range
+      function filterSubtasksForReport(subtasks, startDateStr, endDateStr, minTimeMs) {
+        return subtasks.filter(subtask => {
+          // Include if task is completed
+          if (subtask.isDone) return true;
+          
+          // Include if task has time spent in the date range
+          if (subtask.timeSpentOnDay) {
+            return Object.keys(subtask.timeSpentOnDay).some(date => {
+              const isInRange = date >= startDateStr && date <= endDateStr;
+              return isInRange && subtask.timeSpentOnDay[date] >= minTimeMs;
+            });
+          }
+          
+          return false;
+        });
+      }
+
       // Aggregate time and dates for a task within the date range
       function aggregateTaskTime(task, startDateStr, endDateStr, minTimeMs, excludedCountRef) {
         let totalTimeSpent = 0;
@@ -1096,6 +1114,7 @@
       }
 
       // Process subtasks and return them with aggregated data
+      // Only include subtasks that are completed or have time spent in the date range
       function processSubtasks(parentId, parentChildren, startDateStr, endDateStr, minTimeMs, excludedCountRef) {
         const subtasksForProject = parentChildren[parentId] ? parentChildren[parentId].map(subtask => {
           const { totalTimeSpent, taskDates } = aggregateTaskTime(subtask, startDateStr, endDateStr, minTimeMs, excludedCountRef);
@@ -1105,7 +1124,7 @@
             dates: taskDates,
             isInProgress: !subtask.isDone
           };
-        }) : [];
+        }).filter(subtask => subtask.isDone || subtask.totalTimeSpent > 0) : [];
         return subtasksForProject;
       }
 
@@ -1185,7 +1204,7 @@
                   ...task, 
                   isInProgress: isWorkLogBeforeCompletion,
                   workLogDate: workLogDate,
-                  subtasks: parentChildren[task.id] || []
+                  subtasks: filterSubtasksForReport(parentChildren[task.id] || [], formatDate(startDate), formatDate(endDate), minTimeMs)
                 };
                 tasksByDate[workLogDate].push(taskEntry);
               });
@@ -1202,7 +1221,7 @@
               }
               const taskEntry = {
                 ...task,
-                subtasks: parentChildren[task.id] || []
+                subtasks: filterSubtasksForReport(parentChildren[task.id] || [], formatDate(startDate), formatDate(endDate), minTimeMs)
               };
               tasksByDate[taskDateStr].push(taskEntry);
               if (!processedTasks.has(task.id)) {
@@ -1252,7 +1271,7 @@
                 ...task, 
                 isInProgress: true, 
                 workLogDate: dateForTask,
-                subtasks: parentChildren[task.id] || []
+                subtasks: filterSubtasksForReport(parentChildren[task.id] || [], formatDate(startDate), formatDate(endDate), minTimeMs)
               };
               tasksByDate[dateForTask].push(taskWithStatus);
             });
