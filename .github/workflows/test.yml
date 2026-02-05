@@ -36,3 +36,15 @@ jobs:
       with:
         files: ./coverage/coverage-final.json
         fail_ci_if_error: false
+    
+    - name: Build plugin
+      if: success()
+      run: make build
+    
+    - name: Upload plugin artifact
+      if: success()
+      uses: actions/upload-artifact@v4
+      with:
+        name: date-range-reporter-plugin
+        path: date-range-reporter.zip
+        retention-days: 90
