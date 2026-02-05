@@ -1056,16 +1056,19 @@
         return parentChildren;
       }
 
+      // Helper function to check if a task/subtask is completed within the date range
+      function isCompletedWithinDateRange(task, startDateStr, endDateStr) {
+        if (!task.isDone || !task.doneOn) return false;
+        const completionDate = formatDate(new Date(task.doneOn));
+        return completionDate >= startDateStr && completionDate <= endDateStr;
+      }
+
       // Filter subtasks that have work logs in the date range or are completed
       function getSubtasksForInclusion(subtasks, startDateStr, endDateStr, minTimeMs) {
         return subtasks.filter(subtask => {
           // Include if subtask is completed within the date range
           if (subtask.isDone) {
-            if (subtask.doneOn) {
-              const completionDate = formatDate(new Date(subtask.doneOn));
-              return completionDate >= startDateStr && completionDate <= endDateStr;
-            }
-            return false; // Exclude if no completion date
+            return isCompletedWithinDateRange(subtask, startDateStr, endDateStr);
           }
           
           // Include if subtask has time logs in the date range
@@ -1082,11 +1085,7 @@
         return subtasks.filter(subtask => {
           // Include if task is completed within the date range
           if (subtask.isDone) {
-            if (subtask.doneOn) {
-              const completionDate = formatDate(new Date(subtask.doneOn));
-              return completionDate >= startDateStr && completionDate <= endDateStr;
-            }
-            return false; // Exclude if no completion date
+            return isCompletedWithinDateRange(subtask, startDateStr, endDateStr);
           }
           
           // Include if task has time spent in the date range
@@ -1145,9 +1144,8 @@
           if (subtask.totalTimeSpent > 0) return true;
           
           // Include if subtask is completed within the date range
-          if (subtask.isDone && subtask.doneOn) {
-            const completionDate = formatDate(new Date(subtask.doneOn));
-            return completionDate >= startDateStr && completionDate <= endDateStr;
+          if (subtask.isDone) {
+            return isCompletedWithinDateRange(subtask, startDateStr, endDateStr);
           }
           
           return false;
