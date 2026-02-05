@@ -1059,8 +1059,14 @@
       // Filter subtasks that have work logs in the date range or are completed
       function getSubtasksForInclusion(subtasks, startDateStr, endDateStr, minTimeMs) {
         return subtasks.filter(subtask => {
-          // Include if subtask is completed
-          if (subtask.isDone) return true;
+          // Include if subtask is completed within the date range
+          if (subtask.isDone) {
+            if (subtask.doneOn) {
+              const completionDate = formatDate(new Date(subtask.doneOn));
+              return completionDate >= startDateStr && completionDate <= endDateStr;
+            }
+            return false; // Exclude if no completion date
+          }
           
           // Include if subtask has time logs in the date range
           if (!subtask.timeSpentOnDay) return false;
@@ -1074,8 +1080,14 @@
       // Filter subtasks to only include those that are completed or have time logs in the date range
       function filterSubtasksForReport(subtasks, startDateStr, endDateStr, minTimeMs) {
         return subtasks.filter(subtask => {
-          // Include if task is completed
-          if (subtask.isDone) return true;
+          // Include if task is completed within the date range
+          if (subtask.isDone) {
+            if (subtask.doneOn) {
+              const completionDate = formatDate(new Date(subtask.doneOn));
+              return completionDate >= startDateStr && completionDate <= endDateStr;
+            }
+            return false; // Exclude if no completion date
+          }
           
           // Include if task has time spent in the date range
           if (subtask.timeSpentOnDay) {
@@ -1128,7 +1140,18 @@
             dates: taskDates,
             isInProgress: !subtask.isDone
           };
-        }).filter(subtask => subtask.isDone || subtask.totalTimeSpent > 0) : [];
+        }).filter(subtask => {
+          // Include if subtask has time spent in the date range
+          if (subtask.totalTimeSpent > 0) return true;
+          
+          // Include if subtask is completed within the date range
+          if (subtask.isDone && subtask.doneOn) {
+            const completionDate = formatDate(new Date(subtask.doneOn));
+            return completionDate >= startDateStr && completionDate <= endDateStr;
+          }
+          
+          return false;
+        }) : [];
         return subtasksForProject;
       }
 

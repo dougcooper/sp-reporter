@@ -965,6 +965,153 @@ describe('Date Range Reporter', () => {
       expect(reportText).toContain('subtask completed');
       expect(reportText).toContain('**Total Tasks:** 1');
     });
+
+    it('should exclude subtasks completed outside the date range in date-grouped report', async () => {
+      const parentTask = {
+        id: 'parent-1',
+        title: 'Parent task',
+        isDone: true,
+        doneOn: new Date('2024-01-15T14:00:00').getTime(),
+        timeSpentOnDay: { '2024-01-15': 3600000 } // 1h on Jan 15
+      };
+
+      // Subtask completed BEFORE the date range
+      const subtaskBeforeRange = {
+        id: 'sub-1',
+        parentId: 'parent-1',
+        title: 'subtask completed before range',
+        isDone: true,
+        doneOn: new Date('2024-01-10T14:00:00').getTime() // Jan 10, before range
+      };
+
+      // Subtask completed AFTER the date range
+      const subtaskAfterRange = {
+        id: 'sub-2',
+        parentId: 'parent-1',
+        title: 'subtask completed after range',
+        isDone: true,
+        doneOn: new Date('2024-01-20T14:00:00').getTime() // Jan 20, after range
+      };
+
+      // Subtask completed WITHIN the date range
+      const subtaskInRange = {
+        id: 'sub-3',
+        parentId: 'parent-1',
+        title: 'subtask completed in range',
+        isDone: true,
+        doneOn: new Date('2024-01-15T14:00:00').getTime(), // Jan 15, in range
+        timeSpentOnDay: { '2024-01-15': 1800000 } // 30m
+      };
+
+      mockPluginAPI.getTasks.mockResolvedValue([
+        parentTask, 
+        subtaskBeforeRange, 
+        subtaskAfterRange,
+        subtaskInRange
+      ]);
+
+      const startInput = document.getElementById('startDate');
+      const endInput = document.getElementById('endDate');
+      
+      startInput.value = '2024-01-15';
+      endInput.value = '2024-01-15';
+
+      await window.generateReport();
+
+      const modalContent = document.getElementById('modalReportContent');
+      const reportText = modalContent.value;
+      
+      // Should show parent task
+      expect(reportText).toContain('Parent task');
+      
+      // Should NOT show subtasks completed outside date range
+      expect(reportText).not.toContain('subtask completed before range');
+      expect(reportText).not.toContain('subtask completed after range');
+      
+      // Should show subtask completed within date range
+      expect(reportText).toContain('subtask completed in range');
+      
+      // Should count only 1 task (the parent)
+      expect(reportText).toContain('**Total Tasks:** 1');
+    });
+
+    it('should exclude subtasks completed outside the date range in project-grouped report', async () => {
+      const parentTask = {
+        id: 'parent-1',
+        title: 'Parent task',
+        projectId: 'proj-1',
+        isDone: true,
+        doneOn: new Date('2024-01-15T14:00:00').getTime(),
+        timeSpentOnDay: { '2024-01-15': 3600000 } // 1h on Jan 15
+      };
+
+      // Subtask completed BEFORE the date range
+      const subtaskBeforeRange = {
+        id: 'sub-1',
+        parentId: 'parent-1',
+        title: 'subtask completed before range',
+        projectId: 'proj-1',
+        isDone: true,
+        doneOn: new Date('2024-01-10T14:00:00').getTime() // Jan 10, before range
+      };
+
+      // Subtask completed AFTER the date range
+      const subtaskAfterRange = {
+        id: 'sub-2',
+        parentId: 'parent-1',
+        title: 'subtask completed after range',
+        projectId: 'proj-1',
+        isDone: true,
+        doneOn: new Date('2024-01-20T14:00:00').getTime() // Jan 20, after range
+      };
+
+      // Subtask completed WITHIN the date range
+      const subtaskInRange = {
+        id: 'sub-3',
+        parentId: 'parent-1',
+        title: 'subtask completed in range',
+        projectId: 'proj-1',
+        isDone: true,
+        doneOn: new Date('2024-01-15T14:00:00').getTime(), // Jan 15, in range
+        timeSpentOnDay: { '2024-01-15': 1800000 } // 30m
+      };
+
+      mockPluginAPI.getTasks.mockResolvedValue([
+        parentTask, 
+        subtaskBeforeRange, 
+        subtaskAfterRange,
+        subtaskInRange
+      ]);
+      mockPluginAPI.getAllProjects.mockResolvedValue([
+        { id: 'proj-1', title: 'Super Project' }
+      ]);
+
+      const startInput = document.getElementById('startDate');
+      const endInput = document.getElementById('endDate');
+      const groupBySelect = document.getElementById('groupBy');
+      
+      startInput.value = '2024-01-15';
+      endInput.value = '2024-01-15';
+      groupBySelect.value = 'project';
+
+      await window.generateReport();
+
+      const modalContent = document.getElementById('modalReportContent');
+      const reportText = modalContent.value;
+      
+      // Should show parent task
+      expect(reportText).toContain('Parent task');
+      
+      // Should NOT show subtasks completed outside date range
+      expect(reportText).not.toContain('subtask completed before range');
+      expect(reportText).not.toContain('subtask completed after range');
+      
+      // Should show subtask completed within date range
+      expect(reportText).toContain('subtask completed in range');
+      
+      // Should count only 1 task (the parent)
+      expect(reportText).toContain('**Total Tasks:** 1');
+    });
   });
 
   describe('Saved Reports Management', () => {
