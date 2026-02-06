@@ -1,6 +1,6 @@
 {
   "name": "sp-date-range-reporter",
-  "version": "1.10.2",
+  "version": "1.10.3",
   "description": "Date Range Reporter Plugin for Super Productivity",
   "type": "module",
   "scripts": {
