@@ -24,3 +24,4 @@ jobs:
         name: date-range-reporter-plugin
         path: date-range-reporter.zip
         retention-days: 90
+        compression-level: 0
