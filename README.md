@@ -55,7 +55,7 @@ A plugin for [Super Productivity](https://super-productivity.com) that generates
    - Time spent on each task (when tracked)
    - Count of excluded work logs (if any were filtered out)
    - Optional task notes (when enabled)
-   - Optional missed recurring tasks section (when enabled)
+   - Missed recurring tasks marked with MISSED indicator (when enabled)
 7. **Edit the report** as needed - add comments, modify content, or reorganize tasks
 8. **Save the report** with a custom name for future reference
 9. **Copy to Clipboard** to paste the report in Markdown format anywhere
@@ -76,7 +76,7 @@ The generated report is formatted in Markdown and includes:
 - WIP indicator for work in progress entries (before task completion)
 - Time spent on each task (when tracked)
 - Optional task notes (when enabled)
-- Optional missed recurring tasks section (when enabled) showing tasks with repeat configurations that weren't worked on
+- MISSED indicator for recurring tasks that weren't completed or worked on during the date range (when enabled)
 
 ### Example Report - Grouped by Date
 
@@ -115,15 +115,8 @@ The generated report is formatted in Markdown and includes:
 
 - Refactor API endpoints [Project B] *(120 min)*
 - Fix bug in authentication [Project A] *(60 min)*
-
----
-
-## ⚠️ Missed Recurring Tasks
-
-*These recurring tasks were not completed or worked on during the date range.*
-
-- Daily standup notes [Project A] 🔁
-- Weekly planning session [Project B] 🔁
+- Daily standup notes [Project A] MISSED 🔁
+- Weekly planning session [Project B] MISSED 🔁
 ```
 
 ### Example Report - Grouped by Project

@@ -2645,9 +2645,8 @@ describe('Date Range Reporter', () => {
       const modalContent = document.getElementById('modalReportContent');
       const reportText = modalContent.value;
       
-      expect(reportText).toContain('⚠️ Missed Recurring Tasks');
       expect(reportText).toContain('Missed Recurring Task');
-      expect(reportText).toContain('🔁');
+      expect(reportText).toContain('MISSED 🔁');
       expect(reportText).toContain('Completed Task');
     });
 
@@ -2678,8 +2677,8 @@ describe('Date Range Reporter', () => {
       const modalContent = document.getElementById('modalReportContent');
       const reportText = modalContent.value;
       
-      // Should not be in missed section
-      expect(reportText).not.toContain('⚠️ Missed Recurring Tasks');
+      // Should not have MISSED indicator
+      expect(reportText).not.toContain('MISSED 🔁');
       // Should be in regular tasks
       expect(reportText).toContain('Completed Recurring Task');
     });
@@ -2710,8 +2709,8 @@ describe('Date Range Reporter', () => {
       const modalContent = document.getElementById('modalReportContent');
       const reportText = modalContent.value;
       
-      // Should not be in missed section
-      expect(reportText).not.toContain('⚠️ Missed Recurring Tasks');
+      // Should not have MISSED indicator
+      expect(reportText).not.toContain('MISSED 🔁');
       // Should be in regular tasks with WIP
       expect(reportText).toContain('WIP Recurring Task');
       expect(reportText).toContain('WIP');
@@ -2747,8 +2746,8 @@ describe('Date Range Reporter', () => {
       const modalContent = document.getElementById('modalReportContent');
       const reportText = modalContent.value;
       
-      expect(reportText).toContain('⚠️ Missed Recurring Tasks');
       expect(reportText).toContain('Missed Recurring Task [Test Project]');
+      expect(reportText).toContain('MISSED 🔁');
     });
 
     it('should exclude missed recurring tasks from excluded projects', async () => {
@@ -2839,8 +2838,8 @@ describe('Date Range Reporter', () => {
       let modalContent = document.getElementById('modalReportContent');
       let reportText = modalContent.value;
       
-      expect(reportText).toContain('⚠️ Missed Recurring Tasks');
       expect(reportText).toContain('Missed Recurring Task');
+      expect(reportText).toContain('MISSED 🔁');
 
       // Test with project grouping
       groupBy.value = 'project';
@@ -2849,8 +2848,8 @@ describe('Date Range Reporter', () => {
       modalContent = document.getElementById('modalReportContent');
       reportText = modalContent.value;
       
-      expect(reportText).toContain('⚠️ Missed Recurring Tasks');
       expect(reportText).toContain('Missed Recurring Task');
+      expect(reportText).toContain('MISSED 🔁');
     });
   });
 });

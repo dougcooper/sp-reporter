@@ -1014,8 +1014,6 @@
       endDateInput.valueAsDate = today;
 
       // Constants
-      const MISSED_RECURRING_SECTION_TITLE = '## ⚠️ Missed Recurring Tasks\n\n';
-      const MISSED_RECURRING_SECTION_DESCRIPTION = '*These recurring tasks were not completed or worked on during the date range.*\n\n';
 
       // Format date as YYYY-MM-DD
       function formatDate(date) {
@@ -1366,6 +1364,24 @@
           }
         });
 
+        // Add missed recurring tasks to each date if enabled
+        const includeMissedRecurring = document.getElementById('includeMissedRecurring').checked;
+        if (includeMissedRecurring) {
+          const missedTasks = getMissedRecurringTasks(allTasks, startDate, endDate, processedTasks);
+          
+          // Add each missed recurring task to each date in the range
+          if (missedTasks.length > 0) {
+            dateRange.forEach(dateStr => {
+              missedTasks.forEach(task => {
+                tasksByDate[dateStr].push({
+                  ...task,
+                  isMissedRecurring: true
+                });
+              });
+            });
+          }
+        }
+
         // Generate report in Markdown format
         let reportText = `# Task Completion Report\n\n`;
         reportText += `**Date Range:** ${formatDateDisplay(formatDate(startDate))} - ${formatDateDisplay(formatDate(endDate))}  \n`;
@@ -1400,8 +1416,13 @@
               const timeSpent = (document.getElementById('showTimeSpent').checked && task.timeSpentOnDay && task.timeSpentOnDay[dateForTimeSpent])
                 ? ` *(${Math.round(task.timeSpentOnDay[dateForTimeSpent] / 60000)} min)*`
                 : '';
-              // Show status indicator for in-progress tasks
-              const statusIndicator = task.isInProgress ? ' WIP' : '';
+              // Show status indicator for in-progress tasks or missed recurring tasks
+              let statusIndicator = '';
+              if (task.isMissedRecurring) {
+                statusIndicator = ' MISSED 🔁';
+              } else if (task.isInProgress) {
+                statusIndicator = ' WIP';
+              }
               
               // Optionally show project name
               const projectName = task.projectId && projects[task.projectId] 
@@ -1442,32 +1463,6 @@
             reportText += `\n`;
           }
         });
-
-        // Add missed recurring tasks section if enabled
-        const includeMissedRecurring = document.getElementById('includeMissedRecurring').checked;
-        if (includeMissedRecurring) {
-          const missedTasks = getMissedRecurringTasks(allTasks, startDate, endDate, processedTasks);
-          
-          if (missedTasks.length > 0) {
-            reportText += `---\n\n`;
-            reportText += MISSED_RECURRING_SECTION_TITLE;
-            reportText += MISSED_RECURRING_SECTION_DESCRIPTION;
-            
-            missedTasks.forEach(task => {
-              const projectName = task.projectId && projects[task.projectId] 
-                ? ` [${projects[task.projectId]}]` 
-                : '';
-              reportText += `- ${task.title}${projectName} 🔁\n`;
-              
-              // Include notes if checkbox is checked and task has notes
-              if (includeNotes && task.notes && task.notes.trim()) {
-                const indentedNotes = task.notes.trim().split('\n').map(line => `  ${line}`).join('\n');
-                reportText += `${indentedNotes}\n`;
-              }
-            });
-            reportText += `\n`;
-          }
-        }
 
         return { reportText, totalTasks };
       }
@@ -1558,6 +1553,34 @@
           }
         });
 
+        // Add missed recurring tasks to their respective projects if enabled
+        const includeMissedRecurring = document.getElementById('includeMissedRecurring').checked;
+        if (includeMissedRecurring) {
+          const missedTasks = getMissedRecurringTasks(allTasks, startDate, endDate, processedTasks);
+          
+          missedTasks.forEach(task => {
+            const projectId = task.projectId || 'no-project';
+            const projectName = projects[projectId] || 'No Project';
+            
+            // Create project entry if it doesn't exist
+            if (!tasksByProject[projectId]) {
+              tasksByProject[projectId] = {
+                name: projectName,
+                tasks: [],
+                totalTime: 0
+              };
+            }
+            
+            // Add missed recurring task to the project
+            tasksByProject[projectId].tasks.push({
+              ...task,
+              isMissedRecurring: true,
+              totalTimeSpent: 0,
+              subtasks: []
+            });
+          });
+        }
+
         // Generate report in Markdown format
         let reportText = `# Task Completion Report\n\n`;
         reportText += `**Date Range:** ${formatDateDisplay(formatDate(startDate))} - ${formatDateDisplay(formatDate(endDate))}  \n`;
@@ -1597,7 +1620,13 @@
             project.tasks.forEach(task => {
               const timeMinutes = Math.round(task.totalTimeSpent / 60000);
               const timeSpent = (document.getElementById('showTimeSpent').checked && timeMinutes > 0) ? ` *(${formatTime(timeMinutes)})*` : '';
-              const statusIndicator = task.isInProgress ? ' WIP' : '';
+              // Show status indicator for in-progress tasks or missed recurring tasks
+              let statusIndicator = '';
+              if (task.isMissedRecurring) {
+                statusIndicator = ' MISSED 🔁';
+              } else if (task.isInProgress) {
+                statusIndicator = ' WIP';
+              }
               
               // For project grouping, don't show dates
               reportText += `- ${task.title}${timeSpent}${statusIndicator}\n`;
@@ -1630,32 +1659,6 @@
             reportText += `\n`;
           }
         });
-
-        // Add missed recurring tasks section if enabled
-        const includeMissedRecurring = document.getElementById('includeMissedRecurring').checked;
-        if (includeMissedRecurring) {
-          const missedTasks = getMissedRecurringTasks(allTasks, startDate, endDate, processedTasks);
-          
-          if (missedTasks.length > 0) {
-            reportText += `---\n\n`;
-            reportText += MISSED_RECURRING_SECTION_TITLE;
-            reportText += MISSED_RECURRING_SECTION_DESCRIPTION;
-            
-            missedTasks.forEach(task => {
-              const projectName = task.projectId && projects[task.projectId] 
-                ? ` [${projects[task.projectId]}]` 
-                : '';
-              reportText += `- ${task.title}${projectName} 🔁\n`;
-              
-              // Include notes if checkbox is checked and task has notes
-              if (includeNotes && task.notes && task.notes.trim()) {
-                const indentedNotes = task.notes.trim().split('\n').map(line => `  ${line}`).join('\n');
-                reportText += `${indentedNotes}\n`;
-              }
-            });
-            reportText += `\n`;
-          }
-        }
 
         return { reportText, totalTasks };
       }
