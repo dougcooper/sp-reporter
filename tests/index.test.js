@@ -2568,4 +2568,289 @@ describe('Date Range Reporter', () => {
       expect(copiedText).toContain('**Combined from 2 reports**');
     });
   });
+
+  describe('Missed Recurring Tasks', () => {
+    it('should have includeMissedRecurring checkbox', () => {
+      expect(document.getElementById('includeMissedRecurring')).toBeTruthy();
+    });
+
+    it('should not include missed recurring tasks when option is disabled', async () => {
+      const tasks = [
+        {
+          id: 'task-recurring-missed',
+          title: 'Missed Recurring Task',
+          repeatCfgId: 'repeat-1',
+          isDone: false,
+          timeSpentOnDay: {}
+        },
+        {
+          id: 'task-completed',
+          title: 'Completed Task',
+          isDone: true,
+          doneOn: new Date('2024-01-15T14:00:00').getTime(),
+          timeSpentOnDay: { '2024-01-15': 3600000 }
+        }
+      ];
+
+      mockPluginAPI.getTasks.mockResolvedValue(tasks);
+
+      const startInput = document.getElementById('startDate');
+      const endInput = document.getElementById('endDate');
+      const includeMissedRecurring = document.getElementById('includeMissedRecurring');
+      
+      startInput.value = '2024-01-15';
+      endInput.value = '2024-01-15';
+      includeMissedRecurring.checked = false;
+
+      await window.generateReport();
+
+      const modalContent = document.getElementById('modalReportContent');
+      const reportText = modalContent.value;
+      
+      expect(reportText).not.toContain('Missed Recurring Tasks');
+      expect(reportText).not.toContain('Missed Recurring Task');
+      expect(reportText).toContain('Completed Task');
+    });
+
+    it('should include missed recurring tasks when option is enabled', async () => {
+      const tasks = [
+        {
+          id: 'task-recurring-missed',
+          title: 'Missed Recurring Task',
+          repeatCfgId: 'repeat-1',
+          isDone: false,
+          timeSpentOnDay: {}
+        },
+        {
+          id: 'task-completed',
+          title: 'Completed Task',
+          isDone: true,
+          doneOn: new Date('2024-01-15T14:00:00').getTime(),
+          timeSpentOnDay: { '2024-01-15': 3600000 }
+        }
+      ];
+
+      mockPluginAPI.getTasks.mockResolvedValue(tasks);
+
+      const startInput = document.getElementById('startDate');
+      const endInput = document.getElementById('endDate');
+      const includeMissedRecurring = document.getElementById('includeMissedRecurring');
+      
+      startInput.value = '2024-01-15';
+      endInput.value = '2024-01-15';
+      includeMissedRecurring.checked = true;
+
+      await window.generateReport();
+
+      const modalContent = document.getElementById('modalReportContent');
+      const reportText = modalContent.value;
+      
+      expect(reportText).toContain('⚠️ Missed Recurring Tasks');
+      expect(reportText).toContain('Missed Recurring Task');
+      expect(reportText).toContain('🔁');
+      expect(reportText).toContain('Completed Task');
+    });
+
+    it('should not include recurring tasks that were completed in date range', async () => {
+      const tasks = [
+        {
+          id: 'task-recurring-completed',
+          title: 'Completed Recurring Task',
+          repeatCfgId: 'repeat-1',
+          isDone: true,
+          doneOn: new Date('2024-01-15T14:00:00').getTime(),
+          timeSpentOnDay: { '2024-01-15': 3600000 }
+        }
+      ];
+
+      mockPluginAPI.getTasks.mockResolvedValue(tasks);
+
+      const startInput = document.getElementById('startDate');
+      const endInput = document.getElementById('endDate');
+      const includeMissedRecurring = document.getElementById('includeMissedRecurring');
+      
+      startInput.value = '2024-01-15';
+      endInput.value = '2024-01-15';
+      includeMissedRecurring.checked = true;
+
+      await window.generateReport();
+
+      const modalContent = document.getElementById('modalReportContent');
+      const reportText = modalContent.value;
+      
+      // Should not be in missed section
+      expect(reportText).not.toContain('⚠️ Missed Recurring Tasks');
+      // Should be in regular tasks
+      expect(reportText).toContain('Completed Recurring Task');
+    });
+
+    it('should not include recurring tasks that had work logs in date range', async () => {
+      const tasks = [
+        {
+          id: 'task-recurring-wip',
+          title: 'WIP Recurring Task',
+          repeatCfgId: 'repeat-1',
+          isDone: false,
+          timeSpentOnDay: { '2024-01-15': 3600000 }
+        }
+      ];
+
+      mockPluginAPI.getTasks.mockResolvedValue(tasks);
+
+      const startInput = document.getElementById('startDate');
+      const endInput = document.getElementById('endDate');
+      const includeMissedRecurring = document.getElementById('includeMissedRecurring');
+      
+      startInput.value = '2024-01-15';
+      endInput.value = '2024-01-15';
+      includeMissedRecurring.checked = true;
+
+      await window.generateReport();
+
+      const modalContent = document.getElementById('modalReportContent');
+      const reportText = modalContent.value;
+      
+      // Should not be in missed section
+      expect(reportText).not.toContain('⚠️ Missed Recurring Tasks');
+      // Should be in regular tasks with WIP
+      expect(reportText).toContain('WIP Recurring Task');
+      expect(reportText).toContain('WIP');
+    });
+
+    it('should show project names for missed recurring tasks', async () => {
+      const tasks = [
+        {
+          id: 'task-recurring-missed',
+          title: 'Missed Recurring Task',
+          repeatCfgId: 'repeat-1',
+          projectId: 'project-1',
+          isDone: false,
+          timeSpentOnDay: {}
+        }
+      ];
+
+      mockPluginAPI.getTasks.mockResolvedValue(tasks);
+      mockPluginAPI.getAllProjects.mockResolvedValue([
+        { id: 'project-1', title: 'Test Project' }
+      ]);
+
+      const startInput = document.getElementById('startDate');
+      const endInput = document.getElementById('endDate');
+      const includeMissedRecurring = document.getElementById('includeMissedRecurring');
+      
+      startInput.value = '2024-01-15';
+      endInput.value = '2024-01-15';
+      includeMissedRecurring.checked = true;
+
+      await window.generateReport();
+
+      const modalContent = document.getElementById('modalReportContent');
+      const reportText = modalContent.value;
+      
+      expect(reportText).toContain('⚠️ Missed Recurring Tasks');
+      expect(reportText).toContain('Missed Recurring Task [Test Project]');
+    });
+
+    it('should exclude missed recurring tasks from excluded projects', async () => {
+      const tasks = [
+        {
+          id: 'task-recurring-excluded',
+          title: 'Excluded Recurring Task',
+          repeatCfgId: 'repeat-1',
+          projectId: 'excluded-project',
+          isDone: false,
+          timeSpentOnDay: {}
+        },
+        {
+          id: 'task-recurring-included',
+          title: 'Included Recurring Task',
+          repeatCfgId: 'repeat-2',
+          projectId: 'included-project',
+          isDone: false,
+          timeSpentOnDay: {}
+        }
+      ];
+
+      mockPluginAPI.getTasks.mockResolvedValue(tasks);
+      mockPluginAPI.getAllProjects.mockResolvedValue([
+        { id: 'excluded-project', title: 'Excluded Project' },
+        { id: 'included-project', title: 'Included Project' }
+      ]);
+
+      // Mock loadSyncedData to return preferences with excluded projects
+      mockPluginAPI.loadSyncedData.mockResolvedValue(JSON.stringify({
+        reports: [],
+        preferences: {
+          excludeProjects: true,
+          excludedProjects: ['excluded-project']
+        }
+      }));
+
+      // Reload to apply preferences
+      await window.loadReports();
+
+      const startInput = document.getElementById('startDate');
+      const endInput = document.getElementById('endDate');
+      const includeMissedRecurring = document.getElementById('includeMissedRecurring');
+      
+      startInput.value = '2024-01-15';
+      endInput.value = '2024-01-15';
+      includeMissedRecurring.checked = true;
+
+      await window.generateReport();
+
+      const modalContent = document.getElementById('modalReportContent');
+      const reportText = modalContent.value;
+      
+      expect(reportText).toContain('Included Recurring Task');
+      expect(reportText).not.toContain('Excluded Recurring Task');
+    });
+
+    it('should work with both grouping modes', async () => {
+      const tasks = [
+        {
+          id: 'task-recurring-missed',
+          title: 'Missed Recurring Task',
+          repeatCfgId: 'repeat-1',
+          projectId: 'project-1',
+          isDone: false,
+          timeSpentOnDay: {}
+        }
+      ];
+
+      mockPluginAPI.getTasks.mockResolvedValue(tasks);
+      mockPluginAPI.getAllProjects.mockResolvedValue([
+        { id: 'project-1', title: 'Test Project' }
+      ]);
+
+      const startInput = document.getElementById('startDate');
+      const endInput = document.getElementById('endDate');
+      const includeMissedRecurring = document.getElementById('includeMissedRecurring');
+      const groupBy = document.getElementById('groupBy');
+      
+      startInput.value = '2024-01-15';
+      endInput.value = '2024-01-15';
+      includeMissedRecurring.checked = true;
+
+      // Test with date grouping
+      groupBy.value = 'date';
+      await window.generateReport();
+
+      let modalContent = document.getElementById('modalReportContent');
+      let reportText = modalContent.value;
+      
+      expect(reportText).toContain('⚠️ Missed Recurring Tasks');
+      expect(reportText).toContain('Missed Recurring Task');
+
+      // Test with project grouping
+      groupBy.value = 'project';
+      await window.generateReport();
+
+      modalContent = document.getElementById('modalReportContent');
+      reportText = modalContent.value;
+      
+      expect(reportText).toContain('⚠️ Missed Recurring Tasks');
+      expect(reportText).toContain('Missed Recurring Task');
+    });
+  });
 });
