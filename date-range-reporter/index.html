@@ -1013,6 +1013,10 @@
       startDateInput.valueAsDate = sevenDaysAgo;
       endDateInput.valueAsDate = today;
 
+      // Constants
+      const MISSED_RECURRING_SECTION_TITLE = '## ⚠️ Missed Recurring Tasks\n\n';
+      const MISSED_RECURRING_SECTION_DESCRIPTION = '*These recurring tasks were not completed or worked on during the date range.*\n\n';
+
       // Format date as YYYY-MM-DD
       function formatDate(date) {
         const year = date.getFullYear();
@@ -1446,8 +1450,8 @@
           
           if (missedTasks.length > 0) {
             reportText += `---\n\n`;
-            reportText += `## ⚠️ Missed Recurring Tasks\n\n`;
-            reportText += `*These recurring tasks were not completed or worked on during the date range.*\n\n`;
+            reportText += MISSED_RECURRING_SECTION_TITLE;
+            reportText += MISSED_RECURRING_SECTION_DESCRIPTION;
             
             missedTasks.forEach(task => {
               const projectName = task.projectId && projects[task.projectId] 
@@ -1634,8 +1638,8 @@
           
           if (missedTasks.length > 0) {
             reportText += `---\n\n`;
-            reportText += `## ⚠️ Missed Recurring Tasks\n\n`;
-            reportText += `*These recurring tasks were not completed or worked on during the date range.*\n\n`;
+            reportText += MISSED_RECURRING_SECTION_TITLE;
+            reportText += MISSED_RECURRING_SECTION_DESCRIPTION;
             
             missedTasks.forEach(task => {
               const projectName = task.projectId && projects[task.projectId] 
