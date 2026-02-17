@@ -22,6 +22,8 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: date-range-reporter-plugin
-        path: date-range-reporter.zip
+        path: |
+          date-range-reporter/*
+          !date-range-reporter/manifest.json.template
         retention-days: 90
         compression-level: 0
