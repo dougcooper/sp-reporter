@@ -6,11 +6,13 @@
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "build:min": "html-minifier-terser --collapse-whitespace --remove-comments --remove-optional-tags --minify-css true --minify-js true -o build/date-range-reporter/index.html date-range-reporter/index.html"
   },
   "devDependencies": {
     "@vitest/coverage-v8": "^1.0.4",
     "@vitest/ui": "^1.0.4",
+    "html-minifier-terser": "^6.1.0",
     "jsdom": "^23.0.0",
     "vitest": "^1.0.4"
   },

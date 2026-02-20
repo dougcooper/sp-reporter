@@ -12,17 +12,24 @@ RELEASE_FILE = date-range-reporter-v$(VERSION).zip
 # Default target
 build: clean
 	@echo "Building plugin zip file..."
+	@echo "Preparing build directory..."
+	@mkdir -p build/$(PLUGIN_DIR)
+	@cp -R $(PLUGIN_DIR)/* build/$(PLUGIN_DIR)/
 	@echo "Generating manifest.json from template..."
 	@VERSION="$(VERSION)" DESCRIPTION="$(DESCRIPTION)" sh -c '\
 		sed -e "s/{{VERSION}}/$$VERSION/g" -e "s|{{DESCRIPTION}}|$$DESCRIPTION|g" \
-		$(PLUGIN_DIR)/manifest.json.template > $(PLUGIN_DIR)/manifest.json'
-	@cd $(PLUGIN_DIR) && zip -r ../$(ZIP_FILE) . -x "manifest.json.template"
+		$(PLUGIN_DIR)/manifest.json.template > build/$(PLUGIN_DIR)/manifest.json'
+	@rm -f build/$(PLUGIN_DIR)/manifest.json.template
+	@echo "Minifying HTML (inline CSS/JS preserved) -> build/$(PLUGIN_DIR)/index.html"
+	@npm run build:min
+	@cd build/$(PLUGIN_DIR) && zip -r ../../$(ZIP_FILE) . -x "manifest.json.template"
 	@echo "✓ Plugin packaged successfully: $(ZIP_FILE)"
 
 # Clean up generated files
 clean:
 	@echo "Cleaning up..."
-	@rm -f $(ZIP_FILE) date-range-reporter-v*.zip $(PLUGIN_DIR)/manifest.json
+	@rm -f $(ZIP_FILE) $(PLUGIN_DIR)-v*.zip $(PLUGIN_DIR)/manifest.json
+	@rm -rf build
 	@echo "✓ Cleaned"
 
 # Run tests
