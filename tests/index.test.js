@@ -2897,6 +2897,8 @@ describe('Date Range Reporter', () => {
 
       mockPluginAPI.getTasks.mockResolvedValue(tasks);
       document.getElementById('outputFormat').value = 'table';
+      // Ensure notes column is shown for this test
+      document.getElementById('includeNotes').checked = true;
       document.getElementById('startDate').value = '2024-01-15';
       document.getElementById('endDate').value = '2024-01-15';
 
@@ -2933,8 +2935,9 @@ describe('Date Range Reporter', () => {
       await window.generateReport();
 
       const reportText = document.getElementById('modalReportContent').value;
-      expect(reportText).toContain('## January 15, 2024');
-      expect(reportText).toContain('## January 16, 2024');
+      // allow weekday prefix (e.g. "Monday, January 15, 2024") — check date substring instead
+      expect(reportText).toContain('January 15, 2024');
+      expect(reportText).toContain('January 16, 2024');
       const occurrences = (reportText.match(/\| Date \| Project \| Task Title \|/g) || []).length;
       expect(occurrences).toBeGreaterThanOrEqual(2);
     });
@@ -2953,7 +2956,8 @@ describe('Date Range Reporter', () => {
       await window.generateReport();
 
       const reportText = document.getElementById('modalReportContent').value;
-      expect(reportText).not.toContain('Notes |');
+      // Ensure Notes column is not present and private note text is not included
+      expect(reportText).not.toMatch(/\|\s*Notes\s*\|/);
       expect(reportText).not.toContain('secret');
     });
 
