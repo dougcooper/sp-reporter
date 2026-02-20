@@ -144,6 +144,8 @@ The generated report is formatted in Markdown and includes:
 ```
 
 The Markdown format makes it easy to paste into documentation, notes, or any Markdown-compatible application.
+
+Table output (new): You can choose `Table (Markdown)` in the plugin settings to produce a pipe-separated Markdown table instead of the simple list format. Table mode supports configurable column order (drag-and-drop), a sort column and direction, and respects existing filters (`groupBy`, `minTimeSpent`, `includeNotes`, etc.). Example table row: `| Monday, January 15, 2024 | Project A | Write docs | 2h | WIP | Updated API examples |`.
 ```
 
 ## Combining Reports

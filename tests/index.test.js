@@ -2852,4 +2852,130 @@ describe('Date Range Reporter', () => {
       expect(reportText).toContain('MISSED 🔁');
     });
   });
+
+  describe('Report Format - Table output', () => {
+    it('generates markdown table when outputFormat is table', async () => {
+      const tasks = [
+        {
+          id: 'task-1',
+          title: 'Table Task',
+          isDone: true,
+          doneOn: new Date('2024-01-15T14:00:00').getTime(),
+          notes: 'Note line',
+          timeSpentOnDay: { '2024-01-15': 7200000 }
+        }
+      ];
+
+      mockPluginAPI.getTasks.mockResolvedValue(tasks);
+      document.getElementById('outputFormat').value = 'table';
+      document.getElementById('includeNotes').checked = true;
+      document.getElementById('startDate').value = '2024-01-15';
+      document.getElementById('endDate').value = '2024-01-15';
+
+      await window.generateReport();
+
+      const reportText = document.getElementById('modalReportContent').value;
+      expect(reportText).toContain('| Date | Project | Task Title | Time Spent | Status | Notes |');
+      expect(reportText).toContain('Table Task');
+      expect(reportText).toContain('2h');
+      expect(reportText).toContain('Note line');
+    });
+
+    it('respects column order preference', async () => {
+      window.preferences.tableColumns = ['project','date','title','time','status','notes'];
+      window.applyPreferences();
+
+      const tasks = [
+        {
+          id: 'task-2',
+          title: 'Ordered Task',
+          isDone: true,
+          doneOn: new Date('2024-01-15T12:00:00').getTime(),
+          timeSpentOnDay: { '2024-01-15': 3600000 }
+        }
+      ];
+
+      mockPluginAPI.getTasks.mockResolvedValue(tasks);
+      document.getElementById('outputFormat').value = 'table';
+      document.getElementById('startDate').value = '2024-01-15';
+      document.getElementById('endDate').value = '2024-01-15';
+
+      await window.generateReport();
+
+      const reportText = document.getElementById('modalReportContent').value;
+      expect(reportText).toContain('| Project | Date | Task Title | Time Spent | Status | Notes |');
+    });
+
+    it('groups by date when groupBy=date', async () => {
+      const tasks = [
+        {
+          id: 't1',
+          title: 'A',
+          isDone: true,
+          doneOn: new Date('2024-01-15T11:00:00').getTime(),
+          timeSpentOnDay: { '2024-01-15': 3600000 }
+        },
+        {
+          id: 't2',
+          title: 'B',
+          isDone: true,
+          doneOn: new Date('2024-01-16T12:00:00').getTime(),
+          timeSpentOnDay: { '2024-01-16': 3600000 }
+        }
+      ];
+
+      mockPluginAPI.getTasks.mockResolvedValue(tasks);
+      document.getElementById('outputFormat').value = 'table';
+      document.getElementById('groupBy').value = 'date';
+      document.getElementById('startDate').value = '2024-01-15';
+      document.getElementById('endDate').value = '2024-01-16';
+
+      await window.generateReport();
+
+      const reportText = document.getElementById('modalReportContent').value;
+      expect(reportText).toContain('## January 15, 2024');
+      expect(reportText).toContain('## January 16, 2024');
+      const occurrences = (reportText.match(/\| Date \| Project \| Task Title \|/g) || []).length;
+      expect(occurrences).toBeGreaterThanOrEqual(2);
+    });
+
+    it('omits Notes column when includeNotes is unchecked', async () => {
+      const tasks = [
+        { id: 't3', title: 'NoNotes', isDone: true, doneOn: new Date('2024-01-15T12:00:00').getTime(), notes: 'secret', timeSpentOnDay: { '2024-01-15': 3600000 } }
+      ];
+
+      mockPluginAPI.getTasks.mockResolvedValue(tasks);
+      document.getElementById('outputFormat').value = 'table';
+      document.getElementById('includeNotes').checked = false;
+      document.getElementById('startDate').value = '2024-01-15';
+      document.getElementById('endDate').value = '2024-01-15';
+
+      await window.generateReport();
+
+      const reportText = document.getElementById('modalReportContent').value;
+      expect(reportText).not.toContain('Notes |');
+      expect(reportText).not.toContain('secret');
+    });
+
+    it('sorts by time desc when configured', async () => {
+      const tasks = [
+        { id: 'big', title: 'Big Task', isDone: true, doneOn: new Date('2024-01-15T12:00:00').getTime(), timeSpentOnDay: { '2024-01-15': 7200000 } },
+        { id: 'small', title: 'Small Task', isDone: true, doneOn: new Date('2024-01-15T13:00:00').getTime(), timeSpentOnDay: { '2024-01-15': 1800000 } }
+      ];
+
+      mockPluginAPI.getTasks.mockResolvedValue(tasks);
+      document.getElementById('outputFormat').value = 'table';
+      document.getElementById('tableSortColumn').value = 'time';
+      document.getElementById('tableSortDirection').value = 'desc';
+      document.getElementById('startDate').value = '2024-01-15';
+      document.getElementById('endDate').value = '2024-01-15';
+
+      await window.generateReport();
+
+      const reportText = document.getElementById('modalReportContent').value;
+      const firstIndex = reportText.indexOf('Big Task');
+      const secondIndex = reportText.indexOf('Small Task');
+      expect(firstIndex).toBeLessThan(secondIndex);
+    });
+  });
 });
