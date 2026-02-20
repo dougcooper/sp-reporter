@@ -1978,11 +1978,13 @@
         if (!list) return;
 
         const defaultCols = ['date','project','title','time','status','notes'];
-        const cols = (preferences.tableColumns && Array.isArray(preferences.tableColumns)) ? preferences.tableColumns : defaultCols;
-        const labels = { date: 'Date', project: 'Project', title: 'Task Title', time: 'Time Spent', status: 'Status', notes: 'Notes' };
-
-        // If notes are disabled globally, ensure notes column is not included in visual list
+        // copy order, ensure notes appears if includeNotes is on
+        let cols = (preferences.tableColumns && Array.isArray(preferences.tableColumns)) ? preferences.tableColumns.slice() : defaultCols.slice();
         const includeNotes = document.getElementById('includeNotes') ? document.getElementById('includeNotes').checked : preferences.includeNotes;
+        if (includeNotes && !cols.includes('notes')) {
+          cols.push('notes');
+        }
+        const labels = { date: 'Date', project: 'Project', title: 'Task Title', time: 'Time Spent', status: 'Status', notes: 'Notes' };
 
         list.innerHTML = '';
         cols.forEach(key => {
@@ -2170,7 +2172,15 @@
         Object.keys(groups).forEach(k => groups[k].sort(comparator));
 
         // Build columns list honoring includeNotes
-        const requestedCols = (preferences.tableColumns && preferences.tableColumns.slice()) || ['date','project','title','time','status','notes'];
+        // start from saved column order or default
+        let requestedCols = (preferences.tableColumns && Array.isArray(preferences.tableColumns))
+          ? preferences.tableColumns.slice()
+          : ['date','project','title','time','status','notes'];
+        // if notes are enabled but the array doesn't include it, append it
+        if (includeNotes && !requestedCols.includes('notes')) {
+          requestedCols.push('notes');
+        }
+        // if notes disabled we simply filter it out below
         const cols = requestedCols.filter(c => c !== 'notes' || includeNotes);
         const headerLabel = { date: 'Date', project: 'Project', title: 'Task Title', time: 'Time Spent', status: 'Status', notes: 'Notes' };
 

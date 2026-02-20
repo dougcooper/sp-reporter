@@ -2882,10 +2882,13 @@ describe('Date Range Reporter', () => {
       expect(reportText).toContain('Note line');
     });
 
-    it('respects column order preference and columns align', async () => {
-      window.preferences.tableColumns = ['project','date','title','time','status','notes'];
+    it('respects column order preference and columns align even if notes previously removed', async () => {
+      // simulate user removed notes earlier
+      window.preferences.tableColumns = ['project','date','title','time','status'];
       window.applyPreferences();
 
+      // now enable notes
+      document.getElementById('includeNotes').checked = true;
       const tasks = [
         {
           id: 'task-2',
