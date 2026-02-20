@@ -2196,21 +2196,43 @@
             return;
           }
 
-          reportText += `| ${cols.map(c => headerLabel[c]).join(' | ')} |\n`;
-          reportText += `| ${cols.map(() => '---').join(' | ')} |\n`;
-
-          rows.forEach(r => {
-            const cells = cols.map(c => {
-              if (c === 'date') return formatDateDisplay(r.date);
-              if (c === 'project') return r.project || '';
-              if (c === 'title') return r.title;
-              if (c === 'time') return (showTimeSpent && r.timeMinutes) ? formatTime(r.timeMinutes) : (showTimeSpent ? '0m' : '');
-              if (c === 'status') return r.status || '';
-              if (c === 'notes') return escapeCell(r.notes || '');
-              return '';
-            });
-            reportText += `| ${cells.join(' | ')} |\n`;
+          // compute column widths for alignment
+        const cellValues = rows.map(r => {
+          return cols.map(c => {
+            if (c === 'date') return formatDateDisplay(r.date);
+            if (c === 'project') return r.project || '';
+            if (c === 'title') return r.title;
+            if (c === 'time') return (showTimeSpent && r.timeMinutes) ? formatTime(r.timeMinutes) : (showTimeSpent ? '0m' : '');
+            if (c === 'status') return r.status || '';
+            if (c === 'notes') return escapeCell(r.notes || '');
+            return '';
           });
+        });
+        const widths = cols.map((c, idx) => {
+          const headerLen = headerLabel[c].length;
+          const maxCell = cellValues.reduce((max, row) => Math.max(max, (row[idx]||'').length), 0);
+          return Math.max(headerLen, maxCell);
+        });
+        const padded = (str, w) => str + ' '.repeat(Math.max(0, w - str.length));
+
+        // header row
+        reportText += `| ${cols.map((c, i) => padded(headerLabel[c], widths[i])).join(' | ')} |\n`;
+        // separator row
+        reportText += `| ${widths.map(w => '-'.repeat(w)).join(' | ')} |\n`;
+
+        rows.forEach((r) => {
+          const cells = cols.map((c, i) => {
+            let val = '';
+            if (c === 'date') val = formatDateDisplay(r.date);
+            else if (c === 'project') val = r.project || '';
+            else if (c === 'title') val = r.title;
+            else if (c === 'time') val = (showTimeSpent && r.timeMinutes) ? formatTime(r.timeMinutes) : (showTimeSpent ? '0m' : '');
+            else if (c === 'status') val = r.status || '';
+            else if (c === 'notes') val = escapeCell(r.notes || '');
+            return padded(val, widths[i]);
+          });
+          reportText += `| ${cells.join(' | ')} |\n`;
+        });
 
           reportText += `\n`;
         });

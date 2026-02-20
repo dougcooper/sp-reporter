@@ -2875,13 +2875,14 @@ describe('Date Range Reporter', () => {
       await window.generateReport();
 
       const reportText = document.getElementById('modalReportContent').value;
-      expect(reportText).toContain('| Date | Project | Task Title | Time Spent | Status | Notes |');
+      // header cells should appear in order regardless of padding
+      expect(reportText).toMatch(/\|\s*Date\s*\|\s*Project\s*\|\s*Task Title\s*\|\s*Time Spent\s*\|\s*Status\s*\|\s*Notes\s*\|/);
       expect(reportText).toContain('Table Task');
       expect(reportText).toContain('2h');
       expect(reportText).toContain('Note line');
     });
 
-    it('respects column order preference', async () => {
+    it('respects column order preference and columns align', async () => {
       window.preferences.tableColumns = ['project','date','title','time','status','notes'];
       window.applyPreferences();
 
@@ -2905,7 +2906,16 @@ describe('Date Range Reporter', () => {
       await window.generateReport();
 
       const reportText = document.getElementById('modalReportContent').value;
-      expect(reportText).toContain('| Project | Date | Task Title | Time Spent | Status | Notes |');
+      // header cells appear in configured order regardless of padding
+      expect(reportText).toMatch(/\|\s*Project\s*\|\s*Date\s*\|\s*Task Title\s*\|\s*Time Spent\s*\|\s*Status\s*\|\s*Notes\s*\|/);
+      // verify that all rows have the same number of columns and bar positions
+      const lines = reportText.split('\n').filter(l => l.startsWith('|'));
+      const barIndexes = lines[0].split('').map((ch,i)=> ch==='|'?i:-1).filter(i=>i>=0);
+      lines.forEach(line => {
+        barIndexes.forEach(idx => {
+          expect(line[idx]).toBe('|');
+        });
+      });
     });
 
     it('groups by date when groupBy=date', async () => {
@@ -2938,7 +2948,7 @@ describe('Date Range Reporter', () => {
       // allow weekday prefix (e.g. "Monday, January 15, 2024") — check date substring instead
       expect(reportText).toContain('January 15, 2024');
       expect(reportText).toContain('January 16, 2024');
-      const occurrences = (reportText.match(/\| Date \| Project \| Task Title \|/g) || []).length;
+      const occurrences = (reportText.match(/\|\s*Date\s*\|\s*Project\s*\|\s*Task Title \|/g) || []).length;
       expect(occurrences).toBeGreaterThanOrEqual(2);
     });
 
