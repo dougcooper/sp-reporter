@@ -7,7 +7,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "build:min": "html-minifier-terser --collapse-whitespace --remove-comments --remove-optional-tags --minify-css true --minify-js true -o build/date-range-reporter/index.html date-range-reporter/index.html"
+    "build:min": "./scripts/minify.sh"
   },
   "devDependencies": {
     "@vitest/coverage-v8": "^1.0.4",
