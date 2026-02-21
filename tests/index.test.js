@@ -181,6 +181,23 @@ describe('Date Range Reporter', () => {
       expect(typeof window.deleteReport).toBe('function');
       expect(typeof window.renderSavedReports).toBe('function');
     });
+
+    it('report textarea should not wrap by default', () => {
+      const modal = document.getElementById('modalReportContent');
+      const style = window.getComputedStyle(modal);
+      expect(style.whiteSpace).toBe('pre');
+      expect(style.overflowX).toBe('auto');
+    });
+
+    it('table sort controls align with columns label', () => {
+      document.getElementById('outputFormat').value = 'table';
+      window.applyPreferences();
+      const sortContainer = document.querySelector('#tableSettingsContainer .input-field');
+      expect(sortContainer).toBeTruthy();
+      const style = window.getComputedStyle(sortContainer);
+      expect(style.display).toBe('flex');
+      expect(style.alignItems).toBe('center');
+    });
   });
 
   describe('Plugin Integration', () => {
@@ -2912,6 +2929,33 @@ describe('Date Range Reporter', () => {
   });
 
   describe('Report Format - Table output', () => {
+    it('filters out completely empty rows when building table rows', () => {
+      const cols = ['date','project','title','time','status','notes'];
+      const headerLabel = { date: 'Date', project: 'Project', title: 'Task Title', time: 'Time Spent', status: 'Status', notes: 'Notes' };
+
+      // single blank entry should be treated as no tasks
+      let groups = { All: [{ date: '', project: '', title: '', timeMinutes: 0, status: '', notes: '' }] };
+      let text = window.renderTableRows(groups, cols, false, headerLabel);
+      expect(text).toContain('*No tasks*');
+      expect(text).not.toMatch(/\|/); // no table at all
+
+      // mixed with a valid entry: blank row removed, valid row kept
+      groups = {
+        All: [
+          { date: '', project: '', title: '', timeMinutes: 0, status: '', notes: '' },
+          { date: '2024-01-01', project: 'X', title: 'Y', timeMinutes: 30, status: 'WIP', notes: '' }
+        ]
+      };
+      text = window.renderTableRows(groups, cols, true, headerLabel);
+      expect(text).toContain('Y');
+      // should not add an empty '|   |   |' line
+      const lines = text.split('\n').filter(l => l.startsWith('|'));
+      // ignore separator rows that consist of dashes
+      const nonSeparator = lines.filter(l => !/^\|\s*-/.test(l));
+      // should only be header + one data row
+      expect(nonSeparator).toHaveLength(2);
+    });
+
     it('generates markdown table when outputFormat is table', async () => {
       const tasks = [
         {
@@ -2937,6 +2981,11 @@ describe('Date Range Reporter', () => {
       expect(reportText).toContain('Table Task');
       expect(reportText).toContain('2h');
       expect(reportText).toContain('Note line');
+      // there should be no rows consisting solely of pipes/spaces
+      const emptyRowRegex = /^\|\s*(\|\s*)+$/;
+      reportText.split('\n').forEach(l => {
+        expect(l).not.toMatch(emptyRowRegex);
+      });
 
       // grouping controls should not affect table view
       // simulate toggling groupBy even though it's hidden

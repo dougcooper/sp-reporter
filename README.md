@@ -146,7 +146,8 @@ The generated report is formatted in Markdown and includes:
 The Markdown format makes it easy to paste into documentation, notes, or any Markdown-compatible application.
 
 Table output (new): You can choose `Table (Markdown)` in the plugin settings to produce a pipe-separated Markdown table instead of the simple list format. Table mode supports configurable column order (drag-and-drop), a sort column and direction, and respects most filters (minTimeSpent, includeNotes, etc.). When using the table view there's an additional checkbox to show or hide the **Notes** column without affecting the ordering. **Unlike the simple format, the table view does not use the "Group by" preference – it's always one flat table.** Example table row: `| Monday, January 15, 2024 | Project A | Write docs | 2h | WIP | Updated API examples |`.
-```
+
+By default the report textarea (both on the main page and in the modal) no longer wraps long lines; horizontal scrolling is enabled instead so that tables appear as a single row rather than appearing to have extra wrapped rows.```
 
 ## Combining Reports
 

@@ -221,11 +221,12 @@
         min-height: 400px;
         height: 60vh;
         overflow-y: auto;
+        overflow-x: auto; /* allow horizontal scrolling when lines are long */
         font-family: 'Courier New', monospace;
         font-size: 13px;
         line-height: 1.6;
-        white-space: pre-wrap;
-        word-wrap: break-word;
+        white-space: pre;          /* disable automatic wrapping */
+        word-wrap: normal;
         transition: background-color 0.3s ease, border-color 0.3s ease;
         width: 100%;
         resize: vertical;
@@ -563,11 +564,12 @@
         padding: 16px;
         min-height: 400px;
         overflow-y: auto;
+        overflow-x: auto; /* horizontal scroll for wide tables */
         font-family: 'Courier New', monospace;
         font-size: 13px;
         line-height: 1.6;
-        white-space: pre-wrap;
-        word-wrap: break-word;
+        white-space: pre;          /* do not wrap lines */
+        word-wrap: normal;
         width: 100%;
         resize: vertical;
         color: var(--text-primary);
@@ -822,9 +824,9 @@
                 <!-- dynamically rendered -->
               </ul>
 
-              <div style="margin-top: 12px;">
-                <label for="tableSortColumn">Sort by</label>
-                <select id="tableSortColumn" style="width: 200px; margin-left: 8px; padding: 6px; border-radius: 4px; border: 1px solid var(--border-light); background: var(--bg-secondary); color: var(--text-primary);">
+              <div class="input-field" style="margin-top: 12px; display: flex; align-items: center; gap: 8px;">
+                <label for="tableSortColumn" style="margin:0;">Sort by</label>
+                <select id="tableSortColumn" style="width: 200px; padding: 6px; border-radius: 4px; border: 1px solid var(--border-light); background: var(--bg-secondary); color: var(--text-primary);">
                   <option value="date">Date</option>
                   <option value="project">Project</option>
                   <option value="title">Task Title</option>
@@ -832,8 +834,8 @@
                   <option value="status">Status</option>
                 </select>
 
-                <label for="tableSortDirection" style="margin-left: 12px;">Direction</label>
-                <select id="tableSortDirection" style="width: 120px; margin-left: 8px; padding: 6px; border-radius: 4px; border: 1px solid var(--border-light); background: var(--bg-secondary); color: var(--text-primary);">
+                <label for="tableSortDirection" style="margin:0 0 0 12px;">Direction</label>
+                <select id="tableSortDirection" style="width: 120px; padding: 6px; border-radius: 4px; border: 1px solid var(--border-light); background: var(--bg-secondary); color: var(--text-primary);">
                   <option value="asc">Asc</option>
                   <option value="desc">Desc</option>
                 </select>
@@ -2123,6 +2125,92 @@
         return String(text || '').replace(/\|/g, '\\|').replace(/\r?\n/g, ' ');
       }
 
+      // Builds the markdown rows for a 'groups' object in table mode.  This is
+      // factored out so we can unit test the filtering logic separately.  The
+      // caller is responsible for producing the header information and passing
+      // the showTimeSpent flag which affects the time column values.  The
+      // `headerLabel` map should contain human-readable column titles for
+      // whatever column keys are present in `cols`.
+      function renderTableRows(groups, cols, showTimeSpent, headerLabel) {
+        let text = '';
+        Object.keys(groups).forEach(groupKey => {
+          let rows = groups[groupKey] || [];
+          if (rows.length === 0) {
+            text += `*No tasks*\n\n`;
+            return;
+          }
+
+          // filter out entries that would render as completely blank or have an
+          // invalid date; this protects against weird payloads and matches the
+          // behaviour of pushEntry which also guards against empty payloads.
+          rows = rows.filter(r => {
+            const dateText = formatDateDisplay(r.date);
+            const proj = r.project || '';
+            const title = r.title || '';
+            // note: for emptiness check we treat 0 minutes as no time (ignore '0m'),
+            // but we will still render 0m below if there is other content.
+            const timeText = (showTimeSpent && r.timeMinutes) ? formatTime(r.timeMinutes) : (showTimeSpent ? '0m' : '');
+            const status = r.status || '';
+            const notes = escapeCell(r.notes || '');
+            const otherFieldsEmpty = [dateText, proj, title, status, notes]
+              .every(v => !v || v.trim() === '' || v === 'Invalid Date');
+            const timeEmpty = !showTimeSpent || r.timeMinutes === 0;
+            const allEmpty = otherFieldsEmpty && timeEmpty;
+            return !allEmpty;
+          });
+
+          if (rows.length === 0) {
+            text += `*No tasks*\n\n`;
+            return;
+          }
+
+          // build a 2d array of cell strings so we can compute column widths
+          const cellValues = rows.map(r => {
+            return cols.map(c => {
+              if (c === 'date') return formatDateDisplay(r.date);
+              if (c === 'project') return r.project || '';
+              if (c === 'title') return r.title;
+              if (c === 'time') return (showTimeSpent && r.timeMinutes) ? formatTime(r.timeMinutes) : (showTimeSpent ? '0m' : '');
+              if (c === 'status') return r.status || '';
+              if (c === 'notes') return escapeCell(r.notes || '');
+              return '';
+            });
+          });
+
+          const widths = cols.map((c, idx) => {
+            const headerLen = headerLabel[c].length;
+            const maxCell = cellValues.reduce((max, row) => Math.max(max, (row[idx]||'').length), 0);
+            return Math.max(headerLen, maxCell);
+          });
+          const padded = (str, w) => str + ' '.repeat(Math.max(0, w - str.length));
+
+          // header row
+          text += `| ${cols.map((c, i) => padded(headerLabel[c], widths[i])).join(' | ')} |\n`;
+          // separator row
+          text += `| ${widths.map(w => '-'.repeat(w)).join(' | ')} |\n`;
+
+          rows.forEach((r) => {
+            const cells = cols.map((c, i) => {
+              let val = '';
+              if (c === 'date') val = formatDateDisplay(r.date);
+              else if (c === 'project') val = r.project || '';
+              else if (c === 'title') val = r.title;
+              else if (c === 'time') val = (showTimeSpent && r.timeMinutes) ? formatTime(r.timeMinutes) : (showTimeSpent ? '0m' : '');
+              else if (c === 'status') val = r.status || '';
+              else if (c === 'notes') val = escapeCell(r.notes || '');
+              return padded(val, widths[i]);
+            });
+            // skip rows that are completely empty (all cells whitespace)
+            if (cells.every(v => v.trim() === '')) return;
+
+            text += `| ${cells.join(' | ')} |\n`;
+          });
+
+          text += `\n`;
+        });
+        return text;
+      }
+
       function generateReportAsTable(allTasks, startDate, endDate, projects) {
         const minTimeMs = parseInt(document.getElementById('minTimeSpent').value) * 60000;
         // const includeNotes = document.getElementById('includeNotes').checked; // not used in table logic
@@ -2136,6 +2224,12 @@
         const entries = [];
 
         function pushEntry(payload) {
+          // ignore bogus entries that don't contain any useful information
+          if (!payload) return;
+          const hasContent = payload.date || payload.project || payload.title ||
+                             payload.status || payload.notes || payload.timeMinutes;
+          if (!hasContent) return;
+
           entries.push(payload);
           if (payload.taskId) processedTaskIds.add(payload.taskId);
         }
@@ -2242,11 +2336,15 @@
         const cols = requestedCols.filter(c => c !== 'notes' || preferences.showNotesColumn !== false);
         const headerLabel = { date: 'Date', project: 'Project', title: 'Task Title', time: 'Time Spent', status: 'Status', notes: 'Notes' };
 
-        // Build markdown table output
+        // Build markdown table output header (rest of rows handled by helper)
         let reportText = `# Task Completion Report\n\n`;
         reportText += `**Date Range:** ${formatDateDisplay(formatDate(startDate))} - ${formatDateDisplay(formatDate(endDate))}  \n`;
         reportText += `**Generated:** ${new Date().toLocaleString()}  \n`;
         reportText += `**Total Tasks:** ${processedTaskIds.size}\n\n`;
+        // delegate row construction to helper
+        reportText += renderTableRows(groups, cols, showTimeSpent, headerLabel);
+        
+        return { reportText, totalTasks: processedTaskIds.size };
 
         Object.keys(groups).forEach(groupKey => {
           const rows = groups[groupKey];
