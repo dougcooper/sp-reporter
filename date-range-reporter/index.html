@@ -838,6 +838,7 @@
                   <option value="desc">Desc</option>
                 </select>
               </div>
+
             </div>
           </div>
 
@@ -1961,6 +1962,10 @@
       // Persist reports to storage
       async function persistReports() {
         try {
+          // ensure notes column preference has a boolean value
+          if (preferences.showNotesColumn === undefined) {
+            preferences.showNotesColumn = true;
+          }
           const data = {
             reports: savedReports,
             preferences: preferences
@@ -2005,6 +2010,8 @@
         if (tableSettingsContainerEl) tableSettingsContainerEl.style.display = (preferences.outputFormat === 'table') ? 'block' : 'none';
         if (tableSortColumnEl) tableSortColumnEl.value = (preferences.tableSort && preferences.tableSort.column) || 'date';
         if (tableSortDirectionEl) tableSortDirectionEl.value = (preferences.tableSort && preferences.tableSort.direction) || 'asc';
+        // hide display options other than overdue when appropriate
+        updateDisplayOptionVisibility();
 
         // Render the draggable column order UI
         renderTableColumnsUI();
@@ -2024,23 +2031,40 @@
         if (!list) return;
 
         const defaultCols = ['date','project','title','time','status','notes'];
-        // copy order, ensure notes appears if includeNotes is on
+        // start with saved order or defaults
         let cols = (preferences.tableColumns && Array.isArray(preferences.tableColumns)) ? preferences.tableColumns.slice() : defaultCols.slice();
-        const includeNotes = document.getElementById('includeNotes') ? document.getElementById('includeNotes').checked : preferences.includeNotes;
-        if (includeNotes && !cols.includes('notes')) {
-          cols.push('notes');
-        }
+        // ensure defaults are always available (user might remove notes but want to re-add later)
+        defaultCols.forEach(c => { if (!cols.includes(c)) cols.push(c); });
         const labels = { date: 'Date', project: 'Project', title: 'Task Title', time: 'Time Spent', status: 'Status', notes: 'Notes' };
 
         list.innerHTML = '';
         cols.forEach(key => {
-          if (key === 'notes' && !includeNotes) return; // skip notes when not enabled
           const li = document.createElement('li');
           li.draggable = true;
           li.dataset.key = key;
-          li.style.cssText = 'padding:8px; margin-bottom:6px; background:var(--bg-secondary); border:1px solid var(--border-light); border-radius:4px; cursor:grab; display:flex; justify-content:space-between; align-items:center;';
-          li.innerHTML = `<span>${labels[key] || key}</span><span style="opacity:0.5">⋮</span>`;
+          // enforce fixed height for uniform rows
+          li.style.cssText = 'padding:8px; margin-bottom:6px; background:var(--bg-secondary); border:1px solid var(--border-light); border-radius:4px; cursor:grab; display:flex; justify-content:space-between; align-items:center; height:32px;';
+          let inner = `<span>${labels[key] || key}</span>`;
+          if (key === 'notes') {
+            // simple checkbox toggle aligned right
+            inner += `<input type="checkbox" class="notes-toggle" style="margin-left:auto;" ${preferences.showNotesColumn !== false ? 'checked' : ''}/>`;
+            if (preferences.showNotesColumn === false) {
+              li.style.opacity = '0.5';
+              li.title = 'Notes column is hidden';
+            }
+          }
+          inner += `<span style="opacity:0.5;margin-left:8px;">⋮</span>`;
+          li.innerHTML = inner;
           list.appendChild(li);
+        });
+
+        // attach listener for notes toggle
+        list.querySelectorAll('.notes-toggle').forEach(chk => {
+          chk.addEventListener('change', (e) => {
+            preferences.showNotesColumn = e.target.checked;
+            preferencesHasChanges = true;
+            renderTableColumnsUI();
+          });
         });
 
         initTableColumnsDragAndDrop();
@@ -2101,7 +2125,7 @@
 
       function generateReportAsTable(allTasks, startDate, endDate, projects) {
         const minTimeMs = parseInt(document.getElementById('minTimeSpent').value) * 60000;
-        const includeNotes = document.getElementById('includeNotes').checked;
+        // const includeNotes = document.getElementById('includeNotes').checked; // not used in table logic
         const showTimeSpent = document.getElementById('showTimeSpent').checked;
         const excludeEmpty = document.getElementById('excludeEmptyDates').checked;
         const groupBy = document.getElementById('groupBy').value;
@@ -2132,24 +2156,24 @@
               workLogsInRange.forEach(workLogDate => {
                 const timeMinutes = Math.round((task.timeSpentOnDay && task.timeSpentOnDay[workLogDate] ? task.timeSpentOnDay[workLogDate] / 60000 : 0));
                 const status = workLogDate !== taskDateStr ? 'WIP' : '';
-                pushEntry({ date: workLogDate, project: projects[task.projectId] || '', title: task.title, timeMinutes, status, notes: includeNotes ? task.notes : '', taskId: task.id });
+                pushEntry({ date: workLogDate, project: projects[task.projectId] || '', title: task.title, timeMinutes, status, notes: task.notes || '', taskId: task.id });
 
                 const filteredSubtasks = filterSubtasksForReport(subtasks, formatDate(startDate), formatDate(endDate), minTimeMs);
                 filteredSubtasks.forEach(subtask => {
                   const subDate = subtask.workLogDate || workLogDate;
                   const subTimeMinutes = subtask.timeSpentOnDay && subtask.timeSpentOnDay[subDate] ? Math.round(subtask.timeSpentOnDay[subDate] / 60000) : 0;
-                  pushEntry({ date: subDate, project: projects[subtask.projectId] || projects[task.projectId] || '', title: '↳ ' + subtask.title, timeMinutes: subTimeMinutes, status: subtask.isInProgress ? 'WIP' : '', notes: includeNotes ? subtask.notes : '', taskId: task.id });
+                  pushEntry({ date: subDate, project: projects[subtask.projectId] || projects[task.projectId] || '', title: '↳ ' + subtask.title, timeMinutes: subTimeMinutes, status: subtask.isInProgress ? 'WIP' : '', notes: subtask.notes || '', taskId: task.id });
                 });
               });
             } else if ((taskDateStr >= formatDate(startDate) && taskDateStr <= formatDate(endDate)) || subtasksWithLogsInRange.length > 0) {
               const timeMinutes = (task.timeSpentOnDay && task.timeSpentOnDay[taskDateStr]) ? Math.round(task.timeSpentOnDay[taskDateStr] / 60000) : 0;
-              pushEntry({ date: taskDateStr, project: projects[task.projectId] || '', title: task.title, timeMinutes, status: '', notes: includeNotes ? task.notes : '', taskId: task.id });
+              pushEntry({ date: taskDateStr, project: projects[task.projectId] || '', title: task.title, timeMinutes, status: '', notes: task.notes || '', taskId: task.id });
 
               const filteredSubtasks = filterSubtasksForReport(subtasks, formatDate(startDate), formatDate(endDate), minTimeMs);
               filteredSubtasks.forEach(subtask => {
                 const subDate = subtask.workLogDate || taskDateStr;
                 const subTimeMinutes = subtask.timeSpentOnDay && subtask.timeSpentOnDay[subDate] ? Math.round(subtask.timeSpentOnDay[subDate] / 60000) : 0;
-                pushEntry({ date: subDate, project: projects[subtask.projectId] || projects[task.projectId] || '', title: '↳ ' + subtask.title, timeMinutes: subTimeMinutes, status: subtask.isInProgress ? 'WIP' : '', notes: includeNotes ? subtask.notes : '', taskId: task.id });
+                pushEntry({ date: subDate, project: projects[subtask.projectId] || projects[task.projectId] || '', title: '↳ ' + subtask.title, timeMinutes: subTimeMinutes, status: subtask.isInProgress ? 'WIP' : '', notes: subtask.notes || '', taskId: task.id });
               });
             }
           } else if (hasWorkLogs || subtasksWithLogsInRange.length > 0) {
@@ -2157,7 +2181,7 @@
               Object.keys(task.timeSpentOnDay).forEach(workLogDate => {
                 if (workLogDate >= formatDate(startDate) && workLogDate <= formatDate(endDate) && task.timeSpentOnDay[workLogDate] >= minTimeMs) {
                   const timeMinutes = Math.round(task.timeSpentOnDay[workLogDate] / 60000);
-                  pushEntry({ date: workLogDate, project: projects[task.projectId] || '', title: task.title, timeMinutes, status: 'WIP', notes: includeNotes ? task.notes : '', taskId: task.id });
+                  pushEntry({ date: workLogDate, project: projects[task.projectId] || '', title: task.title, timeMinutes, status: 'WIP', notes: task.notes || '', taskId: task.id });
                 }
               });
             }
@@ -2168,7 +2192,7 @@
                 Object.keys(subtask.timeSpentOnDay).forEach(subDate => {
                   if (subDate >= formatDate(startDate) && subDate <= formatDate(endDate) && subtask.timeSpentOnDay[subDate] >= minTimeMs) {
                     const subTimeMinutes = Math.round(subtask.timeSpentOnDay[subDate] / 60000);
-                    pushEntry({ date: subDate, project: projects[subtask.projectId] || projects[task.projectId] || '', title: '↳ ' + subtask.title, timeMinutes: subTimeMinutes, status: subtask.isInProgress ? 'WIP' : '', notes: includeNotes ? subtask.notes : '', taskId: task.id });
+                    pushEntry({ date: subDate, project: projects[subtask.projectId] || projects[task.projectId] || '', title: '↳ ' + subtask.title, timeMinutes: subTimeMinutes, status: subtask.isInProgress ? 'WIP' : '', notes: subtask.notes || '', taskId: task.id });
                   }
                 });
               }
@@ -2184,7 +2208,7 @@
               // choose dueDay first if present, else fallback to plannedAt
               let dateKey = task.dueDay || (task.plannedAt ? formatDate(new Date(task.plannedAt)) : null);
               if (dateKey) {
-                pushEntry({ date: dateKey, project: projects[task.projectId] || '', title: task.title, timeMinutes: 0, status: 'OVERDUE', notes: includeNotes ? task.notes : '', taskId: task.id });
+                pushEntry({ date: dateKey, project: projects[task.projectId] || '', title: task.title, timeMinutes: 0, status: 'OVERDUE', notes: task.notes || '', taskId: task.id });
               }
             });
           }
@@ -2207,17 +2231,15 @@
         };
         Object.keys(groups).forEach(k => groups[k].sort(comparator));
 
-        // Build columns list honoring includeNotes
-        // start from saved column order or default
+        // Build columns list from saved preferences or default order
+        const defaultCols = ['date','project','title','time','status','notes'];
         let requestedCols = (preferences.tableColumns && Array.isArray(preferences.tableColumns))
           ? preferences.tableColumns.slice()
-          : ['date','project','title','time','status','notes'];
-        // if notes are enabled but the array doesn't include it, append it
-        if (includeNotes && !requestedCols.includes('notes')) {
-          requestedCols.push('notes');
-        }
-        // if notes disabled we simply filter it out below
-        const cols = requestedCols.filter(c => c !== 'notes' || includeNotes);
+          : defaultCols.slice();
+        // ensure defaults are present so user can re-add later if removed
+        defaultCols.forEach(c => { if (!requestedCols.includes(c)) requestedCols.push(c); });
+        // respect showNotesColumn preference when generating table
+        const cols = requestedCols.filter(c => c !== 'notes' || preferences.showNotesColumn !== false);
         const headerLabel = { date: 'Date', project: 'Project', title: 'Task Title', time: 'Time Spent', status: 'Status', notes: 'Notes' };
 
         // Build markdown table output
@@ -2428,6 +2450,8 @@
           preferences.minTimeSpent = parseInt(document.getElementById('minTimeSpent').value);
           preferences.showTimeSpent = document.getElementById('showTimeSpent').checked;
           preferences.showTotalTime = document.getElementById('showTotalTime').checked;
+          // notes column visibility persisted via list toggle; default to true if unset
+          preferences.showNotesColumn = preferences.showNotesColumn !== false;
 
           // Persist output format / table settings
           const outputFormatEl = document.getElementById('outputFormat');
@@ -2684,7 +2708,7 @@
         'includeOverdue',
         'minTimeSpent',
         'showTimeSpent',
-        'showTotalTime'
+        'showTotalTime',
       ];
 
       preferenceElements.forEach(elementId => {
@@ -2701,6 +2725,17 @@
 
       // Output format / table specific listeners
       const outputFormatEl = document.getElementById('outputFormat');
+      function updateDisplayOptionVisibility() {
+        const isTable = document.getElementById('outputFormat')?.value === 'table';
+        ['showDate','includeNotes','showTimeSpent','showTotalTime'].forEach(id => {
+          const el = document.getElementById(id);
+          if (el) {
+            const row = el.closest('.toggle-row');
+            if (row) row.style.display = isTable ? 'none' : 'flex';
+          }
+        });
+      }
+
       if (outputFormatEl) {
         outputFormatEl.addEventListener('change', (e) => {
           const isTable = e.target.value === 'table';
@@ -2710,6 +2745,8 @@
           // hide grouping controls when in table mode
           const viewOrgSection = document.getElementById('viewOrgSection');
           if (viewOrgSection) viewOrgSection.style.display = isTable ? 'none' : 'block';
+          // hide other display toggles except overdue
+          updateDisplayOptionVisibility();
           preferencesHasChanges = true;
         });
       }
@@ -2729,6 +2766,7 @@
           preferencesHasChanges = true;
         });
       }
+
 
       // Handle project search/filter
       const projectSearch = document.getElementById('projectExclusionSearch');

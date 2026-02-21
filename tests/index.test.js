@@ -1980,6 +1980,18 @@ describe('Date Range Reporter', () => {
       expect(viewSection.style.display).not.toBe('none');
     });
 
+    it('hides non-overdue display options in table mode', () => {
+      const output = document.getElementById('outputFormat');
+      output.value = 'table';
+      output.dispatchEvent(new Event('change'));
+      ['showDate','includeNotes','showTimeSpent','showTotalTime'].forEach(id => {
+        const row = document.getElementById(id).closest('.toggle-row');
+        expect(row.style.display).toBe('none');
+      });
+      const overdueRow = document.getElementById('includeOverdue').closest('.toggle-row');
+      expect(overdueRow.style.display).not.toBe('none');
+    });
+
     it('should save preferences with reports', async () => {
       // Generate a report first
       mockPluginAPI.getTasks.mockResolvedValue([
@@ -2006,6 +2018,7 @@ describe('Date Range Reporter', () => {
       expect(savedData.preferences.groupBy).toBeDefined();
       expect(savedData.preferences.minTimeSpent).toBeDefined();
       expect(savedData.preferences.outputFormat).toBeDefined();
+      expect(savedData.preferences.showNotesColumn).toBeDefined();
     });
 
     it('should load preferences from storage', async () => {
@@ -2913,7 +2926,6 @@ describe('Date Range Reporter', () => {
 
       mockPluginAPI.getTasks.mockResolvedValue(tasks);
       document.getElementById('outputFormat').value = 'table';
-      document.getElementById('includeNotes').checked = true;
       document.getElementById('startDate').value = '2024-01-15';
       document.getElementById('endDate').value = '2024-01-15';
 
@@ -2965,8 +2977,9 @@ describe('Date Range Reporter', () => {
       window.preferences.tableColumns = ['project','date','title','time','status'];
       window.applyPreferences();
 
-      // now enable notes
-      document.getElementById('includeNotes').checked = true;
+      // re-add notes column by preference
+      window.preferences.tableColumns.push('notes');
+      // preferences updated above
       const tasks = [
         {
           id: 'task-2',
@@ -2979,8 +2992,6 @@ describe('Date Range Reporter', () => {
 
       mockPluginAPI.getTasks.mockResolvedValue(tasks);
       document.getElementById('outputFormat').value = 'table';
-      // Ensure notes column is shown for this test
-      document.getElementById('includeNotes').checked = true;
       document.getElementById('startDate').value = '2024-01-15';
       document.getElementById('endDate').value = '2024-01-15';
 
@@ -3001,23 +3012,39 @@ describe('Date Range Reporter', () => {
 
     // the explicit "groups by date" test is no longer relevant; table mode ignores grouping
 
-    it('omits Notes column when includeNotes is unchecked', async () => {
+    it('toggling showNotesColumn hides or shows Notes column in table output', async () => {
       const tasks = [
         { id: 't3', title: 'NoNotes', isDone: true, doneOn: new Date('2024-01-15T12:00:00').getTime(), notes: 'secret', timeSpentOnDay: { '2024-01-15': 3600000 } }
       ];
 
       mockPluginAPI.getTasks.mockResolvedValue(tasks);
       document.getElementById('outputFormat').value = 'table';
-      document.getElementById('includeNotes').checked = false;
+      // ensure columns list is rendered
+      window.renderTableColumnsUI();
+      // hide notes column via toggle inside list
+      const list = document.getElementById('tableColumnsList');
+      let notesToggle = list.querySelector('li[data-key="notes"] input.notes-toggle');
+      expect(notesToggle).toBeTruthy();
+      notesToggle.checked = false;
+      notesToggle.dispatchEvent(new Event('change'));
+
       document.getElementById('startDate').value = '2024-01-15';
       document.getElementById('endDate').value = '2024-01-15';
 
       await window.generateReport();
-
-      const reportText = document.getElementById('modalReportContent').value;
-      // Ensure Notes column is not present and private note text is not included
+      let reportText = document.getElementById('modalReportContent').value;
       expect(reportText).not.toMatch(/\|\s*Notes\s*\|/);
       expect(reportText).not.toContain('secret');
+
+      // enable notes column (re-query toggle after re-render)
+      notesToggle = list.querySelector('li[data-key="notes"] input[type="checkbox"]');
+      expect(notesToggle).toBeTruthy();
+      notesToggle.checked = true;
+      notesToggle.dispatchEvent(new Event('change'));
+      await window.generateReport();
+      reportText = document.getElementById('modalReportContent').value;
+      expect(reportText).toMatch(/\|\s*Notes\s*\|/);
+      expect(reportText).toContain('secret');
 
       // when switching back to simple view the groupBy section should reappear
       document.getElementById('outputFormat').value = 'simple';
