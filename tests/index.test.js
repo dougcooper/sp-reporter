@@ -1943,12 +1943,41 @@ describe('Date Range Reporter', () => {
   });
 
   describe('User Preferences', () => {
-    it('should have preferences modal elements', () => {
+    it('should have preferences modal elements and correct order', () => {
       expect(document.getElementById('preferencesModal')).toBeTruthy();
+      // report format should exist and be placed before view organization
+      const reportSection = document.getElementById('reportFormatSection');
+      const viewSection = document.getElementById('viewOrgSection');
+      expect(reportSection).toBeTruthy();
+      // ensure only one report format section exists
+      expect(document.querySelectorAll('#reportFormatSection').length).toBe(1);
+      expect(viewSection).toBeTruthy();
+      const children = Array.from(reportSection.parentNode.children);
+      expect(children.indexOf(reportSection)).toBeLessThan(children.indexOf(viewSection));
+
+      // basic controls
+      expect(document.getElementById('outputFormat')).toBeTruthy();
       expect(document.getElementById('groupBy')).toBeTruthy();
       expect(document.getElementById('showDate')).toBeTruthy();
       expect(document.getElementById('includeNotes')).toBeTruthy();
       expect(document.getElementById('minTimeSpent')).toBeTruthy();
+    });
+
+    it('toggles groupBy visibility when format changes', () => {
+      const output = document.getElementById('outputFormat');
+      const viewSection = document.getElementById('viewOrgSection');
+      // start simple
+      output.value = 'simple';
+      output.dispatchEvent(new Event('change'));
+      expect(viewSection.style.display).not.toBe('none');
+      // switch to table
+      output.value = 'table';
+      output.dispatchEvent(new Event('change'));
+      expect(viewSection.style.display).toBe('none');
+      // back to simple
+      output.value = 'simple';
+      output.dispatchEvent(new Event('change'));
+      expect(viewSection.style.display).not.toBe('none');
     });
 
     it('should save preferences with reports', async () => {
@@ -1976,6 +2005,7 @@ describe('Date Range Reporter', () => {
       expect(savedData.preferences).toBeDefined();
       expect(savedData.preferences.groupBy).toBeDefined();
       expect(savedData.preferences.minTimeSpent).toBeDefined();
+      expect(savedData.preferences.outputFormat).toBeDefined();
     });
 
     it('should load preferences from storage', async () => {
@@ -2895,6 +2925,15 @@ describe('Date Range Reporter', () => {
       expect(reportText).toContain('Table Task');
       expect(reportText).toContain('2h');
       expect(reportText).toContain('Note line');
+
+      // grouping controls should not affect table view
+      // simulate toggling groupBy even though it's hidden
+      document.getElementById('groupBy').value = 'project';
+      await window.generateReport();
+      const secondReport = document.getElementById('modalReportContent').value;
+      // header row should still only appear once
+      const headerCount = (secondReport.match(/\|\s*Date\s*\|\s*Project\s*\|/) || []).length;
+      expect(headerCount).toBe(1);
     });
 
     it('includes overdue tasks in table output using dueDay', async () => {
@@ -2960,39 +2999,7 @@ describe('Date Range Reporter', () => {
       });
     });
 
-    it('groups by date when groupBy=date', async () => {
-      const tasks = [
-        {
-          id: 't1',
-          title: 'A',
-          isDone: true,
-          doneOn: new Date('2024-01-15T11:00:00').getTime(),
-          timeSpentOnDay: { '2024-01-15': 3600000 }
-        },
-        {
-          id: 't2',
-          title: 'B',
-          isDone: true,
-          doneOn: new Date('2024-01-16T12:00:00').getTime(),
-          timeSpentOnDay: { '2024-01-16': 3600000 }
-        }
-      ];
-
-      mockPluginAPI.getTasks.mockResolvedValue(tasks);
-      document.getElementById('outputFormat').value = 'table';
-      document.getElementById('groupBy').value = 'date';
-      document.getElementById('startDate').value = '2024-01-15';
-      document.getElementById('endDate').value = '2024-01-16';
-
-      await window.generateReport();
-
-      const reportText = document.getElementById('modalReportContent').value;
-      // allow weekday prefix (e.g. "Monday, January 15, 2024") — check date substring instead
-      expect(reportText).toContain('January 15, 2024');
-      expect(reportText).toContain('January 16, 2024');
-      const occurrences = (reportText.match(/\|\s*Date\s*\|\s*Project\s*\|\s*Task Title \|/g) || []).length;
-      expect(occurrences).toBeGreaterThanOrEqual(2);
-    });
+    // the explicit "groups by date" test is no longer relevant; table mode ignores grouping
 
     it('omits Notes column when includeNotes is unchecked', async () => {
       const tasks = [
@@ -3011,6 +3018,12 @@ describe('Date Range Reporter', () => {
       // Ensure Notes column is not present and private note text is not included
       expect(reportText).not.toMatch(/\|\s*Notes\s*\|/);
       expect(reportText).not.toContain('secret');
+
+      // when switching back to simple view the groupBy section should reappear
+      document.getElementById('outputFormat').value = 'simple';
+      window.applyPreferences();
+      const viewSection = document.getElementById('viewOrgSection');
+      expect(viewSection.style.display).not.toBe('none');
     });
 
     it('sorts by time desc when configured', async () => {

@@ -805,10 +805,46 @@
           <button class="modal-close" id="closePreferencesBtn">×</button>
         </div>
         <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+          <!-- Report Format Section -->
+          <div class="settings-section" id="reportFormatSection">
+            <h4 class="settings-section-title">Report Format</h4>
+            <div class="input-field" style="margin-bottom: 12px;">
+              <label for="outputFormat">Output format</label>
+              <select id="outputFormat" style="width: 220px; padding: 8px; border-radius: 4px; border: 1px solid var(--border-light); background: var(--bg-secondary); color: var(--text-primary);">
+                <option value="simple">Simple (current)</option>
+                <option value="table">Table (Markdown)</option>
+              </select>
+            </div>
+
+            <div id="tableSettingsContainer" style="display:none; margin-top: 12px;">
+              <label for="tableColumnsList">Columns (drag to reorder)</label>
+              <ul id="tableColumnsList" style="list-style: none; padding: 8px; border: 1px solid var(--border-light); border-radius: 4px; background: var(--bg-tertiary);">
+                <!-- dynamically rendered -->
+              </ul>
+
+              <div style="margin-top: 12px;">
+                <label for="tableSortColumn">Sort by</label>
+                <select id="tableSortColumn" style="width: 200px; margin-left: 8px; padding: 6px; border-radius: 4px; border: 1px solid var(--border-light); background: var(--bg-secondary); color: var(--text-primary);">
+                  <option value="date">Date</option>
+                  <option value="project">Project</option>
+                  <option value="title">Task Title</option>
+                  <option value="time">Time Spent</option>
+                  <option value="status">Status</option>
+                </select>
+
+                <label for="tableSortDirection" style="margin-left: 12px;">Direction</label>
+                <select id="tableSortDirection" style="width: 120px; margin-left: 8px; padding: 6px; border-radius: 4px; border: 1px solid var(--border-light); background: var(--bg-secondary); color: var(--text-primary);">
+                  <option value="asc">Asc</option>
+                  <option value="desc">Desc</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
           <!-- View Organization Section -->
-          <div class="settings-section">
+          <div class="settings-section" id="viewOrgSection">
             <h4 class="settings-section-title">View Organization</h4>
-            <div class="input-field" style="margin-bottom: 16px;">
+            <div class="input-field" id="groupByContainer" style="margin-bottom: 16px;">
               <label for="groupBy">Group by</label>
               <select id="groupBy" style="width: 200px; padding: 8px; border-radius: 4px; border: 1px solid var(--border-light); background: var(--bg-secondary); color: var(--text-primary);">
                 <option value="date">Date</option>
@@ -867,41 +903,6 @@
             </div>
           </div>
 
-          <!-- Report Format Section -->
-          <div class="settings-section">
-            <h4 class="settings-section-title">Report Format</h4>
-            <div class="input-field" style="margin-bottom: 12px;">
-              <label for="outputFormat">Output format</label>
-              <select id="outputFormat" style="width: 220px; padding: 8px; border-radius: 4px; border: 1px solid var(--border-light); background: var(--bg-secondary); color: var(--text-primary);">
-                <option value="simple">Simple (current)</option>
-                <option value="table">Table (Markdown)</option>
-              </select>
-            </div>
-
-            <div id="tableSettingsContainer" style="display:none; margin-top: 12px;">
-              <label for="tableColumnsList">Columns (drag to reorder)</label>
-              <ul id="tableColumnsList" style="list-style: none; padding: 8px; border: 1px solid var(--border-light); border-radius: 4px; background: var(--bg-tertiary);">
-                <!-- dynamically rendered -->
-              </ul>
-
-              <div style="margin-top: 12px;">
-                <label for="tableSortColumn">Sort by</label>
-                <select id="tableSortColumn" style="width: 200px; margin-left: 8px; padding: 6px; border-radius: 4px; border: 1px solid var(--border-light); background: var(--bg-secondary); color: var(--text-primary);">
-                  <option value="date">Date</option>
-                  <option value="project">Project</option>
-                  <option value="title">Task Title</option>
-                  <option value="time">Time Spent</option>
-                  <option value="status">Status</option>
-                </select>
-
-                <label for="tableSortDirection" style="margin-left: 12px;">Direction</label>
-                <select id="tableSortDirection" style="width: 120px; margin-left: 8px; padding: 6px; border-radius: 4px; border: 1px solid var(--border-light); background: var(--bg-secondary); color: var(--text-primary);">
-                  <option value="asc">Asc</option>
-                  <option value="desc">Desc</option>
-                </select>
-              </div>
-            </div>
-          </div>
 
           <!-- Filtering Logic Section -->
           <div class="settings-section">
@@ -1995,9 +1996,12 @@
         // Apply table/output format preferences
         const outputFormatEl = document.getElementById('outputFormat');
         const tableSettingsContainerEl = document.getElementById('tableSettingsContainer');
+        const viewOrgSectionEl = document.getElementById('viewOrgSection');
         const tableSortColumnEl = document.getElementById('tableSortColumn');
         const tableSortDirectionEl = document.getElementById('tableSortDirection');
         if (outputFormatEl) outputFormatEl.value = preferences.outputFormat || 'simple';
+        // when using table output we hide the grouping options entirely
+        if (viewOrgSectionEl) viewOrgSectionEl.style.display = (preferences.outputFormat === 'table') ? 'none' : 'block';
         if (tableSettingsContainerEl) tableSettingsContainerEl.style.display = (preferences.outputFormat === 'table') ? 'block' : 'none';
         if (tableSortColumnEl) tableSortColumnEl.value = (preferences.tableSort && preferences.tableSort.column) || 'date';
         if (tableSortDirectionEl) tableSortDirectionEl.value = (preferences.tableSort && preferences.tableSort.direction) || 'asc';
@@ -2186,20 +2190,8 @@
           }
         }
 
-        // Group entries by configured grouping
-        const groups = {};
-        if (groupBy === 'date') {
-          dateRange.forEach(d => groups[d] = []);
-          entries.forEach(e => { groups[e.date] = groups[e.date] || []; groups[e.date].push(e); });
-        } else if (groupBy === 'project') {
-          entries.forEach(e => {
-            const key = e.project || 'No Project';
-            groups[key] = groups[key] || [];
-            groups[key].push(e);
-          });
-        } else {
-          groups['All'] = entries;
-        }
+        // Table view always produces a single flat group; grouping preference is ignored
+        const groups = { 'All': entries };
 
         // Apply sorting within groups
         const sortColumn = document.getElementById('tableSortColumn')?.value || (preferences.tableSort && preferences.tableSort.column) || 'date';
@@ -2237,14 +2229,7 @@
         Object.keys(groups).forEach(groupKey => {
           const rows = groups[groupKey];
           const isEmpty = !rows || rows.length === 0;
-          if (groupBy === 'date') {
-            if (isEmpty && excludeEmpty) return;
-            reportText += `## ${formatDateDisplay(groupKey)}\n\n`;
-          } else if (groupBy === 'project') {
-            if (isEmpty && excludeEmpty) return;
-            reportText += `## ${groupKey}\n\n`;
-          }
-
+          // no group headers in table mode; simply show message if no rows
           if (isEmpty) {
             reportText += `*No tasks*\n\n`;
             return;
@@ -2691,6 +2676,7 @@
 
       // Track preference changes
       const preferenceElements = [
+        'outputFormat',
         'groupBy',
         'showDate',
         'excludeEmptyDates',
@@ -2717,9 +2703,13 @@
       const outputFormatEl = document.getElementById('outputFormat');
       if (outputFormatEl) {
         outputFormatEl.addEventListener('change', (e) => {
-          const show = e.target.value === 'table';
+          const isTable = e.target.value === 'table';
+          // show or hide table-specific options
           const container = document.getElementById('tableSettingsContainer');
-          if (container) container.style.display = show ? 'block' : 'none';
+          if (container) container.style.display = isTable ? 'block' : 'none';
+          // hide grouping controls when in table mode
+          const viewOrgSection = document.getElementById('viewOrgSection');
+          if (viewOrgSection) viewOrgSection.style.display = isTable ? 'none' : 'block';
           preferencesHasChanges = true;
         });
       }
