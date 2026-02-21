@@ -23,7 +23,7 @@ A plugin for [Super Productivity](https://super-productivity.com) that generates
 - ⏱️ Shows time spent on tasks (when available)
 - 📈 Displays task statistics including excluded work log counts
 - 📝 Optional inclusion of task notes in reports
-- 🔁 **Optionally include missed recurring tasks** in reports to track tasks that weren't completed or worked on
+- ⚠️ **Optionally include overdue tasks** in reports to track instances that passed their planned date or due date without completion (based on dueDay field)
 - 🔄 Reports are synced across devices using Super Productivity's persistence API
 
 ## Installation
@@ -47,7 +47,7 @@ A plugin for [Super Productivity](https://super-productivity.com) that generates
    - **Show/hide time spent** on individual tasks
    - **Show/hide total time** for projects (when grouping by project)
    - **Include task notes** in the report
-   - **Include missed recurring tasks** to see recurring tasks that weren't completed or worked on during the date range
+   - **Include overdue tasks** to see task instances that are overdue during the date range (based on dueDay field)
 4. Click "Generate Report"
 6. The report will appear in a modal popup showing:
    - Tasks grouped by date (completed tasks and tasks with work logs)
@@ -55,7 +55,7 @@ A plugin for [Super Productivity](https://super-productivity.com) that generates
    - Time spent on each task (when tracked)
    - Count of excluded work logs (if any were filtered out)
    - Optional task notes (when enabled)
-   - Missed recurring tasks marked with MISSED indicator (when enabled)
+   - Overdue tasks (by planned date or due date) marked with OVERDUE indicator (when enabled)
 7. **Edit the report** as needed - add comments, modify content, or reorganize tasks
 8. **Save the report** with a custom name for future reference
 9. **Copy to Clipboard** to paste the report in Markdown format anywhere
@@ -76,7 +76,7 @@ The generated report is formatted in Markdown and includes:
 - WIP indicator for work in progress entries (before task completion)
 - Time spent on each task (when tracked)
 - Optional task notes (when enabled)
-- MISSED indicator for recurring tasks that weren't completed or worked on during the date range (when enabled)
+- OVERDUE indicator for tasks that passed their planned date without completion (when enabled)
 
 ### Example Report - Grouped by Date
 
@@ -115,8 +115,8 @@ The generated report is formatted in Markdown and includes:
 
 - Refactor API endpoints [Project B] *(120 min)*
 - Fix bug in authentication [Project A] *(60 min)*
-- Daily standup notes [Project A] MISSED 🔁
-- Weekly planning session [Project B] MISSED 🔁
+- Daily standup notes [Project A] OVERDUE ⚠️
+- Weekly planning session [Project B] OVERDUE ⚠️
 ```
 
 ### Example Report - Grouped by Project

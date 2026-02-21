@@ -2569,18 +2569,24 @@ describe('Date Range Reporter', () => {
     });
   });
 
-  describe('Missed Recurring Tasks', () => {
-    it('should have includeMissedRecurring checkbox', () => {
-      expect(document.getElementById('includeMissedRecurring')).toBeTruthy();
+  describe('Overdue Tasks', () => {
+    it('should have includeOverdue checkbox', () => {
+      expect(document.getElementById('includeOverdue')).toBeTruthy();
     });
 
-    it('should not include missed recurring tasks when option is disabled', async () => {
+    it('should not include overdue tasks when option is disabled', async () => {
       const tasks = [
         {
-          id: 'task-recurring-missed',
-          title: 'Missed Recurring Task',
-          repeatCfgId: 'repeat-1',
-          isDone: false,
+          id: 'task-overdue',
+          title: 'Overdue Task',
+          dueDay: '2024-01-15',
+          timeSpentOnDay: {}
+        },
+        {
+          id: 'task-dueonly',
+          title: 'Due Day Only',
+          // no status, but dueDay should qualify if unchecked later
+          dueDay: '2024-01-15',
           timeSpentOnDay: {}
         },
         {
@@ -2596,37 +2602,35 @@ describe('Date Range Reporter', () => {
 
       const startInput = document.getElementById('startDate');
       const endInput = document.getElementById('endDate');
-      const includeMissedRecurring = document.getElementById('includeMissedRecurring');
+      const includeOverdue = document.getElementById('includeOverdue');
       
       startInput.value = '2024-01-15';
       endInput.value = '2024-01-15';
-      includeMissedRecurring.checked = false;
+      includeOverdue.checked = false;
 
       await window.generateReport();
 
       const modalContent = document.getElementById('modalReportContent');
       const reportText = modalContent.value;
       
-      expect(reportText).not.toContain('Missed Recurring Tasks');
-      expect(reportText).not.toContain('Missed Recurring Task');
+      expect(reportText).not.toContain('Overdue Task');
+      expect(reportText).not.toContain('Due Day Only');
       expect(reportText).toContain('Completed Task');
     });
 
-    it('should include missed recurring tasks when option is enabled', async () => {
+    it('should include overdue tasks when option is enabled and only on planned date', async () => {
       const tasks = [
         {
-          id: 'task-recurring-missed',
-          title: 'Missed Recurring Task',
-          repeatCfgId: 'repeat-1',
-          isDone: false,
+          id: 'task-overdue',
+          title: 'Overdue Task',
+          dueDay: '2024-01-16',
           timeSpentOnDay: {}
         },
         {
-          id: 'task-completed',
-          title: 'Completed Task',
-          isDone: true,
-          doneOn: new Date('2024-01-15T14:00:00').getTime(),
-          timeSpentOnDay: { '2024-01-15': 3600000 }
+          id: 'task-dueday',
+          title: 'Due Day Only Overdue',
+          dueDay: '2024-01-16',
+          timeSpentOnDay: {}
         }
       ];
 
@@ -2634,31 +2638,42 @@ describe('Date Range Reporter', () => {
 
       const startInput = document.getElementById('startDate');
       const endInput = document.getElementById('endDate');
-      const includeMissedRecurring = document.getElementById('includeMissedRecurring');
+      const includeOverdue = document.getElementById('includeOverdue');
       
       startInput.value = '2024-01-15';
-      endInput.value = '2024-01-15';
-      includeMissedRecurring.checked = true;
+      endInput.value = '2024-01-17';
+      includeOverdue.checked = true;
 
       await window.generateReport();
 
       const modalContent = document.getElementById('modalReportContent');
       const reportText = modalContent.value;
       
-      expect(reportText).toContain('Missed Recurring Task');
-      expect(reportText).toContain('MISSED 🔁');
-      expect(reportText).toContain('Completed Task');
+      // Each task appears once on its relevant date
+      expect(reportText.match(/Overdue Task/g)?.length).toBe(1);
+      expect(reportText).toContain('Overdue Task');
+      expect(reportText.match(/Due Day Only Overdue/g)?.length).toBe(1);
+      expect(reportText).toContain('Due Day Only Overdue');
+      expect(reportText).toContain('OVERDUE ⚠️');
     });
 
-    it('should not include recurring tasks that were completed in date range', async () => {
+    it('should not show overdue tasks created after range or deleted before range', async () => {
       const tasks = [
         {
-          id: 'task-recurring-completed',
-          title: 'Completed Recurring Task',
-          repeatCfgId: 'repeat-1',
-          isDone: true,
-          doneOn: new Date('2024-01-15T14:00:00').getTime(),
-          timeSpentOnDay: { '2024-01-15': 3600000 }
+          id: 'late-task',
+          title: 'Late Overdue',
+          dueDay: '2024-01-05',
+          // created after report range
+          createdAt: new Date('2024-01-21T00:00:00').getTime(),
+          timeSpentOnDay: {}
+        },
+        {
+          id: 'early-task',
+          title: 'Early Overdue',
+          dueDay: '2024-01-05',
+          // deleted before report range
+          deletedAt: new Date('2023-12-31T00:00:00').getTime(),
+          timeSpentOnDay: {}
         }
       ];
 
@@ -2666,30 +2681,35 @@ describe('Date Range Reporter', () => {
 
       const startInput = document.getElementById('startDate');
       const endInput = document.getElementById('endDate');
-      const includeMissedRecurring = document.getElementById('includeMissedRecurring');
+      const includeOverdue = document.getElementById('includeOverdue');
       
-      startInput.value = '2024-01-15';
-      endInput.value = '2024-01-15';
-      includeMissedRecurring.checked = true;
+      startInput.value = '2024-01-01';
+      endInput.value = '2024-01-20';
+      includeOverdue.checked = true;
 
       await window.generateReport();
 
       const modalContent = document.getElementById('modalReportContent');
       const reportText = modalContent.value;
       
-      // Should not have MISSED indicator
-      expect(reportText).not.toContain('MISSED 🔁');
-      // Should be in regular tasks
-      expect(reportText).toContain('Completed Recurring Task');
+      expect(reportText).not.toContain('Late Overdue');
+      expect(reportText).not.toContain('Early Overdue');
     });
 
-    it('should not include recurring tasks that had work logs in date range', async () => {
+    it('should not include tasks marked overdue if completed or worked on in range', async () => {
       const tasks = [
         {
-          id: 'task-recurring-wip',
-          title: 'WIP Recurring Task',
-          repeatCfgId: 'repeat-1',
-          isDone: false,
+          id: 'task-overdue-completed',
+          title: 'Completed Overdue Task',
+          dueDay: '2024-01-15',
+          isDone: true,
+          doneOn: new Date('2024-01-15T10:00:00').getTime(),
+          timeSpentOnDay: { '2024-01-15': 3600000 }
+        },
+        {
+          id: 'task-overdue-wip',
+          title: 'WIP Overdue Task',
+          dueDay: '2024-01-15',
           timeSpentOnDay: { '2024-01-15': 3600000 }
         }
       ];
@@ -2698,32 +2718,30 @@ describe('Date Range Reporter', () => {
 
       const startInput = document.getElementById('startDate');
       const endInput = document.getElementById('endDate');
-      const includeMissedRecurring = document.getElementById('includeMissedRecurring');
+      const includeOverdue = document.getElementById('includeOverdue');
       
       startInput.value = '2024-01-15';
       endInput.value = '2024-01-15';
-      includeMissedRecurring.checked = true;
+      includeOverdue.checked = true;
 
       await window.generateReport();
 
       const modalContent = document.getElementById('modalReportContent');
       const reportText = modalContent.value;
       
-      // Should not have MISSED indicator
-      expect(reportText).not.toContain('MISSED 🔁');
-      // Should be in regular tasks with WIP
-      expect(reportText).toContain('WIP Recurring Task');
+      expect(reportText).not.toContain('OVERDUE ⚠️');
+      expect(reportText).toContain('Completed Overdue Task');
+      expect(reportText).toContain('WIP Overdue Task');
       expect(reportText).toContain('WIP');
     });
 
-    it('should show project names for missed recurring tasks', async () => {
+    it('should show project names for overdue tasks', async () => {
       const tasks = [
         {
-          id: 'task-recurring-missed',
-          title: 'Missed Recurring Task',
-          repeatCfgId: 'repeat-1',
+          id: 'task-overdue',
+          title: 'Overdue Task',
           projectId: 'project-1',
-          isDone: false,
+          dueDay: '2024-01-15',
           timeSpentOnDay: {}
         }
       ];
@@ -2735,37 +2753,35 @@ describe('Date Range Reporter', () => {
 
       const startInput = document.getElementById('startDate');
       const endInput = document.getElementById('endDate');
-      const includeMissedRecurring = document.getElementById('includeMissedRecurring');
+      const includeOverdue = document.getElementById('includeOverdue');
       
       startInput.value = '2024-01-15';
       endInput.value = '2024-01-15';
-      includeMissedRecurring.checked = true;
+      includeOverdue.checked = true;
 
       await window.generateReport();
 
       const modalContent = document.getElementById('modalReportContent');
       const reportText = modalContent.value;
       
-      expect(reportText).toContain('Missed Recurring Task [Test Project]');
-      expect(reportText).toContain('MISSED 🔁');
+      expect(reportText).toContain('Overdue Task [Test Project]');
+      expect(reportText).toContain('OVERDUE ⚠️');
     });
 
-    it('should exclude missed recurring tasks from excluded projects', async () => {
+    it('should exclude overdue tasks from excluded projects', async () => {
       const tasks = [
         {
-          id: 'task-recurring-excluded',
-          title: 'Excluded Recurring Task',
-          repeatCfgId: 'repeat-1',
+          id: 'task-overdue-excluded',
+          title: 'Excluded Overdue Task',
           projectId: 'excluded-project',
-          isDone: false,
+          dueDay: '2024-01-15',
           timeSpentOnDay: {}
         },
         {
-          id: 'task-recurring-included',
-          title: 'Included Recurring Task',
-          repeatCfgId: 'repeat-2',
+          id: 'task-overdue-included',
+          title: 'Included Overdue Task',
           projectId: 'included-project',
-          isDone: false,
+          dueDay: '2024-01-15',
           timeSpentOnDay: {}
         }
       ];
@@ -2790,29 +2806,28 @@ describe('Date Range Reporter', () => {
 
       const startInput = document.getElementById('startDate');
       const endInput = document.getElementById('endDate');
-      const includeMissedRecurring = document.getElementById('includeMissedRecurring');
+      const includeOverdue = document.getElementById('includeOverdue');
       
       startInput.value = '2024-01-15';
       endInput.value = '2024-01-15';
-      includeMissedRecurring.checked = true;
+      includeOverdue.checked = true;
 
       await window.generateReport();
 
       const modalContent = document.getElementById('modalReportContent');
       const reportText = modalContent.value;
       
-      expect(reportText).toContain('Included Recurring Task');
-      expect(reportText).not.toContain('Excluded Recurring Task');
+      expect(reportText).toContain('Included Overdue Task');
+      expect(reportText).not.toContain('Excluded Overdue Task');
     });
 
     it('should work with both grouping modes', async () => {
       const tasks = [
         {
-          id: 'task-recurring-missed',
-          title: 'Missed Recurring Task',
-          repeatCfgId: 'repeat-1',
+          id: 'task-overdue',
+          title: 'Overdue Task',
           projectId: 'project-1',
-          isDone: false,
+          dueDay: '2024-01-15',
           timeSpentOnDay: {}
         }
       ];
@@ -2824,12 +2839,12 @@ describe('Date Range Reporter', () => {
 
       const startInput = document.getElementById('startDate');
       const endInput = document.getElementById('endDate');
-      const includeMissedRecurring = document.getElementById('includeMissedRecurring');
+      const includeOverdue = document.getElementById('includeOverdue');
       const groupBy = document.getElementById('groupBy');
       
       startInput.value = '2024-01-15';
       endInput.value = '2024-01-15';
-      includeMissedRecurring.checked = true;
+      includeOverdue.checked = true;
 
       // Test with date grouping
       groupBy.value = 'date';
@@ -2838,8 +2853,8 @@ describe('Date Range Reporter', () => {
       let modalContent = document.getElementById('modalReportContent');
       let reportText = modalContent.value;
       
-      expect(reportText).toContain('Missed Recurring Task');
-      expect(reportText).toContain('MISSED 🔁');
+      expect(reportText).toContain('Overdue Task');
+      expect(reportText).toContain('OVERDUE ⚠️');
 
       // Test with project grouping
       groupBy.value = 'project';
@@ -2848,8 +2863,8 @@ describe('Date Range Reporter', () => {
       modalContent = document.getElementById('modalReportContent');
       reportText = modalContent.value;
       
-      expect(reportText).toContain('Missed Recurring Task');
-      expect(reportText).toContain('MISSED 🔁');
+      expect(reportText).toContain('Overdue Task');
+      expect(reportText).toContain('OVERDUE ⚠️');
     });
   });
 
@@ -2880,6 +2895,30 @@ describe('Date Range Reporter', () => {
       expect(reportText).toContain('Table Task');
       expect(reportText).toContain('2h');
       expect(reportText).toContain('Note line');
+    });
+
+    it('includes overdue tasks in table output using dueDay', async () => {
+      const tasks = [
+        {
+          id: 'overdue-table',
+          title: 'Table Overdue',
+          dueDay: '2024-01-16',
+          timeSpentOnDay: {}
+        }
+      ];
+
+      mockPluginAPI.getTasks.mockResolvedValue(tasks);
+      document.getElementById('outputFormat').value = 'table';
+      document.getElementById('includeOverdue').checked = true;
+      document.getElementById('startDate').value = '2024-01-16';
+      document.getElementById('endDate').value = '2024-01-16';
+
+      await window.generateReport();
+
+      const reportText = document.getElementById('modalReportContent').value;
+      expect(reportText).toContain('Tuesday, January 16, 2024');
+      expect(reportText).toContain('Table Overdue');
+      expect(reportText).toContain('OVERDUE');
     });
 
     it('respects column order preference and columns align even if notes previously removed', async () => {

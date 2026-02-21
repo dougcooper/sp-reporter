@@ -840,10 +840,10 @@
             </div>
             <div class="toggle-row">
               <div class="toggle-content">
-                <label for="includeMissedRecurring">Include missed recurring tasks</label>
+                <label for="includeOverdue">Include overdue tasks</label>
               </div>
               <label class="toggle-switch">
-                <input type="checkbox" id="includeMissedRecurring" style="display: none;" />
+                <input type="checkbox" id="includeOverdue" style="display: none;" />
                 <span class="toggle-slider"></span>
               </label>
             </div>
@@ -1036,7 +1036,7 @@
         showDate: false,
         excludeEmptyDates: true,
         includeNotes: false,
-        includeMissedRecurring: false,
+        includeOverdue: false,
         minTimeSpent: 5,
         showTimeSpent: true,
         showTotalTime: true,
@@ -1214,38 +1214,67 @@
         return preferences.excludedProjects.includes(projectId || 'no-project');
       }
 
-      // Get missed recurring tasks (tasks with repeatCfgId that weren't worked on in date range)
-      function getMissedRecurringTasks(allTasks, startDate, endDate, processedTasks) {
-        const missedTasks = [];
+      // Get overdue tasks (instances with dueDay within range and not done)
+      function getOverdueTasks(allTasks, startDate, endDate, processedTasks) {
+        const overdue = [];
         const startDateStr = formatDate(startDate);
         const endDateStr = formatDate(endDate);
-        
+
         allTasks.forEach(task => {
-          // Skip if task was already processed (completed or had work logs in range)
+          // Skip if already processed (completed or worked on)
           if (processedTasks.has(task.id)) {
             return;
           }
-          
-          // Skip if task doesn't have a repeatCfgId (not a recurring task)
-          if (!task.repeatCfgId) {
+
+          // Determine whether this should be treated as overdue.
+          // Since exported tasks may lack a `status` field, we rely on dueDay
+          // and ensure the task isn't done.
+          const hasDueDay = task.dueDay && !task.isDone;
+          if (!hasDueDay) {
             return;
           }
-          
+
           // Skip tasks from excluded projects
           if (isProjectExcluded(task.projectId)) {
             return;
           }
-          
-          // Skip subtasks (they're shown under their parent)
+
+          // Skip subtasks - they appear under their parent
           if (task.parentId) {
             return;
           }
-          
-          // This is a recurring task that wasn't completed or worked on in the date range
-          missedTasks.push(task);
+
+          // If we have a dueDay, use that for range filtering; otherwise fall back to plannedAt
+          if (hasDueDay) {
+            const dueStr = task.dueDay;
+            if (dueStr < startDateStr || dueStr > endDateStr) {
+              return;
+            }
+          } else if (task.plannedAt) {
+            const plannedStr = formatDate(new Date(task.plannedAt));
+            if (plannedStr < startDateStr || plannedStr > endDateStr) {
+              return;
+            }
+          }
+
+          // Respect creation/deletion boundaries if present
+          if (task.createdAt) {
+            const createdStr = formatDate(new Date(task.createdAt));
+            if (createdStr > endDateStr) {
+              return;
+            }
+          }
+          if (task.deletedAt) {
+            const deletedStr = formatDate(new Date(task.deletedAt));
+            if (deletedStr < startDateStr) {
+              return;
+            }
+          }
+
+          overdue.push(task);
         });
-        
-        return missedTasks;
+
+        return overdue;
       }
 
       // Generate report grouped by date
@@ -1405,20 +1434,27 @@
           }
         });
 
-        // Add missed recurring tasks to each date if enabled
-        const includeMissedRecurring = document.getElementById('includeMissedRecurring').checked;
-        if (includeMissedRecurring) {
-          const missedTasks = getMissedRecurringTasks(allTasks, startDate, endDate, processedTasks);
+        // Add overdue tasks if option enabled
+        const includeOverdue = document.getElementById('includeOverdue').checked;
+        if (includeOverdue) {
+          const overdueTasks = getOverdueTasks(allTasks, startDate, endDate, processedTasks);
           
-          // Add each missed recurring task to each date in the range
-          if (missedTasks.length > 0) {
-            dateRange.forEach(dateStr => {
-              missedTasks.forEach(task => {
-                tasksByDate[dateStr].push({
+          // Add each overdue task on its planned date only
+          if (overdueTasks.length > 0) {
+            overdueTasks.forEach(task => {
+              // choose dueDay first if present, else fallback to plannedAt
+              let dateKey = null;
+              if (task.dueDay) {
+                dateKey = task.dueDay;
+              } else if (task.plannedAt) {
+                dateKey = formatDate(new Date(task.plannedAt));
+              }
+              if (dateKey && tasksByDate[dateKey]) {
+                tasksByDate[dateKey].push({
                   ...task,
-                  isMissedRecurring: true
+                  isOverdue: true
                 });
-              });
+              }
             });
           }
         }
@@ -1457,10 +1493,10 @@
               const timeSpent = (document.getElementById('showTimeSpent').checked && task.timeSpentOnDay && task.timeSpentOnDay[dateForTimeSpent])
                 ? ` *(${Math.round(task.timeSpentOnDay[dateForTimeSpent] / 60000)} min)*`
                 : '';
-              // Show status indicator for in-progress tasks or missed recurring tasks
+              // Show status indicator for in-progress tasks or overdue tasks
               let statusIndicator = '';
-              if (task.isMissedRecurring) {
-                statusIndicator = ' MISSED 🔁';
+              if (task.isOverdue) {
+                statusIndicator = ' OVERDUE ⚠️';
               } else if (task.isInProgress) {
                 statusIndicator = ' WIP';
               }
@@ -1594,12 +1630,13 @@
           }
         });
 
-        // Add missed recurring tasks to their respective projects if enabled
-        const includeMissedRecurring = document.getElementById('includeMissedRecurring').checked;
-        if (includeMissedRecurring) {
-          const missedTasks = getMissedRecurringTasks(allTasks, startDate, endDate, processedTasks);
+        // Add overdue tasks to their respective projects if enabled
+        const includeOverdue = document.getElementById('includeOverdue').checked;
+        if (includeOverdue) {
+          const overdueTasks = getOverdueTasks(allTasks, startDate, endDate, processedTasks);
           
-          missedTasks.forEach(task => {
+          overdueTasks.forEach(task => {
+            // only include if planned date within range (getOverdueTasks already filters)
             const projectId = task.projectId || 'no-project';
             const projectName = projects[projectId] || 'No Project';
             
@@ -1612,10 +1649,10 @@
               };
             }
             
-            // Add missed recurring task to the project
+            // Add overdue task to the project
             tasksByProject[projectId].tasks.push({
               ...task,
-              isMissedRecurring: true,
+              isOverdue: true,
               totalTimeSpent: 0,
               subtasks: []
             });
@@ -1661,10 +1698,10 @@
             project.tasks.forEach(task => {
               const timeMinutes = Math.round(task.totalTimeSpent / 60000);
               const timeSpent = (document.getElementById('showTimeSpent').checked && timeMinutes > 0) ? ` *(${formatTime(timeMinutes)})*` : '';
-              // Show status indicator for in-progress tasks or missed recurring tasks
+              // Show status indicator for in-progress tasks or overdue tasks
               let statusIndicator = '';
-              if (task.isMissedRecurring) {
-                statusIndicator = ' MISSED 🔁';
+              if (task.isOverdue) {
+                statusIndicator = ' OVERDUE ⚠️';
               } else if (task.isInProgress) {
                 statusIndicator = ' WIP';
               }
@@ -1905,6 +1942,11 @@
               savedReports = parsed.reports || [];
               if (parsed.preferences) {
                 preferences = { ...preferences, ...parsed.preferences };
+                // migrate old option name if present
+                if (preferences.includeMissedRecurring !== undefined) {
+                  preferences.includeOverdue = preferences.includeMissedRecurring;
+                  delete preferences.includeMissedRecurring;
+                }
                 applyPreferences();
               }
             }
@@ -1935,7 +1977,7 @@
         const showDateEl = document.getElementById('showDate');
         const excludeEmptyDatesEl = document.getElementById('excludeEmptyDates');
         const includeNotesEl = document.getElementById('includeNotes');
-        const includeMissedRecurringEl = document.getElementById('includeMissedRecurring');
+        const includeOverdueEl = document.getElementById('includeOverdue');
         const minTimeSpentEl = document.getElementById('minTimeSpent');
         const showTimeSpentEl = document.getElementById('showTimeSpent');
         const showTotalTimeEl = document.getElementById('showTotalTime');
@@ -1945,7 +1987,7 @@
         if (showDateEl) showDateEl.checked = preferences.showDate;
         if (excludeEmptyDatesEl) excludeEmptyDatesEl.checked = preferences.excludeEmptyDates;
         if (includeNotesEl) includeNotesEl.checked = preferences.includeNotes;
-        if (includeMissedRecurringEl) includeMissedRecurringEl.checked = preferences.includeMissedRecurring;
+        if (includeOverdueEl) includeOverdueEl.checked = preferences.includeOverdue;
         if (minTimeSpentEl) minTimeSpentEl.value = preferences.minTimeSpent;
         if (showTimeSpentEl) showTimeSpentEl.checked = preferences.showTimeSpent;
         if (showTotalTimeEl) showTotalTimeEl.checked = preferences.showTotalTime;
@@ -2130,14 +2172,16 @@
           }
         });
 
-        // Include missed recurring tasks
-        if (document.getElementById('includeMissedRecurring').checked) {
-          const missedTasks = getMissedRecurringTasks(allTasks, startDate, endDate, processedTaskIds);
-          if (missedTasks.length > 0) {
-            dateRange.forEach(dateStr => {
-              missedTasks.forEach(task => {
-                pushEntry({ date: dateStr, project: projects[task.projectId] || '', title: task.title, timeMinutes: 0, status: 'MISSED', notes: includeNotes ? task.notes : '', taskId: task.id });
-              });
+        // Include overdue tasks if enabled
+        if (document.getElementById('includeOverdue').checked) {
+          const overdueTasks = getOverdueTasks(allTasks, startDate, endDate, processedTaskIds);
+          if (overdueTasks.length > 0) {
+            overdueTasks.forEach(task => {
+              // choose dueDay first if present, else fallback to plannedAt
+              let dateKey = task.dueDay || (task.plannedAt ? formatDate(new Date(task.plannedAt)) : null);
+              if (dateKey) {
+                pushEntry({ date: dateKey, project: projects[task.projectId] || '', title: task.title, timeMinutes: 0, status: 'OVERDUE', notes: includeNotes ? task.notes : '', taskId: task.id });
+              }
             });
           }
         }
@@ -2395,7 +2439,7 @@
           preferences.showDate = document.getElementById('showDate').checked;
           preferences.excludeEmptyDates = document.getElementById('excludeEmptyDates').checked;
           preferences.includeNotes = document.getElementById('includeNotes').checked;
-          preferences.includeMissedRecurring = document.getElementById('includeMissedRecurring').checked;
+          preferences.includeOverdue = document.getElementById('includeOverdue').checked;
           preferences.minTimeSpent = parseInt(document.getElementById('minTimeSpent').value);
           preferences.showTimeSpent = document.getElementById('showTimeSpent').checked;
           preferences.showTotalTime = document.getElementById('showTotalTime').checked;
@@ -2651,6 +2695,7 @@
         'showDate',
         'excludeEmptyDates',
         'includeNotes',
+        'includeOverdue',
         'minTimeSpent',
         'showTimeSpent',
         'showTotalTime'
