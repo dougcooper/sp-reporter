@@ -3123,4 +3123,164 @@ describe('Date Range Reporter', () => {
       expect(firstIndex).toBeLessThan(secondIndex);
     });
   });
+
+  describe('Trend Plot Functions', () => {
+    it('should expose trend plot functions on window', () => {
+      expect(typeof window.generateLineChart).toBe('function');
+      expect(typeof window.generateBarChart).toBe('function');
+      expect(typeof window.generateTrendData).toBe('function');
+      expect(typeof window.getChartColor).toBe('function');
+      expect(typeof window.getChartThemeOptions).toBe('function');
+    });
+
+    it('getChartColor returns light color by default', () => {
+      expect(window.getChartColor(false)).toBe('#1976d2');
+    });
+
+    it('getChartColor returns dark color for dark theme', () => {
+      expect(window.getChartColor(true)).toBe('#42a5f5');
+    });
+
+    it('getChartThemeOptions returns light theme options', () => {
+      const opts = window.getChartThemeOptions(false);
+      expect(opts.bgColor).toBe('#fafafa');
+      expect(opts.gridColor).toBe('#eee');
+      expect(opts.textColor).toBe('#666');
+    });
+
+    it('getChartThemeOptions returns dark theme options', () => {
+      const opts = window.getChartThemeOptions(true);
+      expect(opts.bgColor).toBe('#252525');
+      expect(opts.gridColor).toBe('#404040');
+      expect(opts.textColor).toBe('#b0b0b0');
+    });
+
+    it('generateTrendData aggregates time per date', () => {
+      const tasksByDate = {
+        '2024-01-15': [
+          { timeSpentOnDay: { '2024-01-15': 3600000 } },
+          { timeSpentOnDay: { '2024-01-15': 1800000 } }
+        ],
+        '2024-01-16': [
+          { timeSpentOnDay: { '2024-01-16': 7200000 } }
+        ]
+      };
+      const data = window.generateTrendData(tasksByDate, ['2024-01-15', '2024-01-16'], false);
+      expect(data).toHaveLength(2);
+      expect(data[0].value).toBe(90); // 60 + 30 minutes
+      expect(data[1].value).toBe(120); // 120 minutes
+    });
+
+    it('generateTrendData returns zero for dates with no time', () => {
+      const tasksByDate = { '2024-01-15': [] };
+      const data = window.generateTrendData(tasksByDate, ['2024-01-15'], false);
+      expect(data[0].value).toBe(0);
+    });
+
+    it('generateTrendData formats date labels as M/D', () => {
+      const tasksByDate = { '2024-01-05': [] };
+      const data = window.generateTrendData(tasksByDate, ['2024-01-05'], false);
+      expect(data[0].label).toBe('1/5');
+    });
+
+    it('generateLineChart returns an SVG string', () => {
+      const data = [{ label: '1/15', value: 60 }, { label: '1/16', value: 90 }];
+      const svg = window.generateLineChart(data, {});
+      expect(svg).toContain('<svg');
+      expect(svg).toContain('</svg>');
+      expect(svg).toContain('<polyline');
+    });
+
+    it('generateLineChart includes accessibility attributes', () => {
+      const data = [{ label: '1/15', value: 60 }];
+      const svg = window.generateLineChart(data, {});
+      expect(svg).toContain('role="img"');
+      expect(svg).toContain('aria-label=');
+      expect(svg).toContain('<title>');
+      expect(svg).toContain('<desc>');
+    });
+
+    it('generateLineChart uses provided theme colors', () => {
+      const data = [{ label: '1/15', value: 60 }];
+      const svg = window.generateLineChart(data, { bgColor: '#252525', gridColor: '#404040', textColor: '#b0b0b0' });
+      expect(svg).toContain('#252525');
+      expect(svg).toContain('#404040');
+      expect(svg).toContain('#b0b0b0');
+    });
+
+    it('generateLineChart handles single data point', () => {
+      const data = [{ label: '1/15', value: 60 }];
+      const svg = window.generateLineChart(data, {});
+      expect(svg).toContain('<svg');
+    });
+
+    it('generateLineChart handles empty values gracefully', () => {
+      const data = [{ label: '1/15', value: 0 }, { label: '1/16', value: 0 }];
+      const svg = window.generateLineChart(data, {});
+      expect(svg).toContain('<svg');
+    });
+
+    it('generateBarChart returns an SVG string', () => {
+      const data = [{ label: '1/15', value: 60 }, { label: '1/16', value: 90 }];
+      const svg = window.generateBarChart(data, {});
+      expect(svg).toContain('<svg');
+      expect(svg).toContain('</svg>');
+      expect(svg).toContain('<rect');
+    });
+
+    it('generateBarChart includes accessibility attributes', () => {
+      const data = [{ label: '1/15', value: 60 }];
+      const svg = window.generateBarChart(data, {});
+      expect(svg).toContain('role="img"');
+      expect(svg).toContain('aria-label=');
+      expect(svg).toContain('<title>');
+      expect(svg).toContain('<desc>');
+    });
+
+    it('generateBarChart uses provided theme colors', () => {
+      const data = [{ label: '1/15', value: 60 }];
+      const svg = window.generateBarChart(data, { bgColor: '#252525', gridColor: '#404040', textColor: '#b0b0b0' });
+      expect(svg).toContain('#252525');
+      expect(svg).toContain('#404040');
+      expect(svg).toContain('#b0b0b0');
+    });
+
+    it('generateBarChart handles many data points without negative gap', () => {
+      // 50 data points should not cause negative bar gap
+      const data = Array.from({ length: 50 }, (_, i) => ({ label: `${i}`, value: i * 10 }));
+      const svg = window.generateBarChart(data, {});
+      expect(svg).toContain('<svg');
+      // All rect x values should be non-negative
+      const rectMatches = [...svg.matchAll(/x="([\d.]+)"/g)];
+      rectMatches.forEach(m => {
+        expect(parseFloat(m[1])).toBeGreaterThanOrEqual(0);
+      });
+    });
+
+    it('trend plot is included in report when enabled', async () => {
+      const tasks = [
+        {
+          id: 'task-tp-1',
+          title: 'Trend Task',
+          isDone: true,
+          doneOn: new Date('2024-01-15T12:00:00').getTime(),
+          timeSpentOnDay: { '2024-01-15': 3600000 }
+        }
+      ];
+      mockPluginAPI.getTasks.mockResolvedValue(tasks);
+      document.getElementById('startDate').value = '2024-01-15';
+      document.getElementById('endDate').value = '2024-01-15';
+      document.getElementById('outputFormat').value = 'simple';
+
+      const showTrendPlotsEl = document.getElementById('showTrendPlots');
+      showTrendPlotsEl.checked = true;
+      window.preferences.showTrendPlots = true;
+      window.preferences.trendPlotType = 'line';
+
+      await window.generateReport();
+      const reportText = document.getElementById('modalReportContent').value;
+      expect(reportText).toContain('## Time Trend');
+      expect(reportText).toContain('<svg');
+    });
+  });
 });

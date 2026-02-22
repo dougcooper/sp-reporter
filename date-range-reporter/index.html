@@ -1107,11 +1107,12 @@
       }
 
       // ========== Lightweight SVG Trend Plot Functions ==========
-      // Extremely lightweight - under 10kb total for all chart rendering
+      // Extremely lightweight (~6.4KB total for all chart rendering code)
 
       // Generate a line chart SVG
       function generateLineChart(data, options) {
-        const { width = 400, height = 150, padding = 30, color = '#1976d2' } = options || {};
+        const { width = 400, height = 150, padding = 30, color = '#1976d2',
+                bgColor = '#fafafa', gridColor = '#eee', textColor = '#666' } = options || {};
         const labels = data.map(d => d.label);
         const values = data.map(d => d.value);
         const maxVal = Math.max(...values, 1);
@@ -1136,7 +1137,7 @@
         const xLabels = data.map((d, i) => {
           if (i % labelStep !== 0 && i !== labels.length - 1) return '';
           const x = padding + (i / (data.length - 1 || 1)) * chartWidth;
-          return `<text x="${x}" y="${height - 8}" text-anchor="middle" font-size="10" fill="#666">${d.label}</text>`;
+          return `<text x="${x}" y="${height - 8}" text-anchor="middle" font-size="10" fill="${textColor}">${d.label}</text>`;
         }).join('');
         
         // Generate y-axis labels
@@ -1145,14 +1146,19 @@
         for (let i = 0; i <= yLabelCount; i++) {
           const val = Math.round(minVal + (range * i / yLabelCount));
           const y = padding + chartHeight - (i / yLabelCount) * chartHeight;
-          yLabels.push(`<text x="${padding - 5}" y="${y + 3}" text-anchor="end" font-size="10" fill="#666">${val}</text>`);
+          yLabels.push(`<text x="${padding - 5}" y="${y + 3}" text-anchor="end" font-size="10" fill="${textColor}">${val}</text>`);
         }
+
+        const ariaLabel = `Line chart of time spent over ${data.length} days`;
+        const descText = data.map(d => `${d.label}: ${d.value} min`).join(', ');
         
-        const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" style="max-width:100%; height:auto;">
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" style="max-width:100%; height:auto;" role="img" aria-label="${ariaLabel}">
+  <title>Time Trend</title>
+  <desc>${descText}</desc>
   <!-- Background -->
-  <rect width="${width}" height="${height}" fill="#fafafa"/>
+  <rect width="${width}" height="${height}" fill="${bgColor}"/>
   <!-- Grid lines -->
-  ${[0, 1, 2, 3, 4].map(i => `<line x1="${padding}" y1="${padding + (i / 4) * chartHeight}" x2="${width - padding}" y2="${padding + (i / 4) * chartHeight}" stroke="#eee" stroke-width="1"/>`).join('')}
+  ${[0, 1, 2, 3, 4].map(i => `<line x1="${padding}" y1="${padding + (i / 4) * chartHeight}" x2="${width - padding}" y2="${padding + (i / 4) * chartHeight}" stroke="${gridColor}" stroke-width="1"/>`).join('')}
   <!-- Area fill -->
   <polygon points="${areaPoints}" fill="${color}" opacity="0.1"/>
   <!-- Line -->
@@ -1173,14 +1179,15 @@
 
       // Generate a bar chart SVG
       function generateBarChart(data, options) {
-        const { width = 400, height = 150, padding = 30, color = '#1976d2' } = options || {};
+        const { width = 400, height = 150, padding = 30, color = '#1976d2',
+                bgColor = '#fafafa', gridColor = '#eee', textColor = '#666' } = options || {};
         const values = data.map(d => d.value);
         const maxVal = Math.max(...values, 1);
         
         const chartWidth = width - padding * 2;
         const chartHeight = height - padding * 2;
         const barWidth = Math.min(30, (chartWidth / data.length) * 0.7);
-        const barGap = (chartWidth - barWidth * data.length) / (data.length + 1);
+        const barGap = Math.max(0, (chartWidth - barWidth * data.length) / (data.length + 1));
         
         // Generate bars
         const bars = data.map((d, i) => {
@@ -1195,7 +1202,7 @@
         const xLabels = data.map((d, i) => {
           if (i % labelStep !== 0 && i !== data.length - 1) return '';
           const x = padding + barGap + i * (barWidth + barGap) + barWidth / 2;
-          return `<text x="${x}" y="${height - 8}" text-anchor="middle" font-size="10" fill="#666">${d.label}</text>`;
+          return `<text x="${x}" y="${height - 8}" text-anchor="middle" font-size="10" fill="${textColor}">${d.label}</text>`;
         }).join('');
         
         // Generate y-axis labels
@@ -1204,14 +1211,19 @@
         for (let i = 0; i <= yLabelCount; i++) {
           const val = Math.round(maxVal * i / yLabelCount);
           const y = padding + chartHeight - (i / yLabelCount) * chartHeight;
-          yLabels.push(`<text x="${padding - 5}" y="${y + 3}" text-anchor="end" font-size="10" fill="#666">${val}</text>`);
+          yLabels.push(`<text x="${padding - 5}" y="${y + 3}" text-anchor="end" font-size="10" fill="${textColor}">${val}</text>`);
         }
+
+        const ariaLabel = `Bar chart of time spent over ${data.length} days`;
+        const descText = data.map(d => `${d.label}: ${d.value} min`).join(', ');
         
-        const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" style="max-width:100%; height:auto;">
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" style="max-width:100%; height:auto;" role="img" aria-label="${ariaLabel}">
+  <title>Time Trend</title>
+  <desc>${descText}</desc>
   <!-- Background -->
-  <rect width="${width}" height="${height}" fill="#fafafa"/>
+  <rect width="${width}" height="${height}" fill="${bgColor}"/>
   <!-- Grid lines -->
-  ${[0, 1, 2, 3, 4].map(i => `<line x1="${padding}" y1="${padding + (i / 4) * chartHeight}" x2="${width - padding}" y2="${padding + (i / 4) * chartHeight}" stroke="#eee" stroke-width="1"/>`).join('')}
+  ${[0, 1, 2, 3, 4].map(i => `<line x1="${padding}" y1="${padding + (i / 4) * chartHeight}" x2="${width - padding}" y2="${padding + (i / 4) * chartHeight}" stroke="${gridColor}" stroke-width="1"/>`).join('')}
   <!-- Bars -->
   ${bars}
   <!-- X axis labels -->
@@ -1242,9 +1254,16 @@
         return data;
       }
 
-      // Get accent color based on theme
+      // Get chart colors based on theme
       function getChartColor(isDark) {
         return isDark ? '#42a5f5' : '#1976d2';
+      }
+
+      // Get theme-aware chart options (bg, grid, text colors)
+      function getChartThemeOptions(isDark) {
+        return isDark
+          ? { bgColor: '#252525', gridColor: '#404040', textColor: '#b0b0b0' }
+          : { bgColor: '#fafafa', gridColor: '#eee', textColor: '#666' };
       }
       // ========== End SVG Trend Plot Functions ==========
 
@@ -1630,6 +1649,9 @@
         reportText += `*Note: Individual work log entries are shown for tasks with multiple work logs. WIP indicates work in progress. Subtasks are nested under parent tasks.*\n\n`;
         reportText += `---\n\n`;
 
+        // Sort dates
+        const sortedDates = Object.keys(tasksByDate).sort();
+
         // Add trend plot if enabled (for date grouping)
         const showTrendPlots = document.getElementById('showTrendPlots')?.checked || preferences.showTrendPlots;
         const trendPlotType = document.getElementById('trendPlotType')?.value || preferences.trendPlotType || 'line';
@@ -1637,21 +1659,19 @@
         if (showTrendPlots) {
           const isDark = document.body.classList.contains('dark-theme');
           const chartColor = getChartColor(isDark);
-          const sortedDates = Object.keys(tasksByDate).sort();
+          const themeOpts = getChartThemeOptions(isDark);
           const trendData = generateTrendData(tasksByDate, sortedDates, isDark);
           
           // Only show chart if there's data
           const hasData = trendData.some(d => d.value > 0);
           if (hasData) {
+            const chartOpts = { color: chartColor, ...themeOpts };
             const chartSvg = trendPlotType === 'bar' 
-              ? generateBarChart(trendData, { color: chartColor })
-              : generateLineChart(trendData, { color: chartColor });
+              ? generateBarChart(trendData, chartOpts)
+              : generateLineChart(trendData, chartOpts);
             reportText += `## Time Trend\n\n${chartSvg}\n\n`;
           }
         }
-
-        // Sort dates
-        const sortedDates = Object.keys(tasksByDate).sort();
 
         // Filter out empty dates if checkbox is checked
         const excludeEmpty = document.getElementById('excludeEmptyDates').checked;
@@ -2975,6 +2995,7 @@
       const outputFormatEl = document.getElementById('outputFormat');
       function updateDisplayOptionVisibility() {
         const isTable = document.getElementById('outputFormat')?.value === 'table';
+        const isProjectGrouped = document.getElementById('groupBy')?.value === 'project';
         ['showDate','includeNotes','showTimeSpent','showTotalTime'].forEach(id => {
           const el = document.getElementById(id);
           if (el) {
@@ -2982,11 +3003,14 @@
             if (row) row.style.display = isTable ? 'none' : 'flex';
           }
         });
-        // Also show/hide trend plots option
+        // Hide trend plots option when in table mode or when grouping by project
         const showTrendPlotsEl = document.getElementById('showTrendPlots');
         if (showTrendPlotsEl) {
           const row = showTrendPlotsEl.closest('.toggle-row');
-          if (row) row.style.display = isTable ? 'none' : 'flex';
+          if (row) row.style.display = (isTable || isProjectGrouped) ? 'none' : 'flex';
+          // Also hide the chart type sub-options if not applicable
+          const trendPlotOptionsEl = document.getElementById('trendPlotOptions');
+          if (trendPlotOptionsEl && isProjectGrouped) trendPlotOptionsEl.style.display = 'none';
         }
       }
 
@@ -3000,6 +3024,15 @@
           const viewOrgSection = document.getElementById('viewOrgSection');
           if (viewOrgSection) viewOrgSection.style.display = isTable ? 'none' : 'block';
           // hide other display toggles except overdue
+          updateDisplayOptionVisibility();
+          preferencesHasChanges = true;
+        });
+      }
+
+      // Hide trend plot toggle when grouping by project
+      const groupByEl = document.getElementById('groupBy');
+      if (groupByEl) {
+        groupByEl.addEventListener('change', () => {
           updateDisplayOptionVisibility();
           preferencesHasChanges = true;
         });
@@ -3098,6 +3131,13 @@
       window.renderTableRows = renderTableRows;
       window.applyPreferences = applyPreferences;
       window.renderTableColumnsUI = renderTableColumnsUI;
+
+      // Expose trend plot helpers for tests (Vitest + JSDOM)
+      window.generateLineChart = generateLineChart;
+      window.generateBarChart = generateBarChart;
+      window.generateTrendData = generateTrendData;
+      window.getChartColor = getChartColor;
+      window.getChartThemeOptions = getChartThemeOptions;
 
       document.addEventListener("DOMContentLoaded", function() {
         // Load saved reports on initialization
