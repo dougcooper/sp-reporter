@@ -739,6 +739,50 @@
         background: var(--bg-tertiary);
         color: var(--text-primary);
       }
+
+      /* Trend Plot Styles */
+      .trend-plot {
+        margin: 16px 0;
+        padding: 12px;
+        background: var(--bg-tertiary);
+        border-radius: 6px;
+      }
+
+      .trend-plot-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-secondary);
+        margin-bottom: 8px;
+      }
+
+      .trend-plot svg {
+        display: block;
+        width: 100%;
+        height: 120px;
+      }
+
+      .trend-plot-line {
+        fill: none;
+        stroke: var(--accent-color);
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .trend-plot-bar {
+        fill: var(--accent-color);
+        opacity: 0.8;
+      }
+
+      .trend-plot-axis {
+        stroke: var(--border-light);
+        stroke-width: 1;
+      }
+
+      .trend-plot-label {
+        font-size: 10px;
+        fill: var(--text-tertiary);
+      }
     </style>
   </head>
   <body>
@@ -904,6 +948,15 @@
                 <span class="toggle-slider"></span>
               </label>
             </div>
+            <div class="toggle-row">
+              <div class="toggle-content">
+                <label for="showTrendPlots">Show trend plots</label>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="showTrendPlots" style="display: none;" />
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
           </div>
 
 
@@ -1044,6 +1097,7 @@
         minTimeSpent: 5,
         showTimeSpent: true,
         showTotalTime: true,
+        showTrendPlots: false,
         excludeProjects: false,
         excludedProjects: [],
         // Table / output settings (new)
@@ -1083,6 +1137,147 @@
         const hours = Math.floor(minutes / 60);
         const mins = minutes % 60;
         return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
+      }
+
+      // Lightweight SVG Line Chart - creates an inline SVG polyline chart
+      // data: array of {label, value} objects
+      // options: {width, height, color}
+      function createLineChart(data, options) {
+        if (!data || data.length === 0) return '';
+        const width = options.width || 600;
+        const height = options.height || 120;
+        const padding = {top: 10, right: 10, bottom: 25, left: 35};
+        const chartWidth = width - padding.left - padding.right;
+        const chartHeight = height - padding.top - padding.bottom;
+
+        const maxValue = Math.max(...data.map(d => d.value), 1);
+        const minValue = 0;
+        const range = maxValue - minValue || 1;
+
+        // Generate points for polyline
+        const points = data.map((d, i) => {
+          const x = padding.left + (i / (data.length - 1 || 1)) * chartWidth;
+          const y = padding.top + chartHeight - ((d.value - minValue) / range) * chartHeight;
+          return `${x},${y}`;
+        }).join(' ');
+
+        // Generate axis lines
+        const axisLines = [];
+        const numYLines = 3;
+        for (let i = 0; i <= numYLines; i++) {
+          const y = padding.top + (i / numYLines) * chartHeight;
+          axisLines.push(`<line x1="${padding.left}" y1="${y}" x2="${width - padding.right}" y2="${y}" class="trend-plot-axis"/>`);
+        }
+
+        // Generate X-axis labels (show every nth label)
+        const xLabels = [];
+        const showEvery = Math.max(1, Math.floor(data.length / 5));
+        data.forEach((d, i) => {
+          if (i % showEvery === 0 || i === data.length - 1) {
+            const x = padding.left + (i / (data.length - 1 || 1)) * chartWidth;
+            xLabels.push(`<text x="${x}" y="${height - 5}" class="trend-plot-label" text-anchor="middle">${d.label}</text>`);
+          }
+        });
+
+        // Generate Y-axis labels
+        const yLabels = [];
+        for (let i = 0; i <= numYLines; i++) {
+          const val = Math.round(minValue + (1 - i / numYLines) * range);
+          const y = padding.top + (i / numYLines) * chartHeight;
+          yLabels.push(`<text x="${padding.left - 5}" y="${y + 3}" class="trend-plot-label" text-anchor="end">${val}</text>`);
+        }
+
+        return `<svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none">
+  ${axisLines.join('\n  ')}
+  <polyline points="${points}" class="trend-plot-line"/>
+  ${xLabels.join('\n  ')}
+  ${yLabels.join('\n  ')}
+</svg>`;
+      }
+
+      // Lightweight SVG Bar Chart - creates an inline SVG bar chart
+      // data: array of {label, value} objects
+      // options: {width, height}
+      function createBarChart(data, options) {
+        if (!data || data.length === 0) return '';
+        const width = options.width || 600;
+        const height = options.height || 120;
+        const padding = {top: 10, right: 10, bottom: 25, left: 35};
+        const chartWidth = width - padding.left - padding.right;
+        const chartHeight = height - padding.top - padding.bottom;
+
+        const maxValue = Math.max(...data.map(d => d.value), 1);
+        const barWidth = Math.max(2, (chartWidth / data.length) - 2);
+        const barGap = (chartWidth - barWidth * data.length) / (data.length + 1);
+
+        // Generate bars
+        const bars = data.map((d, i) => {
+          const barHeight = (d.value / maxValue) * chartHeight;
+          const x = padding.left + barGap + i * (barWidth + barGap);
+          const y = padding.top + chartHeight - barHeight;
+          return `<rect x="${x}" y="${y}" width="${barWidth}" height="${barHeight}" class="trend-plot-bar"/>`;
+        }).join('\n  ');
+
+        // Generate axis line
+        const axisY = padding.top + chartHeight;
+        const axisLines = `<line x1="${padding.left}" y1="${axisY}" x2="${width - padding.right}" y2="${axisY}" class="trend-plot-axis"/>
+  <line x1="${padding.left}" y1="${padding.top}" x2="${padding.left}" y2="${axisY}" class="trend-plot-axis"/>`;
+
+        // Generate X-axis labels
+        const xLabels = [];
+        const showEvery = Math.max(1, Math.floor(data.length / 5));
+        data.forEach((d, i) => {
+          if (i % showEvery === 0 || i === data.length - 1) {
+            const x = padding.left + barGap + i * (barWidth + barGap) + barWidth / 2;
+            xLabels.push(`<text x="${x}" y="${height - 5}" class="trend-plot-label" text-anchor="middle">${d.label}</text>`);
+          }
+        });
+
+        // Generate Y-axis labels
+        const yLabels = [];
+        const numYLines = 3;
+        for (let i = 0; i <= numYLines; i++) {
+          const val = Math.round((1 - i / numYLines) * maxValue);
+          const y = padding.top + (i / numYLines) * chartHeight;
+          yLabels.push(`<text x="${padding.left - 5}" y="${y + 3}" class="trend-plot-label" text-anchor="end">${val}</text>`);
+        }
+
+        return `<svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none">
+  ${axisLines}
+  ${bars}
+  ${xLabels.join('\n  ')}
+  ${yLabels.join('\n  ')}
+</svg>`;
+      }
+
+      // Generate trend plot HTML with both line and bar charts
+      // dataByDate: object mapping date strings to total minutes
+      function generateTrendPlots(dataByDate) {
+        if (!preferences.showTrendPlots) return '';
+        
+        const dates = Object.keys(dataByDate).sort();
+        if (dates.length === 0) return '';
+
+        const data = dates.map(date => {
+          const dateObj = new Date(date + 'T00:00:00');
+          const label = `${dateObj.getMonth() + 1}/${dateObj.getDate()}`;
+          return {label, value: Math.round(dataByDate[date] / 60000)}; // Convert ms to minutes
+        });
+
+        // Only show chart if we have enough data points
+        if (data.length < 2) return '';
+
+        const lineChart = createLineChart(data, {});
+        const barChart = createBarChart(data, {});
+
+        return `<div class="trend-plot">
+  <div class="trend-plot-title">Time Spent by Day (Line)</div>
+  ${lineChart}
+</div>
+<div class="trend-plot">
+  <div class="trend-plot-title">Time Spent by Day (Bar)</div>
+  ${barChart}
+</div>`;
       }
 
       // Get all dates in range
@@ -1467,6 +1662,9 @@
         reportText += `*Note: Individual work log entries are shown for tasks with multiple work logs. WIP indicates work in progress. Subtasks are nested under parent tasks.*\n\n`;
         reportText += `---\n\n`;
 
+        // Collect time by date for trend plots
+        const timeByDate = {};
+
         // Sort dates
         const sortedDates = Object.keys(tasksByDate).sort();
 
@@ -1487,9 +1685,15 @@
             tasks.forEach((task, index) => {
               // Use workLogDate if available, otherwise use the date from the section
               const dateForTimeSpent = task.workLogDate || dateStr;
-              const timeSpent = (document.getElementById('showTimeSpent').checked && task.timeSpentOnDay && task.timeSpentOnDay[dateForTimeSpent])
-                ? ` *(${Math.round(task.timeSpentOnDay[dateForTimeSpent] / 60000)} min)*`
-                : '';
+              const timeSpentMs = (document.getElementById('showTimeSpent').checked && task.timeSpentOnDay && task.timeSpentOnDay[dateForTimeSpent])
+                ? task.timeSpentOnDay[dateForTimeSpent]
+                : 0;
+              const timeSpent = timeSpentMs ? ` *(${Math.round(timeSpentMs / 60000)} min)*` : '';
+              
+              // Collect time for trend plot
+              if (timeSpentMs > 0) {
+                timeByDate[dateForTimeSpent] = (timeByDate[dateForTimeSpent] || 0) + timeSpentMs;
+              }
               // Show status indicator for in-progress tasks or overdue tasks
               let statusIndicator = '';
               if (task.isOverdue) {
@@ -1537,6 +1741,10 @@
             reportText += `\n`;
           }
         });
+
+        // Add trend plots at the end of the report
+        reportText += `\n---\n\n`;
+        reportText += generateTrendPlots(timeByDate);
 
         return { reportText, totalTasks };
       }
@@ -1667,6 +1875,9 @@
         reportText += `*Note: Tasks are grouped by project. Time shown is the total across all days in the date range. Subtasks are nested under parent tasks.*\n\n`;
         reportText += `---\n\n`;
 
+        // Collect time by date for trend plots
+        const timeByDate = {};
+
         // Sort projects by name
         const sortedProjects = Object.keys(tasksByProject).sort((a, b) => {
           const nameA = tasksByProject[a].name.toLowerCase();
@@ -1685,6 +1896,16 @@
           const project = tasksByProject[projectId];
           const totalMinutes = Math.round(project.totalTime / 60000);
           const formattedTime = formatTime(totalMinutes);
+          
+          // Collect time for trend plots (distribute across dates)
+          project.tasks.forEach(task => {
+            if (task.dates && task.dates.length > 0) {
+              const timePerDay = task.totalTimeSpent / task.dates.length;
+              task.dates.forEach(date => {
+                timeByDate[date] = (timeByDate[date] || 0) + timePerDay;
+              });
+            }
+          });
           
           const totalTimeDisplay = document.getElementById('showTotalTime').checked ? ` *(total: ${formattedTime})*` : '';
           reportText += `## ${project.name}${totalTimeDisplay}\n\n`;
@@ -1734,6 +1955,10 @@
             reportText += `\n`;
           }
         });
+
+        // Add trend plots at the end of the report
+        reportText += `\n---\n\n`;
+        reportText += generateTrendPlots(timeByDate);
 
         return { reportText, totalTasks };
       }
@@ -1992,6 +2217,8 @@
         if (minTimeSpentEl) minTimeSpentEl.value = preferences.minTimeSpent;
         if (showTimeSpentEl) showTimeSpentEl.checked = preferences.showTimeSpent;
         if (showTotalTimeEl) showTotalTimeEl.checked = preferences.showTotalTime;
+        const showTrendPlotsEl = document.getElementById('showTrendPlots');
+        if (showTrendPlotsEl) showTrendPlotsEl.checked = preferences.showTrendPlots || false;
 
         // Apply table/output format preferences
         const outputFormatEl = document.getElementById('outputFormat');
@@ -2489,6 +2716,7 @@
           preferences.minTimeSpent = parseInt(document.getElementById('minTimeSpent').value);
           preferences.showTimeSpent = document.getElementById('showTimeSpent').checked;
           preferences.showTotalTime = document.getElementById('showTotalTime').checked;
+          preferences.showTrendPlots = document.getElementById('showTrendPlots').checked;
 
           // Persist output format / table settings
           const outputFormatEl = document.getElementById('outputFormat');
@@ -2746,6 +2974,7 @@
         'minTimeSpent',
         'showTimeSpent',
         'showTotalTime',
+        'showTrendPlots',
       ];
 
       preferenceElements.forEach(elementId => {
@@ -2881,6 +3110,9 @@
       window.renderTableRows = renderTableRows;
       window.applyPreferences = applyPreferences;
       window.renderTableColumnsUI = renderTableColumnsUI;
+      window.generateTrendPlots = generateTrendPlots;
+      window.createLineChart = createLineChart;
+      window.createBarChart = createBarChart;
 
       document.addEventListener("DOMContentLoaded", function() {
         // Load saved reports on initialization
