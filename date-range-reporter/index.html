@@ -861,7 +861,8 @@
           <div class="modal-report-preview" id="modalReportPreview" style="display: none; background: var(--bg-code); border: 1px solid var(--border-color); border-radius: 4px; padding: 16px; min-height: 400px; max-height: 60vh; overflow-y: auto; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 14px; line-height: 1.6; white-space: pre-wrap;"></div>
         </div>
         <div class="modal-footer">
-          <button id="modalCopyBtn" class="secondary-btn">📋 Copy to Clipboard</button>
+          <button id="modalCopyBtn" class="secondary-btn">📋 Copy Markdown</button>
+          <button id="modalCopyHtmlBtn" class="secondary-btn">📋 Copy as HTML</button>
           <button id="modalSaveBtn">💾 Save Report</button>
         </div>
       </div>
@@ -1096,6 +1097,7 @@
       const modalTitle = document.getElementById('modalTitle');
       const modalReportContent = document.getElementById('modalReportContent');
       const modalCopyBtn = document.getElementById('modalCopyBtn');
+      const modalCopyHtmlBtn = document.getElementById('modalCopyHtmlBtn');
       const modalSaveBtn = document.getElementById('modalSaveBtn');
       const reportNameInput = document.getElementById('reportNameInput');
       
@@ -2301,6 +2303,47 @@
         }
       }
 
+      // Copy as HTML (with rendered SVG) from modal
+      async function copyAsHtmlFromModal() {
+        try {
+          const markdown = modalReportContent.value;
+          const html = convertMarkdownToHtml(markdown);
+          
+          // Copy as HTML blob
+          const blob = new Blob([html], { type: 'text/html' });
+          const plainTextBlob = new Blob([html], { type: 'text/plain' });
+          const data = [new ClipboardItem({
+            'text/html': blob,
+            'text/plain': plainTextBlob
+          })];
+          await navigator.clipboard.write(data);
+
+          PluginAPI.showSnack({
+            msg: 'Report (with charts) copied as HTML!',
+            type: 'SUCCESS',
+            ico: 'content_copy',
+          });
+        } catch (error) {
+          console.error('Error copying as HTML:', error);
+          // Fallback: try to copy as plain text
+          try {
+            const markdown = modalReportContent.value;
+            const html = convertMarkdownToHtml(markdown);
+            await navigator.clipboard.writeText(html);
+            PluginAPI.showSnack({
+              msg: 'Report (with charts) copied as HTML text!',
+              type: 'SUCCESS',
+              ico: 'content_copy',
+            });
+          } catch (fallbackError) {
+            PluginAPI.showSnack({
+              msg: 'Failed to copy as HTML',
+              type: 'ERROR',
+            });
+          }
+        }
+      }
+
       // Save report
       async function saveReport() {
         try {
@@ -2792,7 +2835,6 @@
           let chartColor = getChartColor(isDark);
           let chartTitle = 'Time Trend';
           
-          let chartColor, chartTitle;
           if (trendPlotType === 'hours') {
             // Hours per day chart - recalculate with hours
             trendData.length = 0; // Clear and repopulate
@@ -3225,6 +3267,7 @@
       generateBtn.addEventListener('click', generateReport);
       closeModalBtn.addEventListener('click', hideReportModal);
       modalCopyBtn.addEventListener('click', copyFromModal);
+      modalCopyHtmlBtn.addEventListener('click', copyAsHtmlFromModal);
       modalSaveBtn.addEventListener('click', saveReport);
       deleteSelectedBtn.addEventListener('click', deleteSelectedReports);
       combineSelectedBtn.addEventListener('click', combineSelectedReports);
@@ -3301,12 +3344,12 @@
             if (row) row.style.display = isTable ? 'none' : 'flex';
           }
         });
-        // Hide trend plots option when in table mode or when grouping by project
+        // Hide trend plots option only when grouping by project (works in simple and table modes)
         const showTrendPlotsEl = document.getElementById('showTrendPlots');
         if (showTrendPlotsEl) {
           const row = showTrendPlotsEl.closest('.toggle-row');
-          if (row) row.style.display = (isTable || isProjectGrouped) ? 'none' : 'flex';
-          // Also hide the chart type sub-options if not applicable
+          if (row) row.style.display = isProjectGrouped ? 'none' : 'flex';
+          // Also hide the chart type sub-options if grouping by project
           const trendPlotOptionsEl = document.getElementById('trendPlotOptions');
           if (trendPlotOptionsEl && isProjectGrouped) trendPlotOptionsEl.style.display = 'none';
         }
