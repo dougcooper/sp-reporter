@@ -2187,15 +2187,15 @@
           previewEl.innerHTML = convertMarkdownToHtml(reportText);
         }
         
-        // Show edit view by default
+        // Show preview by default so SVG charts are visible
         const editBtn = document.getElementById('viewEditBtn');
         const previewBtn = document.getElementById('viewPreviewBtn');
         if (editBtn && previewBtn) {
-          editBtn.classList.add('secondary-btn');
-          previewBtn.classList.remove('secondary-btn');
+          editBtn.classList.remove('secondary-btn');
+          previewBtn.classList.add('secondary-btn');
         }
-        modalReportContent.style.display = 'block';
-        if (previewEl) previewEl.style.display = 'none';
+        modalReportContent.style.display = 'none';
+        if (previewEl) previewEl.style.display = 'block';
         
         reportModal.classList.add('show');
       }
