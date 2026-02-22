@@ -861,6 +861,24 @@
             <h4 class="settings-section-title">Display Options</h4>
             <div class="toggle-row">
               <div class="toggle-content">
+                <label for="showTrendPlots">Show trend plots</label>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="showTrendPlots" style="display: none;" />
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div id="trendPlotOptions" style="display: none; margin-top: 12px; margin-left: 8px;">
+              <div class="input-field" style="margin-bottom: 12px;">
+                <label for="trendPlotType">Chart type</label>
+                <select id="trendPlotType" style="width: 150px; padding: 6px; border-radius: 4px; border: 1px solid var(--border-light); background: var(--bg-secondary); color: var(--text-primary);">
+                  <option value="line">Line Chart</option>
+                  <option value="bar">Bar Chart</option>
+                </select>
+              </div>
+            </div>
+            <div class="toggle-row">
+              <div class="toggle-content">
                 <label for="showDate">Show completion date</label>
               </div>
               <label class="toggle-switch">
@@ -1049,7 +1067,10 @@
         // Table / output settings (new)
         outputFormat: 'simple', // 'simple' | 'table'
         tableColumns: ['date','project','title','time','status','notes'],
-        tableSort: { column: 'date', direction: 'asc' }
+        tableSort: { column: 'date', direction: 'asc' },
+        // Trend plot settings
+        showTrendPlots: false,
+        trendPlotType: 'line'
       };
 
       // Set default dates to past seven days (including today)
@@ -1084,6 +1105,148 @@
         const mins = minutes % 60;
         return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
       }
+
+      // ========== Lightweight SVG Trend Plot Functions ==========
+      // Extremely lightweight - under 10kb total for all chart rendering
+
+      // Generate a line chart SVG
+      function generateLineChart(data, options) {
+        const { width = 400, height = 150, padding = 30, color = '#1976d2' } = options || {};
+        const labels = data.map(d => d.label);
+        const values = data.map(d => d.value);
+        const maxVal = Math.max(...values, 1);
+        const minVal = 0;
+        const range = maxVal - minVal || 1;
+        
+        const chartWidth = width - padding * 2;
+        const chartHeight = height - padding * 2;
+        
+        // Generate points for polyline
+        const points = data.map((d, i) => {
+          const x = padding + (i / (data.length - 1 || 1)) * chartWidth;
+          const y = padding + chartHeight - ((d.value - minVal) / range) * chartHeight;
+          return `${x},${y}`;
+        }).join(' ');
+        
+        // Generate area fill points
+        const areaPoints = `${padding},${padding + chartHeight} ${points} ${padding + chartWidth},${padding + chartHeight}`;
+        
+        // Generate x-axis labels (show every nth label to avoid crowding)
+        const labelStep = Math.max(1, Math.floor(labels.length / 5));
+        const xLabels = data.map((d, i) => {
+          if (i % labelStep !== 0 && i !== labels.length - 1) return '';
+          const x = padding + (i / (data.length - 1 || 1)) * chartWidth;
+          return `<text x="${x}" y="${height - 8}" text-anchor="middle" font-size="10" fill="#666">${d.label}</text>`;
+        }).join('');
+        
+        // Generate y-axis labels
+        const yLabelCount = 4;
+        const yLabels = [];
+        for (let i = 0; i <= yLabelCount; i++) {
+          const val = Math.round(minVal + (range * i / yLabelCount));
+          const y = padding + chartHeight - (i / yLabelCount) * chartHeight;
+          yLabels.push(`<text x="${padding - 5}" y="${y + 3}" text-anchor="end" font-size="10" fill="#666">${val}</text>`);
+        }
+        
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" style="max-width:100%; height:auto;">
+  <!-- Background -->
+  <rect width="${width}" height="${height}" fill="#fafafa"/>
+  <!-- Grid lines -->
+  ${[0, 1, 2, 3, 4].map(i => `<line x1="${padding}" y1="${padding + (i / 4) * chartHeight}" x2="${width - padding}" y2="${padding + (i / 4) * chartHeight}" stroke="#eee" stroke-width="1"/>`).join('')}
+  <!-- Area fill -->
+  <polygon points="${areaPoints}" fill="${color}" opacity="0.1"/>
+  <!-- Line -->
+  <polyline points="${points}" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Data points -->
+  ${data.map((d, i) => {
+    const x = padding + (i / (data.length - 1 || 1)) * chartWidth;
+    const y = padding + chartHeight - ((d.value - minVal) / range) * chartHeight;
+    return `<circle cx="${x}" cy="${y}" r="3" fill="${color}"/>`;
+  }).join('')}
+  <!-- X axis labels -->
+  ${xLabels}
+  <!-- Y axis labels -->
+  ${yLabels.join('')}
+</svg>`;
+        return svg;
+      }
+
+      // Generate a bar chart SVG
+      function generateBarChart(data, options) {
+        const { width = 400, height = 150, padding = 30, color = '#1976d2' } = options || {};
+        const values = data.map(d => d.value);
+        const maxVal = Math.max(...values, 1);
+        
+        const chartWidth = width - padding * 2;
+        const chartHeight = height - padding * 2;
+        const barWidth = Math.min(30, (chartWidth / data.length) * 0.7);
+        const barGap = (chartWidth - barWidth * data.length) / (data.length + 1);
+        
+        // Generate bars
+        const bars = data.map((d, i) => {
+          const barHeight = (d.value / maxVal) * chartHeight;
+          const x = padding + barGap + i * (barWidth + barGap);
+          const y = padding + chartHeight - barHeight;
+          return `<rect x="${x}" y="${y}" width="${barWidth}" height="${barHeight}" fill="${color}" rx="2"/>`;
+        }).join('');
+        
+        // Generate x-axis labels
+        const labelStep = Math.max(1, Math.floor(data.length / 5));
+        const xLabels = data.map((d, i) => {
+          if (i % labelStep !== 0 && i !== data.length - 1) return '';
+          const x = padding + barGap + i * (barWidth + barGap) + barWidth / 2;
+          return `<text x="${x}" y="${height - 8}" text-anchor="middle" font-size="10" fill="#666">${d.label}</text>`;
+        }).join('');
+        
+        // Generate y-axis labels
+        const yLabelCount = 4;
+        const yLabels = [];
+        for (let i = 0; i <= yLabelCount; i++) {
+          const val = Math.round(maxVal * i / yLabelCount);
+          const y = padding + chartHeight - (i / yLabelCount) * chartHeight;
+          yLabels.push(`<text x="${padding - 5}" y="${y + 3}" text-anchor="end" font-size="10" fill="#666">${val}</text>`);
+        }
+        
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" style="max-width:100%; height:auto;">
+  <!-- Background -->
+  <rect width="${width}" height="${height}" fill="#fafafa"/>
+  <!-- Grid lines -->
+  ${[0, 1, 2, 3, 4].map(i => `<line x1="${padding}" y1="${padding + (i / 4) * chartHeight}" x2="${width - padding}" y2="${padding + (i / 4) * chartHeight}" stroke="#eee" stroke-width="1"/>`).join('')}
+  <!-- Bars -->
+  ${bars}
+  <!-- X axis labels -->
+  ${xLabels}
+  <!-- Y axis labels -->
+  ${yLabels.join('')}
+</svg>`;
+        return svg;
+      }
+
+      // Generate trend plot data from tasks
+      function generateTrendData(tasksByDate, dateRange, isDark) {
+        const data = [];
+        dateRange.forEach(date => {
+          const tasks = tasksByDate[date] || [];
+          // Sum up time spent for each date (in minutes)
+          let totalMinutes = 0;
+          tasks.forEach(task => {
+            if (task.timeSpentOnDay && task.timeSpentOnDay[date]) {
+              totalMinutes += Math.round(task.timeSpentOnDay[date] / 60000);
+            }
+          });
+          // Format label as short date
+          const dateObj = new Date(date + 'T00:00:00');
+          const label = `${dateObj.getMonth() + 1}/${dateObj.getDate()}`;
+          data.push({ label, value: totalMinutes });
+        });
+        return data;
+      }
+
+      // Get accent color based on theme
+      function getChartColor(isDark) {
+        return isDark ? '#42a5f5' : '#1976d2';
+      }
+      // ========== End SVG Trend Plot Functions ==========
 
       // Get all dates in range
       function getDateRange(startDate, endDate) {
@@ -1466,6 +1629,26 @@
         }
         reportText += `*Note: Individual work log entries are shown for tasks with multiple work logs. WIP indicates work in progress. Subtasks are nested under parent tasks.*\n\n`;
         reportText += `---\n\n`;
+
+        // Add trend plot if enabled (for date grouping)
+        const showTrendPlots = document.getElementById('showTrendPlots')?.checked || preferences.showTrendPlots;
+        const trendPlotType = document.getElementById('trendPlotType')?.value || preferences.trendPlotType || 'line';
+        
+        if (showTrendPlots) {
+          const isDark = document.body.classList.contains('dark-theme');
+          const chartColor = getChartColor(isDark);
+          const sortedDates = Object.keys(tasksByDate).sort();
+          const trendData = generateTrendData(tasksByDate, sortedDates, isDark);
+          
+          // Only show chart if there's data
+          const hasData = trendData.some(d => d.value > 0);
+          if (hasData) {
+            const chartSvg = trendPlotType === 'bar' 
+              ? generateBarChart(trendData, { color: chartColor })
+              : generateLineChart(trendData, { color: chartColor });
+            reportText += `## Time Trend\n\n${chartSvg}\n\n`;
+          }
+        }
 
         // Sort dates
         const sortedDates = Object.keys(tasksByDate).sort();
@@ -1993,6 +2176,14 @@
         if (showTimeSpentEl) showTimeSpentEl.checked = preferences.showTimeSpent;
         if (showTotalTimeEl) showTotalTimeEl.checked = preferences.showTotalTime;
 
+        // Apply trend plot preferences
+        const showTrendPlotsEl = document.getElementById('showTrendPlots');
+        const trendPlotTypeEl = document.getElementById('trendPlotType');
+        const trendPlotOptionsEl = document.getElementById('trendPlotOptions');
+        if (showTrendPlotsEl) showTrendPlotsEl.checked = preferences.showTrendPlots;
+        if (trendPlotTypeEl) trendPlotTypeEl.value = preferences.trendPlotType || 'line';
+        if (trendPlotOptionsEl) trendPlotOptionsEl.style.display = preferences.showTrendPlots ? 'block' : 'none';
+
         // Apply table/output format preferences
         const outputFormatEl = document.getElementById('outputFormat');
         const tableSettingsContainerEl = document.getElementById('tableSettingsContainer');
@@ -2490,6 +2681,12 @@
           preferences.showTimeSpent = document.getElementById('showTimeSpent').checked;
           preferences.showTotalTime = document.getElementById('showTotalTime').checked;
 
+          // Save trend plot preferences
+          const showTrendPlotsEl = document.getElementById('showTrendPlots');
+          const trendPlotTypeEl = document.getElementById('trendPlotType');
+          preferences.showTrendPlots = showTrendPlotsEl ? showTrendPlotsEl.checked : false;
+          preferences.trendPlotType = trendPlotTypeEl ? trendPlotTypeEl.value : 'line';
+
           // Persist output format / table settings
           const outputFormatEl = document.getElementById('outputFormat');
           if (outputFormatEl) preferences.outputFormat = outputFormatEl.value || 'simple';
@@ -2746,6 +2943,8 @@
         'minTimeSpent',
         'showTimeSpent',
         'showTotalTime',
+        'showTrendPlots',
+        'trendPlotType',
       ];
 
       preferenceElements.forEach(elementId => {
@@ -2760,6 +2959,18 @@
         }
       });
 
+      // Show/hide trend plot options when toggle is clicked
+      const showTrendPlotsEl = document.getElementById('showTrendPlots');
+      const trendPlotOptionsEl = document.getElementById('trendPlotOptions');
+      if (showTrendPlotsEl) {
+        showTrendPlotsEl.addEventListener('change', (e) => {
+          if (trendPlotOptionsEl) {
+            trendPlotOptionsEl.style.display = e.target.checked ? 'block' : 'none';
+          }
+          preferencesHasChanges = true;
+        });
+      }
+
       // Output format / table specific listeners
       const outputFormatEl = document.getElementById('outputFormat');
       function updateDisplayOptionVisibility() {
@@ -2771,6 +2982,12 @@
             if (row) row.style.display = isTable ? 'none' : 'flex';
           }
         });
+        // Also show/hide trend plots option
+        const showTrendPlotsEl = document.getElementById('showTrendPlots');
+        if (showTrendPlotsEl) {
+          const row = showTrendPlotsEl.closest('.toggle-row');
+          if (row) row.style.display = isTable ? 'none' : 'flex';
+        }
       }
 
       if (outputFormatEl) {
