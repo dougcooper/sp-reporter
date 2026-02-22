@@ -581,6 +581,69 @@
         box-shadow: 0 0 0 3px var(--shadow);
       }
 
+      .report-view-toggle {
+        margin-bottom: 8px;
+      }
+
+      .report-view-toggle button {
+        padding: 6px 14px;
+        font-size: 13px;
+      }
+
+      .report-view-toggle button.secondary-btn {
+        background: var(--accent-color) !important;
+        color: white !important;
+      }
+
+      .report-view-toggle button:not(.secondary-btn) {
+        background: var(--bg-tertiary);
+        color: var(--text-secondary);
+        border: 1px solid var(--border-light);
+      }
+
+      .modal-report-preview {
+        background: var(--bg-code);
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        padding: 16px;
+        min-height: 400px;
+        max-height: 60vh;
+        overflow-y: auto;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        font-size: 14px;
+        line-height: 1.6;
+        white-space: pre-wrap;
+        color: var(--text-primary);
+      }
+
+      .modal-report-preview h1, .modal-report-preview h2, .modal-report-preview h3 {
+        color: var(--accent-color);
+        margin-top: 16px;
+        margin-bottom: 8px;
+      }
+
+      .modal-report-preview h1 { font-size: 20px; }
+      .modal-report-preview h2 { font-size: 17px; }
+      .modal-report-preview h3 { font-size: 15px; }
+
+      .modal-report-preview hr {
+        border: none;
+        border-top: 1px solid var(--border-color);
+        margin: 16px 0;
+      }
+
+      .modal-report-preview strong {
+        font-weight: 600;
+      }
+
+      .modal-report-preview code {
+        background: var(--bg-tertiary);
+        padding: 2px 6px;
+        border-radius: 3px;
+        font-family: 'Courier New', monospace;
+        font-size: 13px;
+      }
+
       /* Saved reports list */
       .saved-reports-section {
         margin-top: 24px;
@@ -790,7 +853,12 @@
         </div>
         <div class="modal-body">
           <input type="text" class="report-name-input" id="reportNameInput" placeholder="Report name (optional)" />
+          <div class="report-view-toggle" style="margin-bottom: 8px; display: flex; gap: 8px; align-items: center;">
+            <button id="viewEditBtn" class="secondary-btn" style="padding: 4px 12px; font-size: 12px;">📝 Edit</button>
+            <button id="viewPreviewBtn" style="padding: 4px 12px; font-size: 12px;">👁️ Preview</button>
+          </div>
           <textarea class="modal-report-content" id="modalReportContent"></textarea>
+          <div class="modal-report-preview" id="modalReportPreview" style="display: none; background: var(--bg-code); border: 1px solid var(--border-color); border-radius: 4px; padding: 16px; min-height: 400px; max-height: 60vh; overflow-y: auto; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 14px; line-height: 1.6; white-space: pre-wrap;"></div>
         </div>
         <div class="modal-footer">
           <button id="modalCopyBtn" class="secondary-btn">📋 Copy to Clipboard</button>
@@ -871,9 +939,11 @@
             <div id="trendPlotOptions" style="display: none; margin-top: 12px; margin-left: 8px;">
               <div class="input-field" style="margin-bottom: 12px;">
                 <label for="trendPlotType">Chart type</label>
-                <select id="trendPlotType" style="width: 150px; padding: 6px; border-radius: 4px; border: 1px solid var(--border-light); background: var(--bg-secondary); color: var(--text-primary);">
-                  <option value="line">Line Chart</option>
-                  <option value="bar">Bar Chart</option>
+                <select id="trendPlotType" style="width: 180px; padding: 6px; border-radius: 4px; border: 1px solid var(--border-light); background: var(--bg-secondary); color: var(--text-primary);">
+                  <option value="line">Line Chart (minutes)</option>
+                  <option value="bar">Bar Chart (minutes)</option>
+                  <option value="hours">Line Chart (hours)</option>
+                  <option value="overdue">Overdue per day</option>
                 </select>
               </div>
             </div>
@@ -1254,9 +1324,50 @@
         return data;
       }
 
+      // Generate trend data for hours (total hours logged per day)
+      function generateHoursTrendData(tasksByDate, dateRange, isDark) {
+        const data = [];
+        dateRange.forEach(date => {
+          const tasks = tasksByDate[date] || [];
+          // Sum up time spent for each date (in hours)
+          let totalHours = 0;
+          tasks.forEach(task => {
+            if (task.timeSpentOnDay && task.timeSpentOnDay[date]) {
+              totalHours += task.timeSpentOnDay[date] / 3600000; // Convert ms to hours
+            }
+          });
+          // Format label as short date
+          const dateObj = new Date(date + 'T00:00:00');
+          const label = `${dateObj.getMonth() + 1}/${dateObj.getDate()}`;
+          // Round to 1 decimal place
+          data.push({ label, value: Math.round(totalHours * 10) / 10 });
+        });
+        return data;
+      }
+
+      // Generate trend data for overdue tasks per day
+      function generateOverdueTrendData(entriesByDate, dateRange, isDark) {
+        const data = [];
+        dateRange.forEach(date => {
+          const entries = entriesByDate[date] || [];
+          // Count overdue tasks for this date
+          const overdueCount = entries.filter(e => e.status === 'OVERDUE').length;
+          // Format label as short date
+          const dateObj = new Date(date + 'T00:00:00');
+          const label = `${dateObj.getMonth() + 1}/${dateObj.getDate()}`;
+          data.push({ label, value: overdueCount });
+        });
+        return data;
+      }
+
       // Get chart colors based on theme
       function getChartColor(isDark) {
         return isDark ? '#42a5f5' : '#1976d2';
+      }
+
+      // Get overdue chart color (red tones)
+      function getOverdueChartColor(isDark) {
+        return isDark ? '#ef5350' : '#d32f2f';
       }
 
       // Get theme-aware chart options (bg, grid, text colors)
@@ -1658,18 +1769,46 @@
         
         if (showTrendPlots) {
           const isDark = document.body.classList.contains('dark-theme');
-          const chartColor = getChartColor(isDark);
           const themeOpts = getChartThemeOptions(isDark);
-          const trendData = generateTrendData(tasksByDate, sortedDates, isDark);
+          let trendData, chartColor, chartTitle;
+          
+          if (trendPlotType === 'hours') {
+            // Hours per day chart
+            trendData = generateHoursTrendData(tasksByDate, sortedDates, isDark);
+            chartColor = getChartColor(isDark);
+            chartTitle = 'Total Hours Logged per Day';
+          } else if (trendPlotType === 'overdue') {
+            // Overdue per day chart - need to aggregate entries by date with status
+            const entriesByDate = {};
+            sortedDates.forEach(d => { entriesByDate[d] = []; });
+            sortedDates.forEach(date => {
+              const tasks = tasksByDate[date] || [];
+              // Collect overdue tasks from this date
+              tasks.forEach(task => {
+                if (task.isOverdue) {
+                  entriesByDate[date].push({ status: 'OVERDUE' });
+                }
+              });
+            });
+            trendData = generateOverdueTrendData(entriesByDate, sortedDates, isDark);
+            chartColor = getOverdueChartColor(isDark);
+            chartTitle = 'Overdue Tasks per Day';
+          } else {
+            // Default: minutes per day
+            trendData = generateTrendData(tasksByDate, sortedDates, isDark);
+            chartColor = getChartColor(isDark);
+            chartTitle = 'Time Trend';
+          }
           
           // Only show chart if there's data
           const hasData = trendData.some(d => d.value > 0);
           if (hasData) {
             const chartOpts = { color: chartColor, ...themeOpts };
-            const chartSvg = trendPlotType === 'bar' 
+            const isBarChart = trendPlotType === 'bar';
+            const chartSvg = isBarChart
               ? generateBarChart(trendData, chartOpts)
               : generateLineChart(trendData, chartOpts);
-            reportText += `## Time Trend\n\n${chartSvg}\n\n`;
+            reportText += `## ${chartTitle}\n\n${chartSvg}\n\n`;
           }
         }
 
@@ -2039,7 +2178,92 @@
         reportNameInput.value = currentReport.name || '';
         originalReportContent = reportText; // Store original content for comparison
         reportHasChanges = false; // Reset change tracking when opening modal
+        
+        // Render preview with HTML (markdown + SVG)
+        const previewEl = document.getElementById('modalReportPreview');
+        if (previewEl) {
+          previewEl.innerHTML = convertMarkdownToHtml(reportText);
+        }
+        
+        // Show edit view by default
+        const editBtn = document.getElementById('viewEditBtn');
+        const previewBtn = document.getElementById('viewPreviewBtn');
+        if (editBtn && previewBtn) {
+          editBtn.classList.add('secondary-btn');
+          previewBtn.classList.remove('secondary-btn');
+        }
+        modalReportContent.style.display = 'block';
+        if (previewEl) previewEl.style.display = 'none';
+        
         reportModal.classList.add('show');
+      }
+
+      // Convert basic markdown to HTML (for preview with SVG rendering)
+      function convertMarkdownToHtml(markdown) {
+        let html = markdown;
+        
+        // Escape HTML special characters first (but preserve our SVG)
+        // Extract SVGs first
+        const svgRegex = /<svg[\s\S]*?<\/svg>/gi;
+        const svgs = [];
+        html = html.replace(svgRegex, (match) => {
+          svgs.push(match);
+          return `___SVG_PLACEHOLDER_${svgs.length - 1}___`;
+        });
+        
+        // Escape HTML in remaining text
+        html = html.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        
+        // Restore SVGs as actual HTML
+        html = html.replace(/___SVG_PLACEHOLDER_(\d+)___/g, (match, index) => {
+          return svgs[parseInt(index)] || '';
+        });
+        
+        // Convert markdown headers
+        html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+        html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+        html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+        
+        // Convert bold
+        html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+        
+        // Convert italic
+        html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+        
+        // Convert inline code
+        html = html.replace(/`(.+?)`/g, '<code>$1</code>');
+        
+        // Convert horizontal rule
+        html = html.replace(/^---$/gm, '<hr/>');
+        
+        // Convert line breaks to <br>
+        html = html.replace(/\n/g, '<br/>');
+        
+        return html;
+      }
+
+      // Toggle between edit and preview modes
+      function toggleReportView(mode) {
+        const editBtn = document.getElementById('viewEditBtn');
+        const previewBtn = document.getElementById('viewPreviewBtn');
+        
+        if (mode === 'preview') {
+          // Update preview with current content
+          const previewEl = document.getElementById('modalReportPreview');
+          if (previewEl) {
+            previewEl.innerHTML = convertMarkdownToHtml(modalReportContent.value);
+          }
+          modalReportContent.style.display = 'none';
+          if (previewEl) previewEl.style.display = 'block';
+          if (editBtn) editBtn.classList.remove('secondary-btn');
+          if (previewBtn) previewBtn.classList.add('secondary-btn');
+        } else {
+          modalReportContent.style.display = 'block';
+          const previewEl = document.getElementById('modalReportPreview');
+          if (previewEl) previewEl.style.display = 'none';
+          if (editBtn) editBtn.classList.add('secondary-btn');
+          if (previewBtn) previewBtn.classList.remove('secondary-btn');
+        }
       }
 
       // Hide report modal
@@ -2545,6 +2769,70 @@
         reportText += `**Date Range:** ${formatDateDisplay(formatDate(startDate))} - ${formatDateDisplay(formatDate(endDate))}  \n`;
         reportText += `**Generated:** ${new Date().toLocaleString()}  \n`;
         reportText += `**Total Tasks:** ${processedTaskIds.size}\n\n`;
+
+        // Add trend plot if enabled (works for table mode too)
+        const showTrendPlots = document.getElementById('showTrendPlots')?.checked || preferences.showTrendPlots;
+        const trendPlotType = document.getElementById('trendPlotType')?.value || preferences.trendPlotType || 'line';
+        
+        if (showTrendPlots) {
+          const isDark = document.body.classList.contains('dark-theme');
+          const themeOpts = getChartThemeOptions(isDark);
+          
+          // Generate trend data from entries (aggregate by date)
+          const dateRange = getDateRange(formatDate(startDate), formatDate(endDate));
+          const entriesByDate = {};
+          dateRange.forEach(d => { entriesByDate[d] = []; });
+          entries.forEach(entry => {
+            if (entry.date && entriesByDate[entry.date]) {
+              entriesByDate[entry.date].push(entry);
+            }
+          });
+          
+          let trendData = generateTrendData(entriesByDate, dateRange, isDark);
+          let chartColor = getChartColor(isDark);
+          let chartTitle = 'Time Trend';
+          
+          let chartColor, chartTitle;
+          if (trendPlotType === 'hours') {
+            // Hours per day chart - recalculate with hours
+            trendData.length = 0; // Clear and repopulate
+            dateRange.forEach(date => {
+              const dayEntries = entriesByDate[date] || [];
+              let totalHours = 0;
+              dayEntries.forEach(entry => {
+                if (entry.timeMinutes) {
+                  totalHours += entry.timeMinutes / 60;
+                }
+              });
+              const dateObj = new Date(date + 'T00:00:00');
+              const label = `${dateObj.getMonth() + 1}/${dateObj.getDate()}`;
+              trendData.push({ label, value: Math.round(totalHours * 10) / 10 });
+            });
+            chartColor = getChartColor(isDark);
+            chartTitle = 'Total Hours Logged per Day';
+          } else if (trendPlotType === 'overdue') {
+            // Overdue per day chart
+            const overdueData = generateOverdueTrendData(entriesByDate, dateRange, isDark);
+            trendData.length = 0; // Replace with overdue data
+            overdueData.forEach(d => trendData.push(d));
+            chartColor = getOverdueChartColor(isDark);
+            chartTitle = 'Overdue Tasks per Day';
+          } else {
+            chartColor = getChartColor(isDark);
+            chartTitle = 'Time Trend';
+          }
+          
+          // Only show chart if there's data
+          const hasData = trendData.some(d => d.value > 0);
+          if (hasData) {
+            const chartOpts = { color: chartColor, ...themeOpts };
+            const chartSvg = trendPlotType === 'bar' 
+              ? generateBarChart(trendData, chartOpts)
+              : generateLineChart(trendData, chartOpts);
+            reportText += `## ${chartTitle}\n\n${chartSvg}\n\n`;
+          }
+        }
+
         // delegate row construction to helper
         reportText += renderTableRows(groups, cols, showTimeSpent, headerLabel);
         
@@ -2941,6 +3229,16 @@
       deleteSelectedBtn.addEventListener('click', deleteSelectedReports);
       combineSelectedBtn.addEventListener('click', combineSelectedReports);
 
+      // Edit/Preview toggle buttons
+      const viewEditBtn = document.getElementById('viewEditBtn');
+      const viewPreviewBtn = document.getElementById('viewPreviewBtn');
+      if (viewEditBtn) {
+        viewEditBtn.addEventListener('click', () => toggleReportView('edit'));
+      }
+      if (viewPreviewBtn) {
+        viewPreviewBtn.addEventListener('click', () => toggleReportView('preview'));
+      }
+
       // Track report content changes
       modalReportContent.addEventListener('input', () => {
         reportHasChanges = modalReportContent.value !== originalReportContent;
@@ -3136,8 +3434,13 @@
       window.generateLineChart = generateLineChart;
       window.generateBarChart = generateBarChart;
       window.generateTrendData = generateTrendData;
+      window.generateHoursTrendData = generateHoursTrendData;
+      window.generateOverdueTrendData = generateOverdueTrendData;
       window.getChartColor = getChartColor;
+      window.getOverdueChartColor = getOverdueChartColor;
       window.getChartThemeOptions = getChartThemeOptions;
+      window.convertMarkdownToHtml = convertMarkdownToHtml;
+      window.toggleReportView = toggleReportView;
 
       document.addEventListener("DOMContentLoaded", function() {
         // Load saved reports on initialization
