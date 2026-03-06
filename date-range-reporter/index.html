@@ -1329,8 +1329,8 @@
                 }).sort()
               : [];
             
-            // If task has multiple work logs, show each work log as a separate entry
-            if (workLogsInRange.length > 1) {
+            // If task has one or more work logs, show each work log as a separate entry
+            if (workLogsInRange.length >= 1) {
               workLogsInRange.forEach(workLogDate => {
                 if (!tasksByDate[workLogDate]) {
                   tasksByDate[workLogDate] = [];
@@ -1352,7 +1352,7 @@
                 processedTasks.add(task.id);
               }
             }
-            // Task with one or no work logs - show normally on completion date if in range
+            // Task with no work logs in range - show normally on completion date if in range
             else if (isCompletionInRange || subtasksWithLogsInRange.length > 0) {
               if (!tasksByDate[taskDateStr]) {
                 tasksByDate[taskDateStr] = [];

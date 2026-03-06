@@ -520,6 +520,73 @@ describe('Date Range Reporter', () => {
       expect(reportText).toContain('**Total Tasks:** 1');
     });
 
+    it('should show task on its single work log date, not the completion date', async () => {
+      const tasks = [
+        {
+          id: 'task-single-wl',
+          title: 'Single Work Log Task',
+          isDone: true,
+          doneOn: new Date('2024-01-17T15:00:00').getTime(), // Completed Jan 17
+          timeSpentOnDay: {
+            '2024-01-15': 3600000 // Only worked on Jan 15
+          }
+        }
+      ];
+
+      mockPluginAPI.getTasks.mockResolvedValue(tasks);
+
+      const startInput = document.getElementById('startDate');
+      const endInput = document.getElementById('endDate');
+
+      startInput.value = '2024-01-15';
+      endInput.value = '2024-01-17';
+
+      await window.generateReport();
+
+      const modalContent = document.getElementById('modalReportContent');
+      const reportText = modalContent.value;
+
+      // Task should appear on its work log date (Jan 15), not just the completion date (Jan 17)
+      expect(reportText).toContain('January 15, 2024');
+      expect(reportText).toContain('Single Work Log Task');
+      // Should be marked WIP because the work log date is before the completion date
+      expect(reportText).toContain('WIP');
+      expect(reportText).toContain('**Total Tasks:** 1');
+    });
+
+    it('should show task on its single work log date when completed outside range', async () => {
+      const tasks = [
+        {
+          id: 'task-single-wl-outside',
+          title: 'Task Completed After Range',
+          isDone: true,
+          doneOn: new Date('2024-01-25T15:00:00').getTime(), // Completed outside range
+          timeSpentOnDay: {
+            '2024-01-15': 3600000 // Worked on Jan 15 (inside range)
+          }
+        }
+      ];
+
+      mockPluginAPI.getTasks.mockResolvedValue(tasks);
+
+      const startInput = document.getElementById('startDate');
+      const endInput = document.getElementById('endDate');
+
+      startInput.value = '2024-01-15';
+      endInput.value = '2024-01-17';
+
+      await window.generateReport();
+
+      const modalContent = document.getElementById('modalReportContent');
+      const reportText = modalContent.value;
+
+      // Task should appear on Jan 15 (work log date) even though completion is outside range
+      expect(reportText).toContain('January 15, 2024');
+      expect(reportText).toContain('Task Completed After Range');
+      expect(reportText).toContain('WIP');
+      expect(reportText).toContain('**Total Tasks:** 1');
+    });
+
     it('should nest subtasks under parent tasks in date-grouped report', async () => {
       const parentTask = {
         id: 'parent-1',
