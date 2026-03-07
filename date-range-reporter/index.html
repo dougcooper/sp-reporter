@@ -1347,6 +1347,21 @@
                 tasksByDate[workLogDate].push(taskEntry);
               });
               
+              // Also show on the completion date if it is in range and not already
+              // covered by one of the work log entries above
+              if (isCompletionInRange && !workLogsInRange.includes(taskDateStr)) {
+                if (!tasksByDate[taskDateStr]) {
+                  tasksByDate[taskDateStr] = [];
+                }
+                const completionEntry = {
+                  ...task,
+                  isInProgress: false,
+                  workLogDate: taskDateStr,
+                  subtasks: filterSubtasksForReport(parentChildren[task.id] || [], formatDate(startDate), formatDate(endDate), minTimeMs)
+                };
+                tasksByDate[taskDateStr].push(completionEntry);
+              }
+
               if (!processedTasks.has(task.id)) {
                 totalTasks++;
                 processedTasks.add(task.id);
