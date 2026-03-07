@@ -282,17 +282,52 @@ describe('Date Range Reporter', () => {
       expect(reportText).toContain('January 15, 2024');
       expect(reportText).toContain('January 16, 2024');
       expect(reportText).toContain('WIP');
-      // Should ALSO appear on the completion date without WIP
+      // Should ALSO appear on the completion date with DONE indicator
       expect(reportText).toContain('January 17, 2024');
       expect(reportText).toContain('Finished Task');
       // Only counted once
       expect(reportText).toContain('**Total Tasks:** 1');
 
-      // Verify no WIP on the Jan 17 entry
+      // Verify DONE ✅ on the Jan 17 entry (not WIP)
       const jan17Section = reportText.split(/## [A-Za-z]+, January 17, 2024/)[1];
       const firstTaskLine = jan17Section.split('\n').find(line => line.trim().startsWith('- '));
       expect(firstTaskLine).toBeDefined();
+      expect(firstTaskLine).toContain('DONE');
       expect(firstTaskLine).not.toContain('WIP');
+    });
+
+    it('should mark completed tasks with DONE status', async () => {
+      const tasks = [
+        {
+          id: 'task-done',
+          title: 'Completed Task',
+          isDone: true,
+          doneOn: new Date('2024-01-15T14:00:00').getTime(),
+          timeSpentOnDay: {
+            '2024-01-15': 7200000 // 2 hours, same day as completion
+          }
+        }
+      ];
+
+      mockPluginAPI.getTasks.mockResolvedValue(tasks);
+
+      const startInput = document.getElementById('startDate');
+      const endInput = document.getElementById('endDate');
+
+      startInput.value = '2024-01-15';
+      endInput.value = '2024-01-15';
+
+      await window.generateReport();
+
+      const modalContent = document.getElementById('modalReportContent');
+      const reportText = modalContent.value;
+
+      expect(reportText).toContain('Completed Task');
+      // The task line should contain DONE ✅ and not WIP
+      const taskLine = reportText.split('\n').find(line => line.trim().startsWith('- Completed Task'));
+      expect(taskLine).toBeDefined();
+      expect(taskLine).toContain('DONE');
+      expect(taskLine).not.toContain('WIP');
     });
 
     it('should mark tasks as WIP when not completed but have work logs', async () => {
@@ -593,19 +628,20 @@ describe('Date Range Reporter', () => {
       // Task should appear on its work log date (Jan 15) with WIP indicator
       expect(reportText).toContain('January 15, 2024');
       expect(reportText).toContain('WIP');
-      // Task should ALSO appear on the completion date (Jan 17) without WIP
+      // Task should ALSO appear on the completion date (Jan 17) with DONE indicator
       expect(reportText).toContain('January 17, 2024');
       expect(reportText).toContain('Single Work Log Task');
       // Only counted once in the total
       expect(reportText).toContain('**Total Tasks:** 1');
 
-      // Verify no WIP on the Jan 17 entry by checking the Jan 17 section
+      // Verify DONE ✅ on the Jan 17 entry (not WIP)
       // Use the section header (## ..., January 17) to avoid matching the date range header
       const jan17Section = reportText.split(/## [A-Za-z]+, January 17, 2024/)[1];
       expect(jan17Section).toBeDefined();
-      // The first task line in the Jan 17 section should not contain WIP
+      // The first task line in the Jan 17 section should contain DONE and not WIP
       const firstTaskLine = jan17Section.split('\n').find(line => line.trim().startsWith('- '));
       expect(firstTaskLine).toBeDefined();
+      expect(firstTaskLine).toContain('DONE');
       expect(firstTaskLine).not.toContain('WIP');
     });
 

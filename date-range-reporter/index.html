@@ -1479,7 +1479,7 @@
         if (excludedCountRef.count > 0) {
           reportText += `**Excluded Work Logs:** ${excludedCountRef.count} (below ${document.getElementById('minTimeSpent').value} min threshold)\n`;
         }
-        reportText += `*Note: Individual work log entries are shown for tasks with multiple work logs. WIP indicates work in progress. Subtasks are nested under parent tasks.*\n\n`;
+        reportText += `*Note: Individual work log entries are shown for tasks with multiple work logs. WIP indicates work in progress. DONE indicates a completed task. Subtasks are nested under parent tasks.*\n\n`;
         reportText += `---\n\n`;
 
         // Sort dates
@@ -1511,6 +1511,8 @@
                 statusIndicator = ' OVERDUE ⚠️';
               } else if (task.isInProgress) {
                 statusIndicator = ' WIP';
+              } else if (task.isDone) {
+                statusIndicator = ' DONE ✅';
               }
               
               // Optionally show project name
@@ -1527,7 +1529,7 @@
                   const subtaskTimeSpent = (document.getElementById('showTimeSpent').checked && subtask.timeSpentOnDay && subtask.timeSpentOnDay[subtaskDateForTimeSpent])
                     ? ` *(${Math.round(subtask.timeSpentOnDay[subtaskDateForTimeSpent] / 60000)} min)*`
                     : '';
-                  const subtaskStatusIndicator = subtask.isInProgress ? ' WIP' : '';
+                  const subtaskStatusIndicator = subtask.isInProgress ? ' WIP' : (subtask.isDone ? ' DONE ✅' : '');
                   const subtaskProjectName = subtask.projectId && projects[subtask.projectId]
                     ? ` [${projects[subtask.projectId]}]`
                     : '';
@@ -1716,6 +1718,8 @@
                 statusIndicator = ' OVERDUE ⚠️';
               } else if (task.isInProgress) {
                 statusIndicator = ' WIP';
+              } else if (task.isDone) {
+                statusIndicator = ' DONE ✅';
               }
               
               // For project grouping, don't show dates
@@ -1733,7 +1737,7 @@
                 task.subtasks.forEach(subtask => {
                   const subtaskTimeMinutes = Math.round(subtask.totalTimeSpent / 60000);
                   const subtaskTimeSpent = (document.getElementById('showTimeSpent').checked && subtaskTimeMinutes > 0) ? ` *(${formatTime(subtaskTimeMinutes)})*` : '';
-                  const subtaskStatusIndicator = subtask.isInProgress ? ' WIP' : '';
+                  const subtaskStatusIndicator = subtask.isInProgress ? ' WIP' : (subtask.isDone ? ' DONE ✅' : '');
                   
                   
                   reportText += `  - ${subtask.title}${subtaskTimeSpent}${subtaskStatusIndicator}\n`;
@@ -2257,25 +2261,25 @@
             if (workLogsInRange.length > 0) {
               workLogsInRange.forEach(workLogDate => {
                 const timeMinutes = Math.round((task.timeSpentOnDay && task.timeSpentOnDay[workLogDate] ? task.timeSpentOnDay[workLogDate] / 60000 : 0));
-                const status = workLogDate !== taskDateStr ? 'WIP' : '';
+                const status = workLogDate !== taskDateStr ? 'WIP' : 'DONE';
                 pushEntry({ date: workLogDate, project: projects[task.projectId] || '', title: task.title, timeMinutes, status, notes: task.notes || '', taskId: task.id });
 
                 const filteredSubtasks = filterSubtasksForReport(subtasks, formatDate(startDate), formatDate(endDate), minTimeMs);
                 filteredSubtasks.forEach(subtask => {
                   const subDate = subtask.workLogDate || workLogDate;
                   const subTimeMinutes = subtask.timeSpentOnDay && subtask.timeSpentOnDay[subDate] ? Math.round(subtask.timeSpentOnDay[subDate] / 60000) : 0;
-                  pushEntry({ date: subDate, project: projects[subtask.projectId] || projects[task.projectId] || '', title: '↳ ' + subtask.title, timeMinutes: subTimeMinutes, status: subtask.isInProgress ? 'WIP' : '', notes: subtask.notes || '', taskId: task.id });
+                  pushEntry({ date: subDate, project: projects[subtask.projectId] || projects[task.projectId] || '', title: '↳ ' + subtask.title, timeMinutes: subTimeMinutes, status: subtask.isInProgress ? 'WIP' : (subtask.isDone ? 'DONE' : ''), notes: subtask.notes || '', taskId: task.id });
                 });
               });
             } else if ((taskDateStr >= formatDate(startDate) && taskDateStr <= formatDate(endDate)) || subtasksWithLogsInRange.length > 0) {
               const timeMinutes = (task.timeSpentOnDay && task.timeSpentOnDay[taskDateStr]) ? Math.round(task.timeSpentOnDay[taskDateStr] / 60000) : 0;
-              pushEntry({ date: taskDateStr, project: projects[task.projectId] || '', title: task.title, timeMinutes, status: '', notes: task.notes || '', taskId: task.id });
+              pushEntry({ date: taskDateStr, project: projects[task.projectId] || '', title: task.title, timeMinutes, status: 'DONE', notes: task.notes || '', taskId: task.id });
 
               const filteredSubtasks = filterSubtasksForReport(subtasks, formatDate(startDate), formatDate(endDate), minTimeMs);
               filteredSubtasks.forEach(subtask => {
                 const subDate = subtask.workLogDate || taskDateStr;
                 const subTimeMinutes = subtask.timeSpentOnDay && subtask.timeSpentOnDay[subDate] ? Math.round(subtask.timeSpentOnDay[subDate] / 60000) : 0;
-                pushEntry({ date: subDate, project: projects[subtask.projectId] || projects[task.projectId] || '', title: '↳ ' + subtask.title, timeMinutes: subTimeMinutes, status: subtask.isInProgress ? 'WIP' : '', notes: subtask.notes || '', taskId: task.id });
+                pushEntry({ date: subDate, project: projects[subtask.projectId] || projects[task.projectId] || '', title: '↳ ' + subtask.title, timeMinutes: subTimeMinutes, status: subtask.isInProgress ? 'WIP' : (subtask.isDone ? 'DONE' : ''), notes: subtask.notes || '', taskId: task.id });
               });
             }
           } else if (hasWorkLogs || subtasksWithLogsInRange.length > 0) {
