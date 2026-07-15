@@ -65,6 +65,36 @@ describe('Date Range Reporter', () => {
     });
   });
 
+  // Persisted data is stored as a compressed envelope { v: 2, c: <base64> }.
+  // Decode it back to its original value for assertions.
+  function decodePersisted(raw) {
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (parsed && parsed.v === 2 && typeof parsed.c === 'string') {
+      return JSON.parse(window.LZString.decompressFromBase64(parsed.c));
+    }
+    return parsed;
+  }
+
+  // Reports are sharded across keyed entries: a metadata index under key
+  // 'index' and each report's content under 'report:<id>'. These helpers find
+  // the most recent persisted payload for a given key.
+  function persistedRawFor(key) {
+    const calls = mockPluginAPI.persistDataSynced.mock.calls;
+    for (let i = calls.length - 1; i >= 0; i--) {
+      const k = calls[i][1];
+      const matches = key === undefined ? (k === undefined || k === '') : k === key;
+      if (matches) return calls[i][0];
+    }
+    return undefined;
+  }
+  function persistedIndex() {
+    return decodePersisted(persistedRawFor('index'));
+  }
+  function persistedContent(id) {
+    return decodePersisted(persistedRawFor('report:' + id));
+  }
+
   describe('Date Utilities', () => {
     it('should have date utility functions', () => {
       expect(typeof window.formatDate).toBe('function');
@@ -1323,7 +1353,7 @@ describe('Date Range Reporter', () => {
       await window.saveReport();
 
       expect(mockPluginAPI.persistDataSynced).toHaveBeenCalled();
-      const savedData = JSON.parse(mockPluginAPI.persistDataSynced.mock.calls[0][0]);
+      const savedData = persistedIndex();
       expect(savedData.reports).toHaveLength(1);
       expect(savedData.reports[0].name).toContain('Report');
       expect(savedData.reports[0].name).toContain('Monday, January 15, 2024');
@@ -1355,7 +1385,7 @@ describe('Date Range Reporter', () => {
       await window.saveReport();
 
       expect(mockPluginAPI.persistDataSynced).toHaveBeenCalled();
-      const savedData = JSON.parse(mockPluginAPI.persistDataSynced.mock.calls[0][0]);
+      const savedData = persistedIndex();
       expect(savedData.reports).toHaveLength(1);
       expect(savedData.reports[0].name).toBe('My Custom Report');
     });
@@ -1377,7 +1407,7 @@ describe('Date Range Reporter', () => {
       await window.loadReports();
 
       // View the report to set up editing mode
-      window.viewReport('123');
+      await window.viewReport('123');
 
       const modalContent = document.getElementById('modalReportContent');
       modalContent.value = 'Updated content';
@@ -1388,10 +1418,11 @@ describe('Date Range Reporter', () => {
       await window.saveReport();
 
       expect(mockPluginAPI.persistDataSynced).toHaveBeenCalled();
-      const savedData = JSON.parse(mockPluginAPI.persistDataSynced.mock.calls[0][0]);
+      const savedData = persistedIndex();
       expect(savedData.reports).toHaveLength(1);
       expect(savedData.reports[0].name).toBe('Updated Report');
-      expect(savedData.reports[0].content).toBe('Updated content');
+      expect(savedData.reports[0].content).toBeUndefined(); // content is sharded out of the index
+      expect(persistedContent('123')).toBe('Updated content');
       expect(savedData.reports[0].updatedAt).toBeDefined();
     });
 
@@ -1482,7 +1513,7 @@ describe('Date Range Reporter', () => {
       mockPluginAPI.loadSyncedData.mockResolvedValue(JSON.stringify({ reports: mockReports }));
       await window.loadReports();
 
-      window.viewReport('1');
+      await window.viewReport('1');
 
       const modal = document.getElementById('reportModal');
       expect(modal.classList.contains('show')).toBe(true);
@@ -1679,7 +1710,7 @@ describe('Date Range Reporter', () => {
       await window.loadReports();
 
       // View the saved report
-      window.viewReport('1');
+      await window.viewReport('1');
 
       const modalTitle = document.getElementById('modalTitle');
       expect(modalTitle.textContent).toBe('Edit Saved Report');
@@ -1776,7 +1807,7 @@ describe('Date Range Reporter', () => {
       await window.loadReports();
 
       // View the report (this sets up currentReport properly)
-      window.viewReport('1');
+      await window.viewReport('1');
       
       const modal = document.getElementById('reportModal');
       expect(modal.classList.contains('show')).toBe(true);
@@ -1814,7 +1845,7 @@ describe('Date Range Reporter', () => {
       await window.loadReports();
 
       // View the report
-      window.viewReport('1');
+      await window.viewReport('1');
       
       const modal = document.getElementById('reportModal');
       
@@ -1851,7 +1882,7 @@ describe('Date Range Reporter', () => {
       await window.loadReports();
 
       // View the report
-      window.viewReport('1');
+      await window.viewReport('1');
       
       const modal = document.getElementById('reportModal');
       
@@ -1882,7 +1913,7 @@ describe('Date Range Reporter', () => {
       await window.loadReports();
 
       // View the report
-      window.viewReport('1');
+      await window.viewReport('1');
       
       const modal = document.getElementById('reportModal');
       
@@ -1921,7 +1952,7 @@ describe('Date Range Reporter', () => {
       await window.loadReports();
 
       // View the report
-      window.viewReport('1');
+      await window.viewReport('1');
       
       const modal = document.getElementById('reportModal');
       
@@ -2188,7 +2219,7 @@ describe('Date Range Reporter', () => {
       await window.saveReport();
 
       expect(mockPluginAPI.persistDataSynced).toHaveBeenCalled();
-      const savedData = JSON.parse(mockPluginAPI.persistDataSynced.mock.calls[0][0]);
+      const savedData = persistedIndex();
       expect(savedData.preferences).toBeDefined();
       expect(savedData.preferences.groupBy).toBeDefined();
       expect(savedData.preferences.minTimeSpent).toBeDefined();
@@ -2529,7 +2560,7 @@ describe('Date Range Reporter', () => {
       await window.savePreferences();
 
       expect(mockPluginAPI.persistDataSynced).toHaveBeenCalled();
-      const savedData = JSON.parse(mockPluginAPI.persistDataSynced.mock.calls[0][0]);
+      const savedData = persistedIndex();
       expect(savedData.preferences.showTimeSpent).toBe(false);
       expect(savedData.preferences.showTotalTime).toBe(false);
     });
@@ -2739,7 +2770,7 @@ describe('Date Range Reporter', () => {
 
       // Verify it was saved
       expect(mockPluginAPI.persistDataSynced).toHaveBeenCalled();
-      const savedData = JSON.parse(mockPluginAPI.persistDataSynced.mock.calls[0][0]);
+      const savedData = persistedIndex();
       expect(savedData.reports).toHaveLength(3); // Original 2 + new combined report
       expect(savedData.reports[0].name).toBe('My Combined Report');
     });
@@ -3279,6 +3310,134 @@ describe('Date Range Reporter', () => {
       const firstIndex = reportText.indexOf('Big Task');
       const secondIndex = reportText.indexOf('Small Task');
       expect(firstIndex).toBeLessThan(secondIndex);
+    });
+  });
+
+  describe('Storage Compression & Limits', () => {
+    beforeEach(() => {
+      mockPluginAPI.persistDataSynced.mockClear();
+      mockPluginAPI.persistDataSynced.mockResolvedValue(undefined);
+      mockPluginAPI.loadSyncedData.mockClear();
+      mockPluginAPI.loadSyncedData.mockResolvedValue(null);
+      mockPluginAPI.showSnack.mockClear();
+    });
+
+    it('shards storage: metadata index + a compressed per-report content key', async () => {
+      mockPluginAPI.getTasks.mockResolvedValue([
+        { id: 't1', title: 'Task', isDone: true, doneOn: new Date('2024-01-15T14:00:00').getTime(), timeSpentOnDay: { '2024-01-15': 3600000 } }
+      ]);
+      document.getElementById('startDate').value = '2024-01-15';
+      document.getElementById('endDate').value = '2024-01-15';
+      await window.generateReport();
+      document.getElementById('reportNameInput').value = 'Roundtrip Report';
+      await window.saveReport();
+
+      // The index entry (key 'index') holds metadata only — no content.
+      const indexRaw = persistedRawFor('index');
+      expect(JSON.parse(indexRaw).v).toBe(2); // compressed envelope
+      expect(indexRaw).not.toContain('Roundtrip Report'); // compressed, not plaintext
+      const index = persistedIndex();
+      expect(index.reports).toHaveLength(1);
+      expect(index.reports[0].name).toBe('Roundtrip Report');
+      expect(index.reports[0].content).toBeUndefined();
+
+      // The content lives under its own key 'report:<id>'.
+      const id = index.reports[0].id;
+      expect(persistedContent(id)).toContain('# ');
+    });
+
+    it('round-trips: sharded entries load back and view renders the content', async () => {
+      mockPluginAPI.getTasks.mockResolvedValue([
+        { id: 't1', title: 'Task', isDone: true, doneOn: new Date('2024-01-15T14:00:00').getTime(), timeSpentOnDay: { '2024-01-15': 3600000 } }
+      ]);
+      document.getElementById('startDate').value = '2024-01-15';
+      document.getElementById('endDate').value = '2024-01-15';
+      await window.generateReport();
+      document.getElementById('reportNameInput').value = 'Roundtrip Report';
+      await window.saveReport();
+
+      const id = persistedIndex().reports[0].id;
+      const indexRaw = persistedRawFor('index');
+      const contentRaw = persistedRawFor('report:' + id);
+
+      // Reload from the exact persisted entries, keyed by the storage key.
+      mockPluginAPI.loadSyncedData.mockImplementation((key) =>
+        Promise.resolve(key === 'index' ? indexRaw : key === 'report:' + id ? contentRaw : null));
+      await window.loadReports();
+      expect(document.getElementById('savedReportsList').innerHTML).toContain('Roundtrip Report');
+
+      // Viewing lazily loads the content key and renders it.
+      await window.viewReport(id);
+      expect(document.getElementById('modalReportContent').value).toContain('# ');
+    });
+
+    it('migrates a legacy single-blob store into sharded entries', async () => {
+      const legacyReport = { id: 'legacy1', name: 'Legacy Report', content: '# Legacy content body', startDate: '2024-01-15', endDate: '2024-01-15', totalTasks: 3, savedAt: new Date('2024-01-16').toISOString() };
+      const legacyBlob = JSON.stringify({ v: 2, c: window.LZString.compressToBase64(JSON.stringify({ reports: [legacyReport], preferences: { groupBy: 'date' } })) });
+      // No index yet; the legacy blob lives under the default (no-key) entry.
+      mockPluginAPI.loadSyncedData.mockImplementation((key) =>
+        Promise.resolve(key === undefined || key === '' ? legacyBlob : null));
+
+      await window.loadReports();
+
+      // Renders after migration.
+      expect(document.getElementById('savedReportsList').innerHTML).toContain('Legacy Report');
+      // Wrote a per-report content key and a metadata index.
+      expect(persistedContent('legacy1')).toBe('# Legacy content body');
+      expect(persistedIndex().reports[0].name).toBe('Legacy Report');
+      expect(persistedIndex().reports[0].content).toBeUndefined();
+      // Cleared the legacy default-key blob so migration runs only once.
+      expect(persistedRawFor(undefined)).toBe('');
+    });
+
+    it('still loads legacy uncompressed object format', async () => {
+      const legacy = { reports: [{ id: '1', name: 'Legacy Obj', startDate: '2024-01-15', endDate: '2024-01-15', totalTasks: 2, savedAt: new Date('2024-01-16').toISOString() }], preferences: { groupBy: 'date' } };
+      mockPluginAPI.loadSyncedData.mockResolvedValue(JSON.stringify(legacy));
+      await window.loadReports();
+      expect(document.getElementById('savedReportsList').innerHTML).toContain('Legacy Obj');
+    });
+
+    it('still loads legacy plain-array format', async () => {
+      const legacyArray = [{ id: '1', name: 'Legacy Array', startDate: '2024-01-15', endDate: '2024-01-15', totalTasks: 1, savedAt: new Date('2024-01-16').toISOString() }];
+      mockPluginAPI.loadSyncedData.mockResolvedValue(JSON.stringify(legacyArray));
+      await window.loadReports();
+      expect(document.getElementById('savedReportsList').innerHTML).toContain('Legacy Array');
+    });
+
+    it('compresses a large realistic report well under the 256KB limit', () => {
+      // Build a report array whose uncompressed JSON exceeds the old 256KB limit.
+      const line = '- [Project Alpha] Implement the widget subsystem and write tests · 2h 30m\n';
+      const bigContent = ('# Weekly Report\n\n' + line.repeat(4000)); // repetitive markdown
+      const reports = [];
+      for (let i = 0; i < 3; i++) {
+        reports.push({ id: String(i), name: 'Report ' + i, content: bigContent, startDate: '2024-01-15', endDate: '2024-01-21', totalTasks: 4000, savedAt: new Date('2024-01-22').toISOString() });
+      }
+      const uncompressed = JSON.stringify({ reports, preferences: {} });
+      const uncompressedBytes = new window.Blob([uncompressed]).size;
+      const envelope = JSON.stringify({ v: 2, c: window.LZString.compressToBase64(uncompressed) });
+      const compressedBytes = new window.Blob([envelope]).size;
+
+      expect(uncompressedBytes).toBeGreaterThan(256 * 1024); // would have failed before
+      expect(compressedBytes).toBeLessThan(256 * 1024);      // fits after compression
+      // Round-trip integrity
+      expect(JSON.parse(window.LZString.decompressFromBase64(JSON.parse(envelope).c)).reports[0].content).toBe(bigContent);
+    });
+
+    it('shows an actionable quota message and does not crash when the host rejects', async () => {
+      mockPluginAPI.getTasks.mockResolvedValue([
+        { id: 't1', title: 'Task', isDone: true, doneOn: new Date('2024-01-15T14:00:00').getTime(), timeSpentOnDay: { '2024-01-15': 3600000 } }
+      ]);
+      document.getElementById('startDate').value = '2024-01-15';
+      document.getElementById('endDate').value = '2024-01-15';
+      await window.generateReport();
+
+      mockPluginAPI.persistDataSynced.mockRejectedValueOnce(new Error('Plugin data exceeds maximum size of 256KB. Current size: 271KB'));
+      document.getElementById('reportNameInput').value = 'Too Big';
+      await window.saveReport(); // must not throw
+
+      const messages = mockPluginAPI.showSnack.mock.calls.map(c => c[0].msg);
+      expect(messages.some(m => /too large to save/i.test(m))).toBe(true);
+      expect(messages.some(m => m === 'Failed to save report')).toBe(false);
     });
   });
 });
