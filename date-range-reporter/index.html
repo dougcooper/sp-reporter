@@ -949,6 +949,13 @@
     </div>
 
     <script>
+      // --- Vendored: lz-string 1.5.0 (MIT License, © 2013 pieroxy) ---
+      // https://github.com/pieroxy/lz-string — inlined because the plugin is a
+      // single self-contained HTML file with no runtime dependency loader.
+      // Used to compress persisted report data below Super Productivity's 256KB limit.
+      var LZString=function(){var r=String.fromCharCode,o="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=",n="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+-$",e={};function t(r,o){if(!e[r]){e[r]={};for(var n=0;n<r.length;n++)e[r][r.charAt(n)]=n}return e[r][o]}var i={compressToBase64:function(r){if(null==r)return"";var n=i._compress(r,6,function(r){return o.charAt(r)});switch(n.length%4){default:case 0:return n;case 1:return n+"===";case 2:return n+"==";case 3:return n+"="}},decompressFromBase64:function(r){return null==r?"":""==r?null:i._decompress(r.length,32,function(n){return t(o,r.charAt(n))})},compressToUTF16:function(o){return null==o?"":i._compress(o,15,function(o){return r(o+32)})+" "},decompressFromUTF16:function(r){return null==r?"":""==r?null:i._decompress(r.length,16384,function(o){return r.charCodeAt(o)-32})},compressToUint8Array:function(r){for(var o=i.compress(r),n=new Uint8Array(2*o.length),e=0,t=o.length;e<t;e++){var s=o.charCodeAt(e);n[2*e]=s>>>8,n[2*e+1]=s%256}return n},decompressFromUint8Array:function(o){if(null==o)return i.decompress(o);for(var n=new Array(o.length/2),e=0,t=n.length;e<t;e++)n[e]=256*o[2*e]+o[2*e+1];var s=[];return n.forEach(function(o){s.push(r(o))}),i.decompress(s.join(""))},compressToEncodedURIComponent:function(r){return null==r?"":i._compress(r,6,function(r){return n.charAt(r)})},decompressFromEncodedURIComponent:function(r){return null==r?"":""==r?null:(r=r.replace(/ /g,"+"),i._decompress(r.length,32,function(o){return t(n,r.charAt(o))}))},compress:function(o){return i._compress(o,16,function(o){return r(o)})},_compress:function(r,o,n){if(null==r)return"";var e,t,i,s={},u={},a="",p="",c="",l=2,f=3,h=2,d=[],m=0,v=0;for(i=0;i<r.length;i+=1)if(a=r.charAt(i),Object.prototype.hasOwnProperty.call(s,a)||(s[a]=f++,u[a]=!0),p=c+a,Object.prototype.hasOwnProperty.call(s,p))c=p;else{if(Object.prototype.hasOwnProperty.call(u,c)){if(c.charCodeAt(0)<256){for(e=0;e<h;e++)m<<=1,v==o-1?(v=0,d.push(n(m)),m=0):v++;for(t=c.charCodeAt(0),e=0;e<8;e++)m=m<<1|1&t,v==o-1?(v=0,d.push(n(m)),m=0):v++,t>>=1}else{for(t=1,e=0;e<h;e++)m=m<<1|t,v==o-1?(v=0,d.push(n(m)),m=0):v++,t=0;for(t=c.charCodeAt(0),e=0;e<16;e++)m=m<<1|1&t,v==o-1?(v=0,d.push(n(m)),m=0):v++,t>>=1}0==--l&&(l=Math.pow(2,h),h++),delete u[c]}else for(t=s[c],e=0;e<h;e++)m=m<<1|1&t,v==o-1?(v=0,d.push(n(m)),m=0):v++,t>>=1;0==--l&&(l=Math.pow(2,h),h++),s[p]=f++,c=String(a)}if(""!==c){if(Object.prototype.hasOwnProperty.call(u,c)){if(c.charCodeAt(0)<256){for(e=0;e<h;e++)m<<=1,v==o-1?(v=0,d.push(n(m)),m=0):v++;for(t=c.charCodeAt(0),e=0;e<8;e++)m=m<<1|1&t,v==o-1?(v=0,d.push(n(m)),m=0):v++,t>>=1}else{for(t=1,e=0;e<h;e++)m=m<<1|t,v==o-1?(v=0,d.push(n(m)),m=0):v++,t=0;for(t=c.charCodeAt(0),e=0;e<16;e++)m=m<<1|1&t,v==o-1?(v=0,d.push(n(m)),m=0):v++,t>>=1}0==--l&&(l=Math.pow(2,h),h++),delete u[c]}else for(t=s[c],e=0;e<h;e++)m=m<<1|1&t,v==o-1?(v=0,d.push(n(m)),m=0):v++,t>>=1;0==--l&&(l=Math.pow(2,h),h++)}for(t=2,e=0;e<h;e++)m=m<<1|1&t,v==o-1?(v=0,d.push(n(m)),m=0):v++,t>>=1;for(;;){if(m<<=1,v==o-1){d.push(n(m));break}v++}return d.join("")},decompress:function(r){return null==r?"":""==r?null:i._decompress(r.length,32768,function(o){return r.charCodeAt(o)})},_decompress:function(o,n,e){var t,i,s,u,a,p,c,l=[],f=4,h=4,d=3,m="",v=[],g={val:e(0),position:n,index:1};for(t=0;t<3;t+=1)l[t]=t;for(s=0,a=Math.pow(2,2),p=1;p!=a;)u=g.val&g.position,g.position>>=1,0==g.position&&(g.position=n,g.val=e(g.index++)),s|=(u>0?1:0)*p,p<<=1;switch(s){case 0:for(s=0,a=Math.pow(2,8),p=1;p!=a;)u=g.val&g.position,g.position>>=1,0==g.position&&(g.position=n,g.val=e(g.index++)),s|=(u>0?1:0)*p,p<<=1;c=r(s);break;case 1:for(s=0,a=Math.pow(2,16),p=1;p!=a;)u=g.val&g.position,g.position>>=1,0==g.position&&(g.position=n,g.val=e(g.index++)),s|=(u>0?1:0)*p,p<<=1;c=r(s);break;case 2:return""}for(l[3]=c,i=c,v.push(c);;){if(g.index>o)return"";for(s=0,a=Math.pow(2,d),p=1;p!=a;)u=g.val&g.position,g.position>>=1,0==g.position&&(g.position=n,g.val=e(g.index++)),s|=(u>0?1:0)*p,p<<=1;switch(c=s){case 0:for(s=0,a=Math.pow(2,8),p=1;p!=a;)u=g.val&g.position,g.position>>=1,0==g.position&&(g.position=n,g.val=e(g.index++)),s|=(u>0?1:0)*p,p<<=1;l[h++]=r(s),c=h-1,f--;break;case 1:for(s=0,a=Math.pow(2,16),p=1;p!=a;)u=g.val&g.position,g.position>>=1,0==g.position&&(g.position=n,g.val=e(g.index++)),s|=(u>0?1:0)*p,p<<=1;l[h++]=r(s),c=h-1,f--;break;case 2:return v.join("")}if(0==f&&(f=Math.pow(2,d),d++),l[c])m=l[c];else{if(c!==h)return null;m=i+i.charAt(0)}v.push(m),l[h++]=i+m.charAt(0),i=m,0==--f&&(f=Math.pow(2,d),d++)}}};return i}();
+      // --- End vendored lz-string ---
+
       // Theme detection and management
       function detectTheme() {
         try {
@@ -1895,11 +1902,13 @@
 
       // Save report
       async function saveReport() {
+        const previousReports = savedReports.slice();
         try {
           const reportContent = modalReportContent.value;
           const currentTime = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
           const reportName = reportNameInput.value.trim() || `Report ${formatDateDisplay(currentReport.startDate)} - ${formatDateDisplay(currentReport.endDate)} at ${currentTime}`;
 
+          let report;
           if (isEditingExisting) {
             // Update existing report
             const existingIndex = savedReports.findIndex(r => r.id === currentReport.id);
@@ -1910,6 +1919,7 @@
                 content: reportContent,
                 updatedAt: new Date().toISOString()
               };
+              report = savedReports[existingIndex];
             }
           } else {
             // Create new report
@@ -1924,8 +1934,12 @@
               savedAt: new Date().toISOString()
             };
             savedReports.unshift(newReport);
+            report = newReport;
           }
 
+          // Persist the report's content under its own key first, then the index
+          // that references it — so the index never points at content that failed.
+          const contentSize = report ? await persistReportContent(report) : 0;
           await persistReports();
           renderSavedReports();
           reportHasChanges = false; // Reset change tracking after successful save
@@ -1936,10 +1950,24 @@
             type: 'SUCCESS',
             ico: 'save',
           });
+
+          // Warn when a single report nears the per-report 256KB limit.
+          if (contentSize >= MAX_PERSIST_BYTES * STORAGE_WARN_RATIO) {
+            PluginAPI.showSnack({
+              msg: `This report is very large (${Math.round((contentSize / MAX_PERSIST_BYTES) * 100)}% of the 256KB per-report limit).`,
+              type: 'ERROR',
+            });
+          }
         } catch (error) {
+          // Roll back the in-memory change so the list and storage bar reflect
+          // what is actually persisted.
+          savedReports = previousReports;
+          renderSavedReports();
           console.error('Error saving report:', error);
           PluginAPI.showSnack({
-            msg: 'Failed to save report',
+            msg: isQuotaError(error)
+              ? 'This report is too large to save — it exceeds 256KB even after compression.'
+              : 'Failed to save report',
             type: 'ERROR',
           });
         }
@@ -1948,16 +1976,24 @@
       // Load reports from storage
       async function loadReports() {
         try {
-          const data = await PluginAPI.loadSyncedData();
-          if (data) {
-            const parsed = JSON.parse(data);
-            // Support both old format (array) and new format (object with reports and preferences)
-            if (Array.isArray(parsed)) {
-              savedReports = parsed;
+          let index = decodePayload(await PluginAPI.loadSyncedData(INDEX_KEY));
+
+          // Migrate the legacy single-blob store (pre-sharding) on first load.
+          if (!index) {
+            const legacy = decodePayload(await PluginAPI.loadSyncedData());
+            if (legacy) {
+              index = await migrateLegacyStore(legacy);
+            }
+          }
+
+          if (index) {
+            // Support very old array format and the { reports, preferences } index.
+            if (Array.isArray(index)) {
+              savedReports = index;
             } else {
-              savedReports = parsed.reports || [];
-              if (parsed.preferences) {
-                preferences = { ...preferences, ...parsed.preferences };
+              savedReports = index.reports || [];
+              if (index.preferences) {
+                preferences = { ...preferences, ...index.preferences };
                 // migrate old option name if present
                 if (preferences.includeMissedRecurring !== undefined) {
                   preferences.includeOverdue = preferences.includeMissedRecurring;
@@ -1973,22 +2009,129 @@
         }
       }
 
-      // Persist reports to storage
-      async function persistReports() {
-        try {
-          // ensure notes column preference has a boolean value
-          if (preferences.showNotesColumn === undefined) {
-            preferences.showNotesColumn = true;
+      // One-time migration: split the old single-blob store into the sharded
+      // layout (per-report content keys + a metadata index), then clear the
+      // legacy blob so this runs only once.
+      async function migrateLegacyStore(legacy) {
+        const reports = Array.isArray(legacy) ? legacy : (legacy.reports || []);
+        const prefs = Array.isArray(legacy) ? null : (legacy.preferences || null);
+        for (const report of reports) {
+          if (report && report.id && report.content !== undefined && report.content !== null) {
+            await PluginAPI.persistDataSynced(encodePayload(report.content), reportKey(report.id));
           }
-          const data = {
-            reports: savedReports,
-            preferences: preferences
-          };
-          await PluginAPI.persistDataSynced(JSON.stringify(data));
+        }
+        const index = {
+          reports: reports.map(toReportMeta),
+          preferences: prefs || preferences
+        };
+        await PluginAPI.persistDataSynced(encodePayload(index), INDEX_KEY);
+        // Clear the legacy single-blob entry (default key).
+        await PluginAPI.persistDataSynced('');
+        return index;
+      }
+
+      // Super Productivity caps each persisted plugin-data entry at 256KB,
+      // measured as new Blob([data]).size (UTF-8 bytes). The cap is PER KEY, so
+      // we shard: a small "index" entry holds report metadata + preferences, and
+      // each report's Markdown content lives under its own "report:<id>" key.
+      // Every entry is compressed to base64 (ASCII, 1 byte/char) to minimize the
+      // measured size — UTF16 packing would cost ~3 bytes/char. Keyed persistence
+      // requires Super Productivity >= 18.8.0 (see manifest minSupVersion).
+      const MAX_PERSIST_BYTES = 256 * 1024;
+      const STORAGE_WARN_RATIO = 0.8;
+      const INDEX_KEY = 'index';
+      const REPORT_KEY_PREFIX = 'report:';
+
+      function reportKey(id) {
+        return REPORT_KEY_PREFIX + id;
+      }
+
+      // Byte length exactly as Super Productivity measures it.
+      function persistByteLength(str) {
+        return new Blob([str]).size;
+      }
+
+      // Report metadata (everything except the heavy Markdown content).
+      function toReportMeta(report) {
+        const { content, ...meta } = report;
+        return meta;
+      }
+
+      // Compress a value into the versioned envelope { v: 2, c: <base64> }.
+      function encodePayload(value) {
+        return JSON.stringify({ v: 2, c: LZString.compressToBase64(JSON.stringify(value)) });
+      }
+
+      // Decode an envelope (or legacy uncompressed) string back to its value.
+      // Returns null for empty/absent data.
+      function decodePayload(raw) {
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        if (parsed && !Array.isArray(parsed) && parsed.v === 2 && typeof parsed.c === 'string') {
+          return JSON.parse(LZString.decompressFromBase64(parsed.c));
+        }
+        return parsed;
+      }
+
+      // True when an error is Super Productivity's (or our own) 256KB quota error.
+      function isQuotaError(error) {
+        return !!error && (error.code === 'QUOTA_EXCEEDED' ||
+          /exceeds maximum size|256\s*KB/i.test(error.message || ''));
+      }
+
+      function quotaError(size) {
+        const err = new Error(`Plugin data exceeds maximum size of ${MAX_PERSIST_BYTES / 1024}KB. Current size: ${Math.round(size / 1024)}KB`);
+        err.code = 'QUOTA_EXCEEDED';
+        return err;
+      }
+
+      // Build the compressed index payload (report metadata + preferences).
+      function buildIndexPayload() {
+        // ensure notes column preference has a boolean value
+        if (preferences.showNotesColumn === undefined) {
+          preferences.showNotesColumn = true;
+        }
+        return encodePayload({
+          reports: savedReports.map(toReportMeta),
+          preferences: preferences
+        });
+      }
+
+      // Persist a single report's content under its own key. Returns byte size.
+      async function persistReportContent(report) {
+        const payload = encodePayload(report.content || '');
+        const size = persistByteLength(payload);
+        if (size > MAX_PERSIST_BYTES) {
+          throw quotaError(size);
+        }
+        await PluginAPI.persistDataSynced(payload, reportKey(report.id));
+        return size;
+      }
+
+      // Persist the report index (metadata + preferences). Returns its byte size.
+      async function persistReports() {
+        const payload = buildIndexPayload();
+        const size = persistByteLength(payload);
+        if (size > MAX_PERSIST_BYTES) {
+          throw quotaError(size);
+        }
+        try {
+          await PluginAPI.persistDataSynced(payload, INDEX_KEY);
         } catch (error) {
           console.error('Error persisting reports:', error);
           throw error;
         }
+        return size;
+      }
+
+      // Lazily load a report's content from its own key (content is not kept in
+      // the index). Caches the result on the in-memory report object.
+      async function ensureReportContent(report) {
+        if (report.content === undefined || report.content === null) {
+          const raw = await PluginAPI.loadSyncedData(reportKey(report.id));
+          report.content = decodePayload(raw) || '';
+        }
+        return report.content;
       }
 
       // Load preferences and apply to UI
@@ -2587,13 +2730,14 @@
       }
 
       // View saved report
-      function viewReport(reportId) {
+      async function viewReport(reportId) {
         const report = savedReports.find(r => r.id === reportId);
-        if (report) {
-          currentReport = report;
-          isEditingExisting = true;
-          showReportModal(report.content);
-        }
+        if (!report) return;
+        // Content lives under its own key — load it lazily.
+        await ensureReportContent(report);
+        currentReport = report;
+        isEditingExisting = true;
+        showReportModal(report.content);
       }
 
       // Delete single report
@@ -2605,6 +2749,8 @@
         try {
           savedReports = savedReports.filter(r => r.id !== reportId);
           await persistReports();
+          // Reclaim the report's content entry.
+          await PluginAPI.persistDataSynced('', reportKey(reportId));
           renderSavedReports();
 
           PluginAPI.showSnack({
@@ -2635,6 +2781,10 @@
           const selectedIds = Array.from(checkboxes).map(cb => cb.dataset.id);
           savedReports = savedReports.filter(r => !selectedIds.includes(r.id));
           await persistReports();
+          // Reclaim each deleted report's content entry.
+          for (const id of selectedIds) {
+            await PluginAPI.persistDataSynced('', reportKey(id));
+          }
           renderSavedReports();
 
           PluginAPI.showSnack({
@@ -2668,7 +2818,12 @@
         try {
           const selectedIds = Array.from(checkboxes).map(cb => cb.dataset.id);
           const selectedReports = savedReports.filter(r => selectedIds.includes(r.id));
-          
+
+          // Content is stored per-key — ensure each is loaded before combining.
+          for (const r of selectedReports) {
+            await ensureReportContent(r);
+          }
+
           // Sort reports by their saved date (oldest first)
           selectedReports.sort((a, b) => new Date(a.savedAt) - new Date(b.savedAt));
           

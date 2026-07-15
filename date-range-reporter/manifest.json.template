@@ -4,7 +4,7 @@
   "version": "{{VERSION}}",
   "description": "{{DESCRIPTION}}",
   "manifestVersion": 1,
-  "minSupVersion": "14.0.0",
+  "minSupVersion": "18.8.0",
   "author": "Super Productivity Community",
   "icon": "icon.svg",
   "iFrame": true,
