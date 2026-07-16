@@ -897,7 +897,7 @@
             </div>
             <div class="toggle-row">
               <div class="toggle-content">
-                <label for="showTotalTime">Show total project time</label>
+                <label for="showTotalTime">Show totals</label>
               </div>
               <label class="toggle-switch">
                 <input type="checkbox" id="showTotalTime" checked style="display: none;" />
@@ -1478,11 +1478,37 @@
           }
         }
 
+        // Sum the displayed time (parent own-time + subtasks) for a date's task list,
+        // mirroring the per-line expressions used when rendering below.
+        const showTotals = document.getElementById('showTotalTime')?.checked;
+        function sumDateGroupMs(tasks, dateStr) {
+          let ms = 0;
+          tasks.forEach(task => {
+            // A parent's own time is redundant with its subtasks' time, so count
+            // subtasks when present, otherwise the parent's own time. This matches
+            // the project-grouped report's no-double-count policy.
+            if (task.subtasks && task.subtasks.length > 0) {
+              task.subtasks.forEach(subtask => {
+                const sd = subtask.workLogDate || dateStr;
+                if (subtask.timeSpentOnDay && subtask.timeSpentOnDay[sd]) ms += subtask.timeSpentOnDay[sd];
+              });
+            } else {
+              const d = task.workLogDate || dateStr;
+              if (task.timeSpentOnDay && task.timeSpentOnDay[d]) ms += task.timeSpentOnDay[d];
+            }
+          });
+          return ms;
+        }
+
         // Generate report in Markdown format
         let reportText = `# Task Completion Report\n\n`;
         reportText += `**Date Range:** ${formatDateDisplay(formatDate(startDate))} - ${formatDateDisplay(formatDate(endDate))}  \n`;
         reportText += `**Generated:** ${new Date().toLocaleString()}  \n`;
         reportText += `**Total Tasks:** ${totalTasks}\n`;
+        if (showTotals) {
+          const grandTotalMs = Object.keys(tasksByDate).reduce((sum, dateStr) => sum + sumDateGroupMs(tasksByDate[dateStr], dateStr), 0);
+          reportText += `**Total Time:** ${formatTime(Math.round(grandTotalMs / 60000))}\n`;
+        }
         if (excludedCountRef.count > 0) {
           reportText += `**Excluded Work Logs:** ${excludedCountRef.count} (below ${document.getElementById('minTimeSpent').value} min threshold)\n`;
         }
@@ -1501,7 +1527,8 @@
 
         datesToShow.forEach(dateStr => {
           const tasks = tasksByDate[dateStr];
-          reportText += `## ${formatDateDisplay(dateStr)}\n\n`;
+          const dateTotalDisplay = showTotals ? ` *(total: ${formatTime(Math.round(sumDateGroupMs(tasks, dateStr) / 60000))})*` : '';
+          reportText += `## ${formatDateDisplay(dateStr)}${dateTotalDisplay}\n\n`;
 
           if (tasks.length === 0) {
             reportText += `*No tasks*\n\n`;
@@ -1681,10 +1708,15 @@
         }
 
         // Generate report in Markdown format
+        const showTotals = document.getElementById('showTotalTime')?.checked;
         let reportText = `# Task Completion Report\n\n`;
         reportText += `**Date Range:** ${formatDateDisplay(formatDate(startDate))} - ${formatDateDisplay(formatDate(endDate))}  \n`;
         reportText += `**Generated:** ${new Date().toLocaleString()}  \n`;
         reportText += `**Total Tasks:** ${totalTasks}\n`;
+        if (showTotals) {
+          const grandTotalMinutes = Math.round(Object.values(tasksByProject).reduce((sum, p) => sum + p.totalTime, 0) / 60000);
+          reportText += `**Total Time:** ${formatTime(grandTotalMinutes)}\n`;
+        }
         if (excludedCountRef.count > 0) {
           reportText += `**Excluded Work Logs:** ${excludedCountRef.count} (below ${document.getElementById('minTimeSpent').value} min threshold)\n`;
         }
@@ -2286,7 +2318,27 @@
       // the showTimeSpent flag which affects the time column values.  The
       // `headerLabel` map should contain human-readable column titles for
       // whatever column keys are present in `cols`.
-      function renderTableRows(groups, cols, showTimeSpent, headerLabel) {
+      // Sum timeMinutes across table rows without double-counting parent + subtask
+      // time. Subtask rows share their parent's taskId and carry a '↳ ' title
+      // prefix; when a task has subtask rows only those count (the parent's own
+      // time is redundant), matching the project-grouped report's totals.
+      function sumRowMinutesNoDoubleCount(rows) {
+        const byTask = new Map();
+        rows.forEach((r, i) => {
+          const key = (r.taskId != null) ? `id:${r.taskId}` : `row:${i}`;
+          if (!byTask.has(key)) byTask.set(key, []);
+          byTask.get(key).push(r);
+        });
+        let total = 0;
+        byTask.forEach(group => {
+          const subtaskRows = group.filter(r => typeof r.title === 'string' && r.title.startsWith('↳ '));
+          const counted = subtaskRows.length > 0 ? subtaskRows : group;
+          total += counted.reduce((sum, r) => sum + (r.timeMinutes || 0), 0);
+        });
+        return total;
+      }
+
+      function renderTableRows(groups, cols, showTimeSpent, headerLabel, showTotalRow = false) {
         let text = '';
         Object.keys(groups).forEach(groupKey => {
           let rows = groups[groupKey] || [];
@@ -2332,10 +2384,23 @@
             });
           });
 
+          // Build the optional Total row cells so their width is accounted for below
+          let totalCells = null;
+          if (showTotalRow && rows.length > 0) {
+            const totalMinutes = sumRowMinutesNoDoubleCount(rows);
+            const labelIdx = cols.findIndex(c => c !== 'time');
+            totalCells = cols.map((c, i) => {
+              if (c === 'time') return `**${formatTime(totalMinutes)}**`;
+              if (i === labelIdx) return '**Total**';
+              return '';
+            });
+          }
+
           const widths = cols.map((c, idx) => {
             const headerLen = headerLabel[c].length;
             const maxCell = cellValues.reduce((max, row) => Math.max(max, (row[idx]||'').length), 0);
-            return Math.max(headerLen, maxCell);
+            const totalLen = totalCells ? (totalCells[idx]||'').length : 0;
+            return Math.max(headerLen, maxCell, totalLen);
           });
           const padded = (str, w) => str + ' '.repeat(Math.max(0, w - str.length));
 
@@ -2360,6 +2425,10 @@
 
             text += `| ${cells.join(' | ')} |\n`;
           });
+
+          if (totalCells) {
+            text += `| ${totalCells.map((v, i) => padded(v, widths[i])).join(' | ')} |\n`;
+          }
 
           text += `\n`;
         });
@@ -2492,12 +2561,19 @@
         const headerLabel = { date: 'Date', project: 'Project', title: 'Task Title', time: 'Time Spent', status: 'Status', notes: 'Notes' };
 
         // Build markdown table output header (rest of rows handled by helper)
+        const showTotals = document.getElementById('showTotalTime')?.checked;
         let reportText = `# Task Completion Report\n\n`;
         reportText += `**Date Range:** ${formatDateDisplay(formatDate(startDate))} - ${formatDateDisplay(formatDate(endDate))}  \n`;
         reportText += `**Generated:** ${new Date().toLocaleString()}  \n`;
-        reportText += `**Total Tasks:** ${processedTaskIds.size}\n\n`;
-        // delegate row construction to helper
-        reportText += renderTableRows(groups, cols, showTimeSpent, headerLabel);
+        reportText += `**Total Tasks:** ${processedTaskIds.size}\n`;
+        if (showTotals) {
+          const totalMinutes = sumRowMinutesNoDoubleCount(entries);
+          reportText += `**Total Time:** ${formatTime(totalMinutes)}\n`;
+        }
+        reportText += `\n`;
+        // delegate row construction to helper; append a Total row only when the Time column is shown
+        const showTotalRow = showTotals && showTimeSpent && cols.includes('time');
+        reportText += renderTableRows(groups, cols, showTimeSpent, headerLabel, showTotalRow);
         
         return { reportText, totalTasks: processedTaskIds.size };
       }
