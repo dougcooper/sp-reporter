@@ -20,6 +20,7 @@ describe('Date Range Reporter', () => {
       getTasks: vi.fn().mockResolvedValue([]),
       getArchivedTasks: vi.fn().mockResolvedValue([]),
       getAllProjects: vi.fn().mockResolvedValue([]),
+      getAllTags: vi.fn().mockResolvedValue([]),
       persistDataSynced: vi.fn().mockResolvedValue(undefined),
       loadSyncedData: vi.fn().mockResolvedValue(null),
       showSnack: vi.fn(),
@@ -3572,6 +3573,76 @@ describe('Date Range Reporter', () => {
       const messages = mockPluginAPI.showSnack.mock.calls.map(c => c[0].msg);
       expect(messages.some(m => /too large to save/i.test(m))).toBe(true);
       expect(messages.some(m => m === 'Failed to save report')).toBe(false);
+    });
+  });
+
+  describe('Task tags (#68)', () => {
+    const taskWithTags = {
+      id: 'task-tags',
+      title: 'Tagged Task',
+      isDone: true,
+      doneOn: new Date('2024-01-15T15:00:00').getTime(),
+      projectId: 'p1',
+      tagIds: ['t-backlog', 't-security'],
+      timeSpentOnDay: { '2024-01-15': 3600000 },
+    };
+
+    async function generate(tags = []) {
+      mockPluginAPI.getTasks.mockResolvedValue([taskWithTags]);
+      mockPluginAPI.getAllProjects.mockResolvedValue([{ id: 'p1', title: 'Inbox' }]);
+      mockPluginAPI.getAllTags.mockResolvedValue(tags);
+      document.getElementById('startDate').value = '2024-01-15';
+      document.getElementById('endDate').value = '2024-01-15';
+      await window.generateReport();
+      return document.getElementById('modalReportContent').value;
+    }
+
+    const defaultTags = [
+      { id: 't-backlog', title: 'backlog' },
+      { id: 't-security', title: 'security' },
+    ];
+
+    it('renders tags as #tokens after the project when Show tags is on', async () => {
+      document.getElementById('showTags').checked = true;
+      const report = await generate(defaultTags);
+      const line = report.split('\n').find(l => l.includes('Tagged Task'));
+      expect(line).toContain('[Inbox] #backlog #security');
+    });
+
+    it('hides tags by default (Show tags off)', async () => {
+      // showTags defaults to false
+      const report = await generate(defaultTags);
+      const line = report.split('\n').find(l => l.includes('Tagged Task'));
+      expect(line).not.toContain('#backlog');
+      expect(line).toContain('[Inbox]');
+    });
+
+    it('skips the special Today tag', async () => {
+      document.getElementById('showTags').checked = true;
+      const report = await generate([
+        { id: 'TODAY', title: 'Today' },
+        { id: 't-backlog', title: 'backlog' },
+      ]);
+      const line = report.split('\n').find(l => l.includes('Tagged Task'));
+      expect(line).toContain('#backlog');
+      expect(line).not.toContain('#Today');
+    });
+
+    it('slugifies whitespace in multi-word tag titles', async () => {
+      document.getElementById('showTags').checked = true;
+      const report = await generate([
+        { id: 't-backlog', title: 'backlog' },
+        { id: 't-security', title: 'in progress' },
+      ]);
+      const line = report.split('\n').find(l => l.includes('Tagged Task'));
+      expect(line).toContain('#in-progress');
+    });
+
+    it('omits the project inline when Show project is off', async () => {
+      document.getElementById('showProject').checked = false;
+      const report = await generate(defaultTags);
+      const line = report.split('\n').find(l => l.includes('Tagged Task'));
+      expect(line).not.toContain('[Inbox]');
     });
   });
 });

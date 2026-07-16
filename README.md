@@ -7,7 +7,8 @@ A plugin for [Super Productivity](https://super-productivity.com) that generates
 - 📅 Select custom date ranges for reporting
 - 📊 View all tasks completed or worked on within the selected period
 - 🔀 **Group reports by Date or by Project** for different perspectives
-- 🏷️ Optionally show project names when grouping by date
+- 🏷️ Optionally show project names alongside tasks (Show project toggle)
+- 🏷️ Optionally show task tags as `#tag` tokens (Show tags toggle, off by default)
 - 📆 Optionally show completion dates when grouping by project
 - ⏱️ Automatic time aggregation per project with totals
 - ⏳ Includes in-progress tasks that have work logs in the date range
@@ -75,6 +76,8 @@ The generated report is formatted in Markdown and includes:
 - Individual work log entries for tasks with multiple work logs
 - WIP indicator for work in progress entries (before task completion)
 - Time spent on each task (when tracked)
+- Optional project name in brackets, e.g. `[Project A]` (Show project toggle, on by default)
+- Optional task tags as `#tag` tokens, e.g. `#backlog #security` (Show tags toggle, off by default; the special "Today" tag is omitted)
 - Optional task notes (when enabled)
 - OVERDUE indicator for tasks that passed their planned date without completion (when enabled)
 
