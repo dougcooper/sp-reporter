@@ -870,6 +870,15 @@
             </div>
             <div class="toggle-row">
               <div class="toggle-content">
+                <label for="showProject">Show project</label>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="showProject" checked style="display: none;" />
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="toggle-row">
+              <div class="toggle-content">
                 <label for="includeNotes">Show task notes</label>
               </div>
               <label class="toggle-switch">
@@ -1043,7 +1052,7 @@
       // Exposed globally so tests can inspect/update preferences via `window.preferences`
       var preferences = {
         groupBy: 'date',
-        showProject: false,
+        showProject: true,
         showDate: false,
         excludeEmptyDates: true,
         includeNotes: false,
@@ -1521,7 +1530,8 @@
         // Filter out empty dates if checkbox is checked
         const excludeEmpty = document.getElementById('excludeEmptyDates').checked;
         const includeNotes = document.getElementById('includeNotes').checked;
-        const datesToShow = excludeEmpty 
+        const showProject = document.getElementById('showProject')?.checked !== false;
+        const datesToShow = excludeEmpty
           ? sortedDates.filter(dateStr => tasksByDate[dateStr].length > 0)
           : sortedDates;
 
@@ -1550,10 +1560,10 @@
               }
               
               // Optionally show project name
-              const projectName = task.projectId && projects[task.projectId] 
-                ? ` [${projects[task.projectId]}]` 
+              const projectName = showProject && task.projectId && projects[task.projectId]
+                ? ` [${projects[task.projectId]}]`
                 : '';
-              
+
               reportText += `- ${task.title}${projectName}${timeSpent}${statusIndicator}\n`;
               
               // Include subtasks indented under parent task
@@ -1564,10 +1574,10 @@
                     ? ` *(${Math.round(subtask.timeSpentOnDay[subtaskDateForTimeSpent] / 60000)} min)*`
                     : '';
                   const subtaskStatusIndicator = subtask.isInProgress ? ' WIP' : (subtask.isDone ? ' DONE ✅' : '');
-                  const subtaskProjectName = subtask.projectId && projects[subtask.projectId]
+                  const subtaskProjectName = showProject && subtask.projectId && projects[subtask.projectId]
                     ? ` [${projects[subtask.projectId]}]`
                     : '';
-                  
+
                   reportText += `  - ${subtask.title}${subtaskProjectName}${subtaskTimeSpent}${subtaskStatusIndicator}\n`;
                   
                   // Include notes for subtask if applicable
@@ -2031,6 +2041,14 @@
                   preferences.includeOverdue = preferences.includeMissedRecurring;
                   delete preferences.includeMissedRecurring;
                 }
+                // The inline project name used to be shown unconditionally (the
+                // showProject toggle was never wired up). Preserve that behavior
+                // for existing users the first time they load with the real
+                // toggle, then respect their choice afterwards.
+                if (preferences.showProjectMigrated === undefined) {
+                  preferences.showProject = true;
+                  preferences.showProjectMigrated = true;
+                }
                 applyPreferences();
               }
             }
@@ -2170,6 +2188,7 @@
       function applyPreferences() {
         const groupByEl = document.getElementById('groupBy');
         const showDateEl = document.getElementById('showDate');
+        const showProjectEl = document.getElementById('showProject');
         const excludeEmptyDatesEl = document.getElementById('excludeEmptyDates');
         const includeNotesEl = document.getElementById('includeNotes');
         const includeOverdueEl = document.getElementById('includeOverdue');
@@ -2180,6 +2199,7 @@
         
         if (groupByEl) groupByEl.value = preferences.groupBy;
         if (showDateEl) showDateEl.checked = preferences.showDate;
+        if (showProjectEl) showProjectEl.checked = preferences.showProject;
         if (excludeEmptyDatesEl) excludeEmptyDatesEl.checked = preferences.excludeEmptyDates;
         if (includeNotesEl) includeNotesEl.checked = preferences.includeNotes;
         if (includeOverdueEl) includeOverdueEl.checked = preferences.includeOverdue;
@@ -2721,6 +2741,7 @@
         try {
           preferences.groupBy = document.getElementById('groupBy').value;
           preferences.showDate = document.getElementById('showDate').checked;
+          preferences.showProject = document.getElementById('showProject').checked;
           preferences.excludeEmptyDates = document.getElementById('excludeEmptyDates').checked;
           preferences.includeNotes = document.getElementById('includeNotes').checked;
           preferences.includeOverdue = document.getElementById('includeOverdue').checked;
@@ -2990,6 +3011,7 @@
         'outputFormat',
         'groupBy',
         'showDate',
+        'showProject',
         'excludeEmptyDates',
         'includeNotes',
         'includeOverdue',
@@ -3014,7 +3036,9 @@
       const outputFormatEl = document.getElementById('outputFormat');
       function updateDisplayOptionVisibility() {
         const isTable = document.getElementById('outputFormat')?.value === 'table';
-        ['showDate','includeNotes','showTimeSpent','showTotalTime'].forEach(id => {
+        // showProject only affects the simple/list output (the table has its own
+        // Project column), so hide it in table mode.
+        ['showDate','showProject','includeNotes','showTimeSpent','showTotalTime'].forEach(id => {
           const el = document.getElementById(id);
           if (el) {
             const row = el.closest('.toggle-row');
