@@ -3412,6 +3412,39 @@ describe('Date Range Reporter', () => {
       expect(reportText).toContain('**Total Time:** 1h'); // grand total
       expect(reportText).toContain('*(total: 1h)*');      // per-project subtotal (existing behavior)
     });
+
+    // A parent's own time is redundant with its subtasks' time; totals must count
+    // subtasks only (never both), and must agree across all three report modes.
+    it('does not double-count parent + subtask time, and totals agree across modes', async () => {
+      // Parent logs 1h of its own time but has a subtask that logs 30m.
+      // Correct total = 30m (subtask only), NOT 1h30m.
+      const withSubtask = () => ([
+        { id: 'parent', title: 'Parent', projectId: 'p1', isDone: true, doneOn: new Date('2024-01-15T12:00:00').getTime(), timeSpentOnDay: { '2024-01-15': 3600000 } },
+        { id: 'child', parentId: 'parent', title: 'Child', projectId: 'p1', isDone: true, doneOn: new Date('2024-01-15T12:00:00').getTime(), timeSpentOnDay: { '2024-01-15': 1800000 } }
+      ]);
+      mockPluginAPI.getAllProjects.mockResolvedValue([{ id: 'p1', title: 'Project Alpha' }]);
+      document.getElementById('showTotalTime').checked = true;
+      setRange('2024-01-15', '2024-01-15');
+
+      async function totalLineFor(outputFormat, groupBy) {
+        mockPluginAPI.getTasks.mockResolvedValue(withSubtask());
+        document.getElementById('outputFormat').value = outputFormat;
+        document.getElementById('groupBy').value = groupBy;
+        await window.generateReport();
+        const text = document.getElementById('modalReportContent').value;
+        return text.match(/\*\*Total Time:\*\* (.+)/)[1].trim();
+      }
+
+      const projectTotal = await totalLineFor('simple', 'project');
+      const dateTotal = await totalLineFor('simple', 'date');
+      const tableTotal = await totalLineFor('table', 'date');
+
+      // No double-count: 30m, not 1h 30m
+      expect(projectTotal).toBe('30m');
+      // All three modes agree
+      expect(dateTotal).toBe(projectTotal);
+      expect(tableTotal).toBe(projectTotal);
+    });
   });
 
   describe('Storage Compression & Limits', () => {

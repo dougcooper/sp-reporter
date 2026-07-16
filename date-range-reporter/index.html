@@ -1484,13 +1484,17 @@
         function sumDateGroupMs(tasks, dateStr) {
           let ms = 0;
           tasks.forEach(task => {
-            const d = task.workLogDate || dateStr;
-            if (task.timeSpentOnDay && task.timeSpentOnDay[d]) ms += task.timeSpentOnDay[d];
+            // A parent's own time is redundant with its subtasks' time, so count
+            // subtasks when present, otherwise the parent's own time. This matches
+            // the project-grouped report's no-double-count policy.
             if (task.subtasks && task.subtasks.length > 0) {
               task.subtasks.forEach(subtask => {
                 const sd = subtask.workLogDate || dateStr;
                 if (subtask.timeSpentOnDay && subtask.timeSpentOnDay[sd]) ms += subtask.timeSpentOnDay[sd];
               });
+            } else {
+              const d = task.workLogDate || dateStr;
+              if (task.timeSpentOnDay && task.timeSpentOnDay[d]) ms += task.timeSpentOnDay[d];
             }
           });
           return ms;
@@ -2314,6 +2318,26 @@
       // the showTimeSpent flag which affects the time column values.  The
       // `headerLabel` map should contain human-readable column titles for
       // whatever column keys are present in `cols`.
+      // Sum timeMinutes across table rows without double-counting parent + subtask
+      // time. Subtask rows share their parent's taskId and carry a '↳ ' title
+      // prefix; when a task has subtask rows only those count (the parent's own
+      // time is redundant), matching the project-grouped report's totals.
+      function sumRowMinutesNoDoubleCount(rows) {
+        const byTask = new Map();
+        rows.forEach((r, i) => {
+          const key = (r.taskId != null) ? `id:${r.taskId}` : `row:${i}`;
+          if (!byTask.has(key)) byTask.set(key, []);
+          byTask.get(key).push(r);
+        });
+        let total = 0;
+        byTask.forEach(group => {
+          const subtaskRows = group.filter(r => typeof r.title === 'string' && r.title.startsWith('↳ '));
+          const counted = subtaskRows.length > 0 ? subtaskRows : group;
+          total += counted.reduce((sum, r) => sum + (r.timeMinutes || 0), 0);
+        });
+        return total;
+      }
+
       function renderTableRows(groups, cols, showTimeSpent, headerLabel, showTotalRow = false) {
         let text = '';
         Object.keys(groups).forEach(groupKey => {
@@ -2363,7 +2387,7 @@
           // Build the optional Total row cells so their width is accounted for below
           let totalCells = null;
           if (showTotalRow && rows.length > 0) {
-            const totalMinutes = rows.reduce((sum, r) => sum + (r.timeMinutes || 0), 0);
+            const totalMinutes = sumRowMinutesNoDoubleCount(rows);
             const labelIdx = cols.findIndex(c => c !== 'time');
             totalCells = cols.map((c, i) => {
               if (c === 'time') return `**${formatTime(totalMinutes)}**`;
@@ -2543,7 +2567,7 @@
         reportText += `**Generated:** ${new Date().toLocaleString()}  \n`;
         reportText += `**Total Tasks:** ${processedTaskIds.size}\n`;
         if (showTotals) {
-          const totalMinutes = entries.reduce((sum, e) => sum + (e.timeMinutes || 0), 0);
+          const totalMinutes = sumRowMinutesNoDoubleCount(entries);
           reportText += `**Total Time:** ${formatTime(totalMinutes)}\n`;
         }
         reportText += `\n`;
