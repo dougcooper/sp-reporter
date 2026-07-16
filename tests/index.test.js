@@ -2368,16 +2368,18 @@ describe('Date Range Reporter', () => {
       const startInput = document.getElementById('startDate');
       const endInput = document.getElementById('endDate');
       const showTimeSpent = document.getElementById('showTimeSpent');
-      
+      const showTotalTime = document.getElementById('showTotalTime');
+
       startInput.value = '2024-01-15';
       endInput.value = '2024-01-15';
       showTimeSpent.checked = false;
+      showTotalTime.checked = false; // isolate showTimeSpent: no group/grand totals either
 
       await window.generateReport();
 
       const modalContent = document.getElementById('modalReportContent');
       const reportText = modalContent.value;
-      
+
       expect(reportText).toContain('Test Task');
       expect(reportText).not.toContain('60 min');
       expect(reportText).not.toContain('*(');
@@ -3310,6 +3312,105 @@ describe('Date Range Reporter', () => {
       const firstIndex = reportText.indexOf('Big Task');
       const secondIndex = reportText.indexOf('Small Task');
       expect(firstIndex).toBeLessThan(secondIndex);
+    });
+  });
+
+  describe('Report Totals', () => {
+    const twoTasks = () => ([
+      { id: 'a', title: 'Task A', isDone: true, doneOn: new Date('2024-01-15T12:00:00').getTime(), timeSpentOnDay: { '2024-01-15': 7200000 } }, // 2h
+      { id: 'b', title: 'Task B', isDone: true, doneOn: new Date('2024-01-16T12:00:00').getTime(), timeSpentOnDay: { '2024-01-16': 1800000 } }  // 30m
+    ]);
+
+    function setRange(start, end) {
+      document.getElementById('startDate').value = start;
+      document.getElementById('endDate').value = end;
+    }
+
+    it('table output shows grand total in metadata and a Total row', async () => {
+      mockPluginAPI.getTasks.mockResolvedValue(twoTasks());
+      document.getElementById('outputFormat').value = 'table';
+      document.getElementById('showTotalTime').checked = true;
+      setRange('2024-01-15', '2024-01-16');
+
+      await window.generateReport();
+      const reportText = document.getElementById('modalReportContent').value;
+
+      expect(reportText).toContain('**Total Time:** 2h 30m'); // metadata line
+      expect(reportText).toContain('**Total**');               // total row label
+      expect(reportText).toContain('**2h 30m**');              // total row value (bold, distinct from metadata)
+    });
+
+    it('table output omits totals when showTotalTime is unchecked', async () => {
+      mockPluginAPI.getTasks.mockResolvedValue(twoTasks());
+      document.getElementById('outputFormat').value = 'table';
+      document.getElementById('showTotalTime').checked = false;
+      setRange('2024-01-15', '2024-01-16');
+
+      await window.generateReport();
+      const reportText = document.getElementById('modalReportContent').value;
+
+      expect(reportText).not.toContain('**Total Time:**');
+      expect(reportText).not.toContain('**Total**');
+    });
+
+    it('table grand total shows but Total row is suppressed when showTimeSpent is off', async () => {
+      mockPluginAPI.getTasks.mockResolvedValue(twoTasks());
+      document.getElementById('outputFormat').value = 'table';
+      document.getElementById('showTotalTime').checked = true;
+      document.getElementById('showTimeSpent').checked = false;
+      setRange('2024-01-15', '2024-01-16');
+
+      await window.generateReport();
+      const reportText = document.getElementById('modalReportContent').value;
+
+      expect(reportText).toContain('**Total Time:** 2h 30m'); // metadata summary still shown
+      expect(reportText).not.toContain('**Total**');           // in-table row needs the Time column populated
+    });
+
+    it('date grouping shows per-date subtotals and a grand total', async () => {
+      mockPluginAPI.getTasks.mockResolvedValue(twoTasks());
+      document.getElementById('outputFormat').value = 'simple';
+      document.getElementById('groupBy').value = 'date';
+      document.getElementById('showTotalTime').checked = true;
+      setRange('2024-01-15', '2024-01-16');
+
+      await window.generateReport();
+      const reportText = document.getElementById('modalReportContent').value;
+
+      expect(reportText).toContain('**Total Time:** 2h 30m');
+      expect(reportText).toContain('*(total: 2h)*');  // Jan 15
+      expect(reportText).toContain('*(total: 30m)*'); // Jan 16
+    });
+
+    it('date grouping omits totals when showTotalTime is unchecked', async () => {
+      mockPluginAPI.getTasks.mockResolvedValue(twoTasks());
+      document.getElementById('outputFormat').value = 'simple';
+      document.getElementById('groupBy').value = 'date';
+      document.getElementById('showTotalTime').checked = false;
+      setRange('2024-01-15', '2024-01-16');
+
+      await window.generateReport();
+      const reportText = document.getElementById('modalReportContent').value;
+
+      expect(reportText).not.toContain('**Total Time:**');
+      expect(reportText).not.toContain('*(total:');
+    });
+
+    it('project grouping shows a grand total alongside per-project subtotals', async () => {
+      mockPluginAPI.getAllProjects.mockResolvedValue([{ id: 'p1', title: 'Project Alpha' }]);
+      mockPluginAPI.getTasks.mockResolvedValue([
+        { id: 'a', title: 'Task A', projectId: 'p1', isDone: true, doneOn: new Date('2024-01-15T12:00:00').getTime(), timeSpentOnDay: { '2024-01-15': 3600000 } }
+      ]);
+      document.getElementById('outputFormat').value = 'simple';
+      document.getElementById('groupBy').value = 'project';
+      document.getElementById('showTotalTime').checked = true;
+      setRange('2024-01-15', '2024-01-15');
+
+      await window.generateReport();
+      const reportText = document.getElementById('modalReportContent').value;
+
+      expect(reportText).toContain('**Total Time:** 1h'); // grand total
+      expect(reportText).toContain('*(total: 1h)*');      // per-project subtotal (existing behavior)
     });
   });
 
