@@ -2515,6 +2515,12 @@
         const minTimeMs = parseInt(document.getElementById('minTimeSpent').value) * 60000;
         // const includeNotes = document.getElementById('includeNotes').checked; // not used in table logic
         const showTimeSpent = document.getElementById('showTimeSpent').checked;
+        // When Show tags is off the Tags column is dropped anyway, so null the
+        // lookup to skip per-task tag formatting (formatTaskTags returns '' when
+        // tags is falsy).
+        if (document.getElementById('showTags')?.checked !== true) {
+          tags = null;
+        }
         const excludeEmpty = document.getElementById('excludeEmptyDates').checked;
         const groupBy = document.getElementById('groupBy').value;
 
