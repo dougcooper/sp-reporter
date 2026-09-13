@@ -26,10 +26,11 @@ A plugin for [Super Productivity](https://super-productivity.com) that generates
 - 📝 Optional inclusion of task notes in reports
 - ⚠️ **Optionally include overdue tasks** in reports to track instances that passed their planned date or due date without completion (based on dueDay field)
 - 🔄 Reports are synced across devices using Super Productivity's persistence API
+- 🌐 Choose a language in Filter Settings (English, Simplified or Traditional Chinese, Japanese, Korean, Spanish, French, or German)
 
 ## Installation
 
-1. Download the plugin files for the latest [Release](https://github.com/dougcooper/sp-reporter/releases)
+1. Download the plugin files for the latest [Release](https://github.com/Khk-NL/sp-reporter/releases)
 2. Open Super Productivity
 3. Go to Settings → Plugins
 4. Click "Load Plugin from Folder"
@@ -246,7 +247,7 @@ make help
 
 To create a new release:
 
-1. **Update the version** in `date-range-reporter/manifest.json`
+1. **Update the version** in `package.json` and `package-lock.json` (the build generates `manifest.json`)
 2. **Commit your changes**:
    ```bash
    git add .
