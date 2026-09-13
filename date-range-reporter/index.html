@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="UTF-8" />
-    <title>Date Range Reporter</title>
+    <title data-i18n="appTitle">Date Range Reporter</title>
 
     <style>
       :root {
@@ -744,39 +744,39 @@
   <body>
     <div class="container">
       <div class="header-container">
-        <h1>📊 Date Range Task Reporter</h1>
-        <button class="settings-btn" id="settingsBtn" title="Filter Settings">⚙️</button>
+        <h1>📊 <span data-i18n="appTitle">Date Range Task Reporter</span></h1>
+        <button class="settings-btn" id="settingsBtn" data-i18n-title="filterSettings">⚙️</button>
       </div>
 
       <div class="info">
-        Select a date range to generate a report of all tasks completed or worked on during that period.
+        <span data-i18n="dateRangeHint">Select a date range to generate a report of all tasks completed or worked on during that period.</span>
       </div>
 
       <div class="input-section">
         <div class="input-group">
           <div class="input-field">
-            <label for="startDate">Start Date</label>
+            <label for="startDate" data-i18n="startDate">Start Date</label>
             <input type="date" id="startDate" />
           </div>
           <div class="input-field">
-            <label for="endDate">End Date</label>
+            <label for="endDate" data-i18n="endDate">End Date</label>
             <input type="date" id="endDate" />
           </div>
-          <button id="generateBtn">Generate Report</button>
+          <button id="generateBtn" data-i18n="generateReport">Generate Report</button>
         </div>
       </div>
 
       <!-- Saved Reports Section -->
       <div class="saved-reports-section" id="savedReportsSection">
         <div class="saved-reports-header">
-          <h2 class="saved-reports-title">📁 Saved Reports</h2>
+          <h2 class="saved-reports-title">📁 <span data-i18n="savedReports">Saved Reports</span></h2>
           <div class="button-group" style="margin-top: 0;">
-            <button id="combineSelectedBtn" class="secondary-btn" style="display: none;">🔗 Combine Selected</button>
-            <button id="deleteSelectedBtn" class="danger-btn" style="display: none;">Delete Selected</button>
+            <button id="combineSelectedBtn" class="secondary-btn" style="display: none;">🔗 <span data-i18n="combineSelected">Combine Selected</span></button>
+            <button id="deleteSelectedBtn" class="danger-btn" style="display: none;" data-i18n="deleteSelected">Delete Selected</button>
           </div>
         </div>
         <div class="saved-reports-list" id="savedReportsList">
-          <div class="empty-state">No saved reports yet. Generate and save a report to get started.</div>
+          <div class="empty-state" data-i18n="noSavedReports">No saved reports yet. Generate and save a report to get started.</div>
         </div>
       </div>
     </div>
@@ -785,16 +785,16 @@
     <div class="modal-overlay" id="reportModal">
       <div class="modal">
         <div class="modal-header">
-          <h3 class="modal-title" id="modalTitle">Generated Report</h3>
+          <h3 class="modal-title" id="modalTitle" data-i18n="generatedReport">Generated Report</h3>
           <button class="modal-close" id="closeModalBtn">×</button>
         </div>
         <div class="modal-body">
-          <input type="text" class="report-name-input" id="reportNameInput" placeholder="Report name (optional)" />
+          <input type="text" class="report-name-input" id="reportNameInput" data-i18n-placeholder="reportNamePlaceholder" placeholder="Report name (optional)" />
           <textarea class="modal-report-content" id="modalReportContent"></textarea>
         </div>
         <div class="modal-footer">
-          <button id="modalCopyBtn" class="secondary-btn">📋 Copy to Clipboard</button>
-          <button id="modalSaveBtn">💾 Save Report</button>
+          <button id="modalCopyBtn" class="secondary-btn">📋 <span data-i18n="copyToClipboard">Copy to Clipboard</span></button>
+          <button id="modalSaveBtn">💾 <span data-i18n="saveReport">Save Report</span></button>
         </div>
       </div>
     </div>
@@ -803,41 +803,54 @@
     <div class="modal-overlay" id="preferencesModal">
       <div class="modal">
         <div class="modal-header">
-          <h3 class="modal-title">⚙️ Filter Settings</h3>
+          <h3 class="modal-title">⚙️ <span data-i18n="filterSettings">Filter Settings</span></h3>
           <button class="modal-close" id="closePreferencesBtn">×</button>
         </div>
         <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
           <!-- Report Format Section -->
           <div class="settings-section" id="reportFormatSection">
-            <h4 class="settings-section-title">Report Format</h4>
+            <h4 class="settings-section-title" data-i18n="reportFormat">Report Format</h4>
             <div class="input-field" style="margin-bottom: 12px;">
-              <label for="outputFormat">Output format</label>
+              <label for="language" data-i18n="language">Language</label>
+              <select id="language" style="width: 220px; padding: 8px; border-radius: 4px; border: 1px solid var(--border-light); background: var(--bg-secondary); color: var(--text-primary);">
+                <option value="en" data-i18n="english">English</option>
+                <option value="zh-CN" data-i18n="simplifiedChinese">简体中文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日本語</option>
+                <option value="ko">한국어</option>
+                <option value="es">Español</option>
+                <option value="fr">Français</option>
+                <option value="de">Deutsch</option>
+              </select>
+            </div>
+            <div class="input-field" style="margin-bottom: 12px;">
+              <label for="outputFormat" data-i18n="outputFormat">Output format</label>
               <select id="outputFormat" style="width: 220px; padding: 8px; border-radius: 4px; border: 1px solid var(--border-light); background: var(--bg-secondary); color: var(--text-primary);">
-                <option value="simple">Simple (current)</option>
-                <option value="table">Table (Markdown)</option>
+                <option value="simple" data-i18n="simpleFormat">Simple (current)</option>
+                <option value="table" data-i18n="tableFormat">Table (Markdown)</option>
               </select>
             </div>
 
             <div id="tableSettingsContainer" style="display:none; margin-top: 12px;">
-              <label for="tableColumnsList">Columns (drag to reorder)</label>
+              <label for="tableColumnsList" data-i18n="tableColumns">Columns (drag to reorder)</label>
               <ul id="tableColumnsList" style="list-style: none; padding: 8px; border: 1px solid var(--border-light); border-radius: 4px; background: var(--bg-tertiary);">
                 <!-- dynamically rendered -->
               </ul>
 
               <div class="input-field" style="margin-top: 12px; display: flex; align-items: center; gap: 8px;">
-                <label for="tableSortColumn" style="margin:0;">Sort by</label>
+                <label for="tableSortColumn" style="margin:0;" data-i18n="sortBy">Sort by</label>
                 <select id="tableSortColumn" style="width: 200px; padding: 6px; border-radius: 4px; border: 1px solid var(--border-light); background: var(--bg-secondary); color: var(--text-primary);">
-                  <option value="date">Date</option>
-                  <option value="project">Project</option>
-                  <option value="title">Task Title</option>
-                  <option value="time">Time Spent</option>
-                  <option value="status">Status</option>
+                  <option value="date" data-i18n="date">Date</option>
+                  <option value="project" data-i18n="project">Project</option>
+                  <option value="title" data-i18n="taskTitle">Task Title</option>
+                  <option value="time" data-i18n="timeSpent">Time Spent</option>
+                  <option value="status" data-i18n="status">Status</option>
                 </select>
 
-                <label for="tableSortDirection" style="margin:0 0 0 12px;">Direction</label>
+                <label for="tableSortDirection" style="margin:0 0 0 12px;" data-i18n="direction">Direction</label>
                 <select id="tableSortDirection" style="width: 120px; padding: 6px; border-radius: 4px; border: 1px solid var(--border-light); background: var(--bg-secondary); color: var(--text-primary);">
-                  <option value="asc">Asc</option>
-                  <option value="desc">Desc</option>
+                  <option value="asc" data-i18n="ascending">Asc</option>
+                  <option value="desc" data-i18n="descending">Desc</option>
                 </select>
               </div>
 
@@ -846,22 +859,22 @@
 
           <!-- View Organization Section -->
           <div class="settings-section" id="viewOrgSection">
-            <h4 class="settings-section-title">View Organization</h4>
+            <h4 class="settings-section-title" data-i18n="viewOrganization">View Organization</h4>
             <div class="input-field" id="groupByContainer" style="margin-bottom: 16px;">
-              <label for="groupBy">Group by</label>
+              <label for="groupBy" data-i18n="groupBy">Group by</label>
               <select id="groupBy" style="width: 200px; padding: 8px; border-radius: 4px; border: 1px solid var(--border-light); background: var(--bg-secondary); color: var(--text-primary);">
-                <option value="date">Date</option>
-                <option value="project">Project</option>
+                <option value="date" data-i18n="date">Date</option>
+                <option value="project" data-i18n="project">Project</option>
               </select>
             </div>
           </div>
 
           <!-- Display Options Section -->
           <div class="settings-section">
-            <h4 class="settings-section-title">Display Options</h4>
+            <h4 class="settings-section-title" data-i18n="displayOptions">Display Options</h4>
             <div class="toggle-row">
               <div class="toggle-content">
-                <label for="showDate">Show completion date</label>
+                <label for="showDate" data-i18n="showCompletionDate">Show completion date</label>
               </div>
               <label class="toggle-switch">
                 <input type="checkbox" id="showDate" style="display: none;" />
@@ -870,7 +883,7 @@
             </div>
             <div class="toggle-row">
               <div class="toggle-content">
-                <label for="showProject">Show project</label>
+                <label for="showProject" data-i18n="showProject">Show project</label>
               </div>
               <label class="toggle-switch">
                 <input type="checkbox" id="showProject" checked style="display: none;" />
@@ -879,7 +892,7 @@
             </div>
             <div class="toggle-row">
               <div class="toggle-content">
-                <label for="showTags">Show tags</label>
+                <label for="showTags" data-i18n="showTags">Show tags</label>
               </div>
               <label class="toggle-switch">
                 <input type="checkbox" id="showTags" style="display: none;" />
@@ -888,7 +901,7 @@
             </div>
             <div class="toggle-row">
               <div class="toggle-content">
-                <label for="includeNotes">Show task notes</label>
+                <label for="includeNotes" data-i18n="showTaskNotes">Show task notes</label>
               </div>
               <label class="toggle-switch">
                 <input type="checkbox" id="includeNotes" style="display: none;" />
@@ -897,7 +910,7 @@
             </div>
             <div class="toggle-row">
               <div class="toggle-content">
-                <label for="includeOverdue">Include overdue tasks</label>
+                <label for="includeOverdue" data-i18n="includeOverdue">Include overdue tasks</label>
               </div>
               <label class="toggle-switch">
                 <input type="checkbox" id="includeOverdue" style="display: none;" />
@@ -906,7 +919,7 @@
             </div>
             <div class="toggle-row">
               <div class="toggle-content">
-                <label for="showTimeSpent">Show time spent</label>
+                <label for="showTimeSpent" data-i18n="showTimeSpent">Show time spent</label>
               </div>
               <label class="toggle-switch">
                 <input type="checkbox" id="showTimeSpent" checked style="display: none;" />
@@ -915,7 +928,7 @@
             </div>
             <div class="toggle-row">
               <div class="toggle-content">
-                <label for="showTotalTime">Show totals</label>
+                <label for="showTotalTime" data-i18n="showTotals">Show totals</label>
               </div>
               <label class="toggle-switch">
                 <input type="checkbox" id="showTotalTime" checked style="display: none;" />
@@ -927,10 +940,10 @@
 
           <!-- Filtering Logic Section -->
           <div class="settings-section">
-            <h4 class="settings-section-title">Filtering Logic</h4>
+            <h4 class="settings-section-title" data-i18n="filteringLogic">Filtering Logic</h4>
             <div class="toggle-row">
               <div class="toggle-content">
-                <label id="hideEmptyLabel" for="excludeEmptyDates">Hide empty projects</label>
+                <label id="hideEmptyLabel" for="excludeEmptyDates" data-i18n="hideEmptyProjects">Hide empty projects</label>
               </div>
               <label class="toggle-switch">
                 <input type="checkbox" id="excludeEmptyDates" checked style="display: none;" />
@@ -939,29 +952,29 @@
             </div>
             <div class="toggle-row" style="align-items: center; gap: 12px;">
               <div class="toggle-content" style="flex: 1;">
-                <label for="minTimeSpent">Minimum duration to include: </label>
+                <label for="minTimeSpent" data-i18n="minimumDuration">Minimum duration to include: </label>
               </div>
               <input type="number" id="minTimeSpent" min="0" max="60" value="5" style="width: 60px; padding: 8px; border: 1px solid var(--border-light); border-radius: 4px; background: var(--bg-secondary); color: var(--text-primary);" />
-              <span style="color: var(--text-secondary);">minutes</span>
+              <span style="color: var(--text-secondary);" data-i18n="minutes">minutes</span>
             </div>
           </div>
 
           <!-- Exclusions Section -->
           <div class="settings-section">
-            <h4 class="settings-section-title">Exclusions</h4>
+            <h4 class="settings-section-title" data-i18n="exclusions">Exclusions</h4>
             <div id="projectExclusionContainer" style="display: none;">
               <div class="project-exclusion-input" style="position: relative;">
-                <label for="projectExclusionSearch">Exclude projects:</label>
+                <label for="projectExclusionSearch" data-i18n="excludeProjects">Exclude projects:</label>
                 <div id="projectDropdown" style="display: none;"></div>
-                <input type="text" id="projectExclusionSearch" placeholder="Search or select projects..." style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-light); border-radius: 4px; background: var(--bg-secondary); color: var(--text-primary); font-size: 14px;" />
+                <input type="text" id="projectExclusionSearch" data-i18n-placeholder="searchProjects" placeholder="Search or select projects..." style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-light); border-radius: 4px; background: var(--bg-secondary); color: var(--text-primary); font-size: 14px;" />
                 <div id="selectedProjectsContainer" style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px;"></div>
               </div>
             </div>
           </div>
         </div>
         <div class="modal-footer">
-          <button id="cancelPreferencesBtn" class="secondary-btn">Cancel</button>
-          <button id="savePreferencesBtn">💾 Save Preferences</button>
+          <button id="cancelPreferencesBtn" class="secondary-btn" data-i18n="cancel">Cancel</button>
+          <button id="savePreferencesBtn">💾 <span data-i18n="savePreferences">Save Preferences</span></button>
         </div>
       </div>
     </div>
@@ -1058,6 +1071,69 @@
       let originalExcludedProjects = []; // Track original excluded projects for cancel/discard
       let reportHasChanges = false; // Track unsaved report content changes
       let originalReportContent = ''; // Track original report content for comparison
+
+      const translations = {
+        en: {
+          appTitle: 'Date Range Task Reporter', filterSettings: 'Filter Settings', dateRangeHint: 'Select a date range to generate a report of all tasks completed or worked on during that period.',
+          startDate: 'Start Date', endDate: 'End Date', generateReport: 'Generate Report', savedReports: 'Saved Reports', combineSelected: 'Combine Selected', deleteSelected: 'Delete Selected',
+          noSavedReports: 'No saved reports yet. Generate and save a report to get started.', generatedReport: 'Generated Report', reportNamePlaceholder: 'Report name (optional)', copyToClipboard: 'Copy to Clipboard', saveReport: 'Save Report',
+          reportFormat: 'Report Format', language: 'Language', english: 'English', simplifiedChinese: 'Simplified Chinese', outputFormat: 'Output format', simpleFormat: 'Simple (current)', tableFormat: 'Table (Markdown)', tableColumns: 'Columns (drag to reorder)', sortBy: 'Sort by', date: 'Date', project: 'Project', taskTitle: 'Task Title', timeSpent: 'Time Spent', status: 'Status', direction: 'Direction', ascending: 'Asc', descending: 'Desc',
+          viewOrganization: 'View Organization', groupBy: 'Group by', displayOptions: 'Display Options', showCompletionDate: 'Show completion date', showProject: 'Show project', showTags: 'Show tags', showTaskNotes: 'Show task notes', includeOverdue: 'Include overdue tasks', showTimeSpent: 'Show time spent', showTotals: 'Show totals', filteringLogic: 'Filtering Logic', hideEmptyProjects: 'Hide empty projects', minimumDuration: 'Minimum duration to include: ', minutes: 'minutes', exclusions: 'Exclusions', excludeProjects: 'Exclude projects:', searchProjects: 'Search or select projects...', cancel: 'Cancel', savePreferences: 'Save Preferences',
+          generating: 'Generating...', dateRangeInvalid: 'Start date must be before or equal to end date', reportGenerated: 'Report generated with {count} tasks', failedGenerate: 'Failed to generate report: {error}', editSavedReport: 'Edit Saved Report', tasksCompleted: '{count} task(s) completed', reportCopied: 'Report copied to clipboard!', failedCopy: 'Failed to copy to clipboard', reportUpdated: 'Report updated successfully!', reportSaved: 'Report saved successfully!', reportTooLarge: 'This report is very large ({percent}% of the 256KB per-report limit).', failedSave: 'Failed to save report', reportTooLargeError: 'This report is too large to save - it exceeds 256KB even after compression.',
+          noProjects: 'No projects available', notesHidden: 'Notes column is hidden', deleteConfirm: 'Are you sure you want to delete this report?', deleted: 'Report deleted successfully', failedDelete: 'Failed to delete report', deleteManyConfirm: 'Are you sure you want to delete {count} report(s)?', deletedMany: '{count} report(s) deleted successfully', selectTwo: 'Please select at least 2 reports to combine', combined: 'Combined {count} reports successfully', failedCombine: 'Failed to combine reports', unsavedReport: 'You have unsaved changes to the report. Are you sure you want to discard them?', unsavedPreferences: 'You have unsaved changes. Are you sure you want to discard them?', preferencesSaved: 'Preferences saved successfully!', failedPreferences: 'Failed to save preferences',
+          reportHeader: 'Task Completion Report', dateRangeLabel: 'Date Range', generatedLabel: 'Generated', totalTasksLabel: 'Total Tasks', totalTimeLabel: 'Total Time', excludedLogsLabel: 'Excluded Work Logs', excludedLogs: '{count} (below {minutes} min threshold)', noTasks: 'No tasks', combinedReport: 'Combined Report', combinedFrom: 'Combined from {count} reports', reportNumber: 'Report {number}', total: 'Total', notes: 'Notes', tags: 'Tags',
+          statusOverdue: 'OVERDUE', statusWip: 'WIP', statusDone: 'DONE', noProject: 'No Project', hourUnit: 'h', minuteUnit: 'm', simpleNote: '*Note: Individual work log entries are shown for tasks with multiple work logs. WIP indicates work in progress. DONE indicates a completed task. Subtasks are nested under parent tasks.*', projectNote: '*Note: Tasks are grouped by project. Time shown is the total across all days in the date range. Subtasks are nested under parent tasks.*'
+        },
+        'zh-CN': {
+          appTitle: '日期范围任务报告', filterSettings: '筛选设置', dateRangeHint: '选择日期范围，生成该期间完成或处理过的所有任务报告。',
+          startDate: '开始日期', endDate: '结束日期', generateReport: '生成报告', savedReports: '已保存报告', combineSelected: '合并选中项', deleteSelected: '删除选中项',
+          noSavedReports: '暂无已保存报告。生成并保存报告后，它们会显示在这里。', generatedReport: '生成的报告', reportNamePlaceholder: '报告名称（可选）', copyToClipboard: '复制到剪贴板', saveReport: '保存报告',
+          reportFormat: '报告格式', language: '语言', english: 'English', simplifiedChinese: '简体中文', outputFormat: '输出格式', simpleFormat: '简单格式（当前）', tableFormat: '表格（Markdown）', tableColumns: '列（拖动排序）', sortBy: '排序依据', date: '日期', project: '项目', taskTitle: '任务标题', timeSpent: '耗时', status: '状态', direction: '方向', ascending: '升序', descending: '降序',
+          viewOrganization: '视图组织', groupBy: '分组依据', displayOptions: '显示选项', showCompletionDate: '显示完成日期', showProject: '显示项目', showTags: '显示标签', showTaskNotes: '显示任务备注', includeOverdue: '包含逾期任务', showTimeSpent: '显示耗时', showTotals: '显示总计', filteringLogic: '筛选逻辑', hideEmptyProjects: '隐藏空项目', minimumDuration: '纳入的最短时长：', minutes: '分钟', exclusions: '排除项', excludeProjects: '排除项目：', searchProjects: '搜索或选择项目……', cancel: '取消', savePreferences: '保存设置',
+          generating: '生成中……', dateRangeInvalid: '开始日期必须早于或等于结束日期', reportGenerated: '已生成 {count} 个任务的报告', failedGenerate: '生成报告失败：{error}', editSavedReport: '编辑已保存报告', tasksCompleted: '已完成 {count} 个任务', reportCopied: '报告已复制到剪贴板！', failedCopy: '复制到剪贴板失败', reportUpdated: '报告更新成功！', reportSaved: '报告保存成功！', reportTooLarge: '报告较大（已达到单个报告 256KB 限制的 {percent}%）。', failedSave: '保存报告失败', reportTooLargeError: '报告过大，无法保存：即使压缩后仍超过 256KB。',
+          noProjects: '没有可用项目', notesHidden: '备注列已隐藏', deleteConfirm: '确定要删除此报告吗？', deleted: '报告删除成功', failedDelete: '删除报告失败', deleteManyConfirm: '确定要删除 {count} 个报告吗？', deletedMany: '已成功删除 {count} 个报告', selectTwo: '请至少选择 2 个报告进行合并', combined: '已成功合并 {count} 个报告', failedCombine: '合并报告失败', unsavedReport: '报告有未保存的更改。确定要放弃吗？', unsavedPreferences: '设置有未保存的更改。确定要放弃吗？', preferencesSaved: '设置保存成功！', failedPreferences: '保存设置失败',
+          reportHeader: '任务完成报告', dateRangeLabel: '日期范围', generatedLabel: '生成时间', totalTasksLabel: '任务总数', totalTimeLabel: '总耗时', excludedLogsLabel: '排除的工作记录', excludedLogs: '{count}（低于 {minutes} 分钟阈值）', noTasks: '无任务', combinedReport: '合并报告', combinedFrom: '合并自 {count} 个报告', reportNumber: '报告 {number}', total: '总计', notes: '备注', tags: '标签',
+          statusOverdue: '逾期', statusWip: '进行中', statusDone: '已完成', noProject: '无项目', hourUnit: '小时', minuteUnit: '分钟', simpleNote: '*说明：有多条工作记录的任务会按记录分别显示。进行中表示任务尚未完成，已完成表示任务已经完成。子任务会嵌套在父任务下。*', projectNote: '*说明：任务按项目分组。耗时为日期范围内所有日期的总和。子任务会嵌套在父任务下。*'
+        }
+      };
+
+      // Keep all supported locales on the same key contract.  The English
+      // dictionary remains the fallback for older saved preferences and any
+      // future keys added to the UI.
+      const additionalTranslations = {
+        'zh-TW': {
+          appTitle: '日期範圍任務報告', filterSettings: '篩選設定', dateRangeHint: '選擇日期範圍，產生期間內完成或處理過的所有任務報告。', startDate: '開始日期', endDate: '結束日期', generateReport: '產生報告', savedReports: '已儲存報告', combineSelected: '合併選取項目', deleteSelected: '刪除選取項目', generatedReport: '產生的報告', reportNamePlaceholder: '報告名稱（選填）', copyToClipboard: '複製到剪貼簿', saveReport: '儲存報告', reportFormat: '報告格式', language: '語言', simplifiedChinese: '簡體中文', outputFormat: '輸出格式', simpleFormat: '簡單格式', tableFormat: '表格（Markdown）', tableColumns: '欄位（拖曳排序）', sortBy: '排序依據', date: '日期', project: '專案', taskTitle: '任務標題', timeSpent: '耗時', status: '狀態', direction: '方向', ascending: '升冪', descending: '降冪', viewOrganization: '檢視組織', groupBy: '分組依據', displayOptions: '顯示選項', showCompletionDate: '顯示完成日期', showProject: '顯示專案', showTags: '顯示標籤', showTaskNotes: '顯示任務備註', includeOverdue: '包含逾期任務', showTimeSpent: '顯示耗時', showTotals: '顯示總計', filteringLogic: '篩選邏輯', hideEmptyProjects: '隱藏空專案', minimumDuration: '納入的最短時長：', minutes: '分鐘', exclusions: '排除項目', excludeProjects: '排除專案：', searchProjects: '搜尋或選取專案……', cancel: '取消', savePreferences: '儲存設定', generating: '產生中……', dateRangeInvalid: '開始日期必須早於或等於結束日期', reportGenerated: '已產生 {count} 個任務的報告', reportCopied: '報告已複製到剪貼簿！', failedCopy: '複製到剪貼簿失敗', reportUpdated: '報告更新成功！', reportSaved: '報告儲存成功！', failedSave: '報告儲存失敗', deleted: '報告刪除成功', failedDelete: '報告刪除失敗', selectTwo: '請至少選取 2 個報告進行合併', combined: '已成功合併 {count} 個報告', failedCombine: '報告合併失敗', preferencesSaved: '設定儲存成功！', failedPreferences: '設定儲存失敗', reportHeader: '任務完成報告', dateRangeLabel: '日期範圍', generatedLabel: '產生時間', totalTasksLabel: '任務總數', totalTimeLabel: '總耗時', excludedLogsLabel: '排除的工作記錄', excludedLogs: '{count}（低於 {minutes} 分鐘門檻）', noTasks: '無任務', combinedReport: '合併報告', combinedFrom: '合併自 {count} 個報告', reportNumber: '報告 {number}', total: '總計', notes: '備註', tags: '標籤', statusOverdue: '逾期', statusWip: '進行中', statusDone: '已完成', noProject: '無專案', simpleNote: '*說明：有多筆工作記錄的任務會分別顯示。子任務會嵌套在父任務下。*', projectNote: '*說明：任務按專案分組，耗時為日期範圍內所有日期的總和。子任務會嵌套在父任務下。*', hourUnit: '小時', minuteUnit: '分'
+        },
+        ja: {
+          appTitle: '日付範囲タスクレポート', filterSettings: 'フィルター設定', dateRangeHint: '期間を選択して、その期間に完了または作業したタスクのレポートを作成します。', startDate: '開始日', endDate: '終了日', generateReport: 'レポートを生成', savedReports: '保存済みレポート', combineSelected: '選択項目を結合', deleteSelected: '選択項目を削除', generatedReport: '生成されたレポート', reportNamePlaceholder: 'レポート名（任意）', copyToClipboard: 'クリップボードにコピー', saveReport: 'レポートを保存', reportFormat: 'レポート形式', language: '言語', simplifiedChinese: '簡体字中国語', outputFormat: '出力形式', simpleFormat: 'シンプル形式', tableFormat: '表（Markdown）', tableColumns: '列（ドラッグして並べ替え）', sortBy: '並べ替え', date: '日付', project: 'プロジェクト', taskTitle: 'タスク名', timeSpent: '作業時間', status: 'ステータス', direction: '方向', ascending: '昇順', descending: '降順', viewOrganization: '表示構成', groupBy: 'グループ化', displayOptions: '表示オプション', showCompletionDate: '完了日を表示', showProject: 'プロジェクトを表示', showTags: 'タグを表示', showTaskNotes: 'タスクメモを表示', includeOverdue: '期限超過タスクを含める', showTimeSpent: '作業時間を表示', showTotals: '合計を表示', filteringLogic: 'フィルター条件', hideEmptyProjects: '空のプロジェクトを隠す', minimumDuration: '含める最小時間：', minutes: '分', exclusions: '除外', excludeProjects: '除外するプロジェクト：', searchProjects: 'プロジェクトを検索または選択……', cancel: 'キャンセル', savePreferences: '設定を保存', generating: '生成中……', dateRangeInvalid: '開始日は終了日以前にしてください', reportGenerated: '{count} 件のタスクのレポートを生成しました', reportCopied: 'レポートをコピーしました！', failedCopy: 'コピーに失敗しました', reportUpdated: 'レポートを更新しました！', reportSaved: 'レポートを保存しました！', failedSave: 'レポートの保存に失敗しました', deleted: 'レポートを削除しました', failedDelete: '削除に失敗しました', selectTwo: '結合するには 2 件以上選択してください', combined: '{count} 件のレポートを結合しました', failedCombine: '結合に失敗しました', preferencesSaved: '設定を保存しました！', failedPreferences: '設定の保存に失敗しました', reportHeader: 'タスク完了レポート', dateRangeLabel: '期間', generatedLabel: '生成日時', totalTasksLabel: 'タスク数', totalTimeLabel: '合計時間', excludedLogsLabel: '除外した作業記録', excludedLogs: '{count}（{minutes} 分未満）', noTasks: 'タスクなし', combinedReport: '結合レポート', combinedFrom: '{count} 件のレポートから結合', reportNumber: 'レポート {number}', total: '合計', notes: 'メモ', tags: 'タグ', statusOverdue: '期限超過', statusWip: '作業中', statusDone: '完了', noProject: 'プロジェクトなし', simpleNote: '*注：複数の作業記録は個別に表示されます。子タスクは親タスクの下に表示されます。*', projectNote: '*注：タスクはプロジェクト別に表示されます。*', hourUnit: '時間', minuteUnit: '分'
+        },
+        ko: {
+          appTitle: '날짜 범위 작업 보고서', filterSettings: '필터 설정', dateRangeHint: '기간을 선택하여 해당 기간에 완료했거나 작업한 모든 작업의 보고서를 만듭니다.', startDate: '시작일', endDate: '종료일', generateReport: '보고서 생성', savedReports: '저장된 보고서', combineSelected: '선택 항목 결합', deleteSelected: '선택 항목 삭제', generatedReport: '생성된 보고서', reportNamePlaceholder: '보고서 이름(선택 사항)', copyToClipboard: '클립보드에 복사', saveReport: '보고서 저장', reportFormat: '보고서 형식', language: '언어', simplifiedChinese: '중국어 간체', outputFormat: '출력 형식', simpleFormat: '간단한 형식', tableFormat: '표(Markdown)', tableColumns: '열(드래그하여 정렬)', sortBy: '정렬 기준', date: '날짜', project: '프로젝트', taskTitle: '작업 제목', timeSpent: '소요 시간', status: '상태', direction: '방향', ascending: '오름차순', descending: '내림차순', viewOrganization: '보기 구성', groupBy: '그룹 기준', displayOptions: '표시 옵션', showCompletionDate: '완료 날짜 표시', showProject: '프로젝트 표시', showTags: '태그 표시', showTaskNotes: '작업 메모 표시', includeOverdue: '기한 초과 작업 포함', showTimeSpent: '소요 시간 표시', showTotals: '합계 표시', filteringLogic: '필터 조건', hideEmptyProjects: '빈 프로젝트 숨기기', minimumDuration: '포함할 최소 시간: ', minutes: '분', exclusions: '제외', excludeProjects: '제외할 프로젝트:', searchProjects: '프로젝트 검색 또는 선택……', cancel: '취소', savePreferences: '설정 저장', generating: '생성 중……', dateRangeInvalid: '시작일은 종료일 이전이어야 합니다', reportGenerated: '{count}개 작업 보고서를 생성했습니다', reportCopied: '보고서를 클립보드에 복사했습니다!', failedCopy: '클립보드 복사 실패', reportUpdated: '보고서를 업데이트했습니다!', reportSaved: '보고서를 저장했습니다!', failedSave: '보고서 저장 실패', deleted: '보고서를 삭제했습니다', failedDelete: '보고서 삭제 실패', selectTwo: '결합할 보고서를 2개 이상 선택하세요', combined: '{count}개 보고서를 결합했습니다', failedCombine: '보고서 결합 실패', preferencesSaved: '설정을 저장했습니다!', failedPreferences: '설정 저장 실패', reportHeader: '작업 완료 보고서', dateRangeLabel: '날짜 범위', generatedLabel: '생성 시간', totalTasksLabel: '전체 작업', totalTimeLabel: '총 시간', excludedLogsLabel: '제외된 작업 기록', excludedLogs: '{count}개({minutes}분 미만)', noTasks: '작업 없음', combinedReport: '결합 보고서', combinedFrom: '{count}개 보고서에서 결합', reportNumber: '보고서 {number}', total: '합계', notes: '메모', tags: '태그', statusOverdue: '기한 초과', statusWip: '진행 중', statusDone: '완료', noProject: '프로젝트 없음', simpleNote: '*참고: 여러 작업 기록은 개별 항목으로 표시됩니다. 하위 작업은 상위 작업 아래에 표시됩니다.*', projectNote: '*참고: 작업은 프로젝트별로 그룹화됩니다.*', hourUnit: '시간', minuteUnit: '분'
+        },
+        es: { appTitle: 'Informe de tareas por fechas', filterSettings: 'Configuración de filtros', dateRangeHint: 'Selecciona un intervalo para crear un informe de las tareas completadas o trabajadas durante ese periodo.', startDate: 'Fecha inicial', endDate: 'Fecha final', generateReport: 'Generar informe', savedReports: 'Informes guardados', combineSelected: 'Combinar seleccionados', deleteSelected: 'Eliminar seleccionados', generatedReport: 'Informe generado', reportNamePlaceholder: 'Nombre del informe (opcional)', copyToClipboard: 'Copiar al portapapeles', saveReport: 'Guardar informe', reportFormat: 'Formato del informe', language: 'Idioma', outputFormat: 'Formato de salida', simpleFormat: 'Formato simple', tableFormat: 'Tabla (Markdown)', tableColumns: 'Columnas (arrastrar para ordenar)', sortBy: 'Ordenar por', date: 'Fecha', project: 'Proyecto', taskTitle: 'Título de tarea', timeSpent: 'Tiempo empleado', status: 'Estado', direction: 'Dirección', ascending: 'Ascendente', descending: 'Descendente', viewOrganization: 'Organización', groupBy: 'Agrupar por', displayOptions: 'Opciones de visualización', showCompletionDate: 'Mostrar fecha de finalización', showProject: 'Mostrar proyecto', showTags: 'Mostrar etiquetas', showTaskNotes: 'Mostrar notas', includeOverdue: 'Incluir tareas vencidas', showTimeSpent: 'Mostrar tiempo empleado', showTotals: 'Mostrar totales', filteringLogic: 'Lógica de filtrado', hideEmptyProjects: 'Ocultar proyectos vacíos', minimumDuration: 'Duración mínima: ', minutes: 'minutos', exclusions: 'Exclusiones', excludeProjects: 'Excluir proyectos:', searchProjects: 'Buscar o seleccionar proyectos…', cancel: 'Cancelar', savePreferences: 'Guardar preferencias', generating: 'Generando…', dateRangeInvalid: 'La fecha inicial debe ser anterior o igual a la final', reportGenerated: 'Informe generado con {count} tareas', reportCopied: '¡Informe copiado al portapapeles!', failedCopy: 'No se pudo copiar', reportUpdated: '¡Informe actualizado!', reportSaved: '¡Informe guardado!', failedSave: 'No se pudo guardar el informe', deleted: 'Informe eliminado', failedDelete: 'No se pudo eliminar el informe', selectTwo: 'Selecciona al menos 2 informes para combinar', combined: '{count} informes combinados', failedCombine: 'No se pudieron combinar los informes', preferencesSaved: '¡Preferencias guardadas!', failedPreferences: 'No se pudieron guardar las preferencias', reportHeader: 'Informe de tareas completadas', dateRangeLabel: 'Intervalo de fechas', generatedLabel: 'Generado', totalTasksLabel: 'Total de tareas', totalTimeLabel: 'Tiempo total', excludedLogsLabel: 'Registros excluidos', excludedLogs: '{count} (menos de {minutes} min)', noTasks: 'Sin tareas', combinedReport: 'Informe combinado', combinedFrom: 'Combinado desde {count} informes', reportNumber: 'Informe {number}', total: 'Total', notes: 'Notas', tags: 'Etiquetas', statusOverdue: 'VENCIDA', statusWip: 'EN CURSO', statusDone: 'COMPLETADA', noProject: 'Sin proyecto', simpleNote: '*Nota: las entradas de trabajo múltiples se muestran por separado. Las subtareas aparecen bajo sus tareas principales.*', projectNote: '*Nota: las tareas se agrupan por proyecto.*', hourUnit: 'h', minuteUnit: 'min' },
+        fr: { appTitle: 'Rapport de tâches par période', filterSettings: 'Paramètres des filtres', dateRangeHint: 'Sélectionnez une période pour créer un rapport des tâches terminées ou travaillées pendant cette période.', startDate: 'Date de début', endDate: 'Date de fin', generateReport: 'Générer le rapport', savedReports: 'Rapports enregistrés', combineSelected: 'Combiner la sélection', deleteSelected: 'Supprimer la sélection', generatedReport: 'Rapport généré', reportNamePlaceholder: 'Nom du rapport (facultatif)', copyToClipboard: 'Copier dans le presse-papiers', saveReport: 'Enregistrer le rapport', reportFormat: 'Format du rapport', language: 'Langue', outputFormat: 'Format de sortie', simpleFormat: 'Format simple', tableFormat: 'Tableau (Markdown)', tableColumns: 'Colonnes (glisser pour réorganiser)', sortBy: 'Trier par', date: 'Date', project: 'Projet', taskTitle: 'Titre de la tâche', timeSpent: 'Temps passé', status: 'Statut', direction: 'Direction', ascending: 'Croissant', descending: 'Décroissant', viewOrganization: 'Organisation', groupBy: 'Regrouper par', displayOptions: 'Options d’affichage', showCompletionDate: 'Afficher la date de fin', showProject: 'Afficher le projet', showTags: 'Afficher les tags', showTaskNotes: 'Afficher les notes', includeOverdue: 'Inclure les tâches en retard', showTimeSpent: 'Afficher le temps passé', showTotals: 'Afficher les totaux', filteringLogic: 'Filtres', hideEmptyProjects: 'Masquer les projets vides', minimumDuration: 'Durée minimale : ', minutes: 'minutes', exclusions: 'Exclusions', excludeProjects: 'Exclure les projets :', searchProjects: 'Rechercher ou sélectionner des projets…', cancel: 'Annuler', savePreferences: 'Enregistrer les préférences', generating: 'Génération…', dateRangeInvalid: 'La date de début doit être antérieure ou égale à la date de fin', reportGenerated: 'Rapport généré avec {count} tâches', reportCopied: 'Rapport copié dans le presse-papiers !', failedCopy: 'Échec de la copie', reportUpdated: 'Rapport mis à jour !', reportSaved: 'Rapport enregistré !', failedSave: 'Échec de l’enregistrement', deleted: 'Rapport supprimé', failedDelete: 'Échec de la suppression', selectTwo: 'Sélectionnez au moins 2 rapports à combiner', combined: '{count} rapports combinés', failedCombine: 'Échec de la combinaison', preferencesSaved: 'Préférences enregistrées !', failedPreferences: 'Échec de l’enregistrement des préférences', reportHeader: 'Rapport des tâches terminées', dateRangeLabel: 'Période', generatedLabel: 'Généré', totalTasksLabel: 'Nombre total de tâches', totalTimeLabel: 'Temps total', excludedLogsLabel: 'Journaux exclus', excludedLogs: '{count} (moins de {minutes} min)', noTasks: 'Aucune tâche', combinedReport: 'Rapport combiné', combinedFrom: 'Combiné à partir de {count} rapports', reportNumber: 'Rapport {number}', total: 'Total', notes: 'Notes', tags: 'Tags', statusOverdue: 'EN RETARD', statusWip: 'EN COURS', statusDone: 'TERMINÉ', noProject: 'Sans projet', simpleNote: '*Remarque : les entrées multiples sont affichées séparément. Les sous-tâches apparaissent sous leur tâche parent.*', projectNote: '*Remarque : les tâches sont regroupées par projet.*', hourUnit: 'h', minuteUnit: 'min' },
+        de: { appTitle: 'Aufgabenbericht nach Zeitraum', filterSettings: 'Filtereinstellungen', dateRangeHint: 'Wählen Sie einen Zeitraum für einen Bericht über erledigte oder bearbeitete Aufgaben.', startDate: 'Startdatum', endDate: 'Enddatum', generateReport: 'Bericht erstellen', savedReports: 'Gespeicherte Berichte', combineSelected: 'Auswahl zusammenführen', deleteSelected: 'Auswahl löschen', generatedReport: 'Erstellter Bericht', reportNamePlaceholder: 'Berichtsname (optional)', copyToClipboard: 'In Zwischenablage kopieren', saveReport: 'Bericht speichern', reportFormat: 'Berichtsformat', language: 'Sprache', outputFormat: 'Ausgabeformat', simpleFormat: 'Einfaches Format', tableFormat: 'Tabelle (Markdown)', tableColumns: 'Spalten (ziehen zum Sortieren)', sortBy: 'Sortieren nach', date: 'Datum', project: 'Projekt', taskTitle: 'Aufgabentitel', timeSpent: 'Zeitaufwand', status: 'Status', direction: 'Richtung', ascending: 'Aufsteigend', descending: 'Absteigend', viewOrganization: 'Ansicht', groupBy: 'Gruppieren nach', displayOptions: 'Anzeigeoptionen', showCompletionDate: 'Abschlussdatum anzeigen', showProject: 'Projekt anzeigen', showTags: 'Tags anzeigen', showTaskNotes: 'Notizen anzeigen', includeOverdue: 'Überfällige Aufgaben einbeziehen', showTimeSpent: 'Zeitaufwand anzeigen', showTotals: 'Summen anzeigen', filteringLogic: 'Filterlogik', hideEmptyProjects: 'Leere Projekte ausblenden', minimumDuration: 'Mindestdauer: ', minutes: 'Minuten', exclusions: 'Ausschlüsse', excludeProjects: 'Projekte ausschließen:', searchProjects: 'Projekte suchen oder auswählen…', cancel: 'Abbrechen', savePreferences: 'Einstellungen speichern', generating: 'Wird erstellt…', dateRangeInvalid: 'Das Startdatum muss vor oder gleich dem Enddatum liegen', reportGenerated: 'Bericht mit {count} Aufgaben erstellt', reportCopied: 'Bericht in die Zwischenablage kopiert!', failedCopy: 'Kopieren fehlgeschlagen', reportUpdated: 'Bericht aktualisiert!', reportSaved: 'Bericht gespeichert!', failedSave: 'Bericht konnte nicht gespeichert werden', deleted: 'Bericht gelöscht', failedDelete: 'Löschen fehlgeschlagen', selectTwo: 'Wählen Sie mindestens 2 Berichte zum Zusammenführen aus', combined: '{count} Berichte zusammengeführt', failedCombine: 'Zusammenführen fehlgeschlagen', preferencesSaved: 'Einstellungen gespeichert!', failedPreferences: 'Einstellungen konnten nicht gespeichert werden', reportHeader: 'Aufgabenabschlussbericht', dateRangeLabel: 'Zeitraum', generatedLabel: 'Erstellt', totalTasksLabel: 'Aufgaben gesamt', totalTimeLabel: 'Gesamtzeit', excludedLogsLabel: 'Ausgeschlossene Arbeitsprotokolle', excludedLogs: '{count} (unter {minutes} Min.)', noTasks: 'Keine Aufgaben', combinedReport: 'Zusammengeführter Bericht', combinedFrom: 'Aus {count} Berichten zusammengeführt', reportNumber: 'Bericht {number}', total: 'Gesamt', notes: 'Notizen', tags: 'Tags', statusOverdue: 'ÜBERFÄLLIG', statusWip: 'IN ARBEIT', statusDone: 'ERLEDIGT', noProject: 'Kein Projekt', simpleNote: '*Hinweis: Mehrere Arbeitsprotokolle werden einzeln angezeigt. Unteraufgaben stehen unter der übergeordneten Aufgabe.*', projectNote: '*Hinweis: Aufgaben werden nach Projekt gruppiert.*', hourUnit: 'Std.', minuteUnit: 'Min.' }
+      };
+      Object.keys(additionalTranslations).forEach(locale => {
+        translations[locale] = { ...translations.en, ...additionalTranslations[locale] };
+      });
+
+      function t(key, values = {}) {
+        const language = translations[preferences.language] ? preferences.language : 'en';
+        let text = translations[language][key] || translations.en[key] || key;
+        Object.keys(values).forEach(name => { text = text.replace(new RegExp(`\\{${name}\\}`, 'g'), values[name]); });
+        return text;
+      }
+
+      function translateUI() {
+        document.documentElement.lang = preferences.language || 'en';
+        document.querySelectorAll('[data-i18n]').forEach(element => { element.textContent = t(element.dataset.i18n); });
+        document.querySelectorAll('[data-i18n-placeholder]').forEach(element => { element.placeholder = t(element.dataset.i18nPlaceholder); });
+        document.querySelectorAll('[data-i18n-title]').forEach(element => { element.title = t(element.dataset.i18nTitle); });
+        const language = document.getElementById('language');
+        if (language) language.value = preferences.language;
+        renderTableColumnsUI();
+      }
       // Exposed globally so tests can inspect/update preferences via `window.preferences`
       var preferences = {
         groupBy: 'date',
@@ -1075,7 +1151,8 @@
         // Table / output settings (new)
         outputFormat: 'simple', // 'simple' | 'table'
         tableColumns: ['date','project','title','time','status','notes'],
-        tableSort: { column: 'date', direction: 'asc' }
+        tableSort: { column: 'date', direction: 'asc' },
+        language: 'en'
       };
 
       // Set default dates to past seven days (including today)
@@ -1098,17 +1175,19 @@
       function formatDateDisplay(dateStr) {
         const date = new Date(dateStr + 'T00:00:00');
         const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-        return date.toLocaleDateString('en-US', options);
+        return date.toLocaleDateString(preferences.language || 'en-US', options);
       }
 
       // Format time in minutes to human readable format (e.g., "1h 30m" or "45m")
       function formatTime(minutes) {
+        const hourUnit = t('hourUnit', {}) || 'h';
+        const minuteUnit = t('minuteUnit', {}) || 'm';
         if (minutes < 60) {
-          return `${minutes}m`;
+          return `${minutes}${minuteUnit}`;
         }
         const hours = Math.floor(minutes / 60);
         const mins = minutes % 60;
-        return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
+        return mins > 0 ? `${hours}${hourUnit} ${mins}${minuteUnit}` : `${hours}${hourUnit}`;
       }
 
       // Resolve a task's tagIds to Markdown tokens like "#foo #bar".
@@ -1536,18 +1615,18 @@
         }
 
         // Generate report in Markdown format
-        let reportText = `# Task Completion Report\n\n`;
-        reportText += `**Date Range:** ${formatDateDisplay(formatDate(startDate))} - ${formatDateDisplay(formatDate(endDate))}  \n`;
-        reportText += `**Generated:** ${new Date().toLocaleString()}  \n`;
-        reportText += `**Total Tasks:** ${totalTasks}\n`;
+        let reportText = `# ${t('reportHeader')}\n\n`;
+        reportText += `**${t('dateRangeLabel')}:** ${formatDateDisplay(formatDate(startDate))} - ${formatDateDisplay(formatDate(endDate))}  \n`;
+        reportText += `**${t('generatedLabel')}:** ${new Date().toLocaleString()}  \n`;
+        reportText += `**${t('totalTasksLabel')}:** ${totalTasks}\n`;
         if (showTotals) {
           const grandTotalMs = Object.keys(tasksByDate).reduce((sum, dateStr) => sum + sumDateGroupMs(tasksByDate[dateStr], dateStr), 0);
-          reportText += `**Total Time:** ${formatTime(Math.round(grandTotalMs / 60000))}\n`;
+          reportText += `**${t('totalTimeLabel')}:** ${formatTime(Math.round(grandTotalMs / 60000))}\n`;
         }
         if (excludedCountRef.count > 0) {
-          reportText += `**Excluded Work Logs:** ${excludedCountRef.count} (below ${document.getElementById('minTimeSpent').value} min threshold)\n`;
+          reportText += `**${t('excludedLogsLabel')}:** ${t('excludedLogs', { count: excludedCountRef.count, minutes: document.getElementById('minTimeSpent').value })}\n`;
         }
-        reportText += `*Note: Individual work log entries are shown for tasks with multiple work logs. WIP indicates work in progress. DONE indicates a completed task. Subtasks are nested under parent tasks.*\n\n`;
+        reportText += `${t('simpleNote')}\n\n`;
         reportText += `---\n\n`;
 
         // Sort dates
@@ -1568,7 +1647,7 @@
           reportText += `## ${formatDateDisplay(dateStr)}${dateTotalDisplay}\n\n`;
 
           if (tasks.length === 0) {
-            reportText += `*No tasks*\n\n`;
+            reportText += `*${t('noTasks')}*\n\n`;
           } else {
             tasks.forEach((task, index) => {
               // Use workLogDate if available, otherwise use the date from the section
@@ -1579,11 +1658,11 @@
               // Show status indicator for in-progress tasks or overdue tasks
               let statusIndicator = '';
               if (task.isOverdue) {
-                statusIndicator = ' OVERDUE ⚠️';
+                statusIndicator = ` ${t('statusOverdue')} ⚠️`;
               } else if (task.isInProgress) {
-                statusIndicator = ' WIP';
+                statusIndicator = ` ${t('statusWip')}`;
               } else if (task.isDone) {
-                statusIndicator = ' DONE ✅';
+                statusIndicator = ` ${t('statusDone')} ✅`;
               }
               
               // Optionally show project name
@@ -1603,7 +1682,7 @@
                   const subtaskTimeSpent = (document.getElementById('showTimeSpent').checked && subtask.timeSpentOnDay && subtask.timeSpentOnDay[subtaskDateForTimeSpent])
                     ? ` *(${Math.round(subtask.timeSpentOnDay[subtaskDateForTimeSpent] / 60000)} min)*`
                     : '';
-                  const subtaskStatusIndicator = subtask.isInProgress ? ' WIP' : (subtask.isDone ? ' DONE ✅' : '');
+                  const subtaskStatusIndicator = subtask.isInProgress ? ` ${t('statusWip')}` : (subtask.isDone ? ` ${t('statusDone')} ✅` : '');
                   const subtaskProjectName = showProject && subtask.projectId && projects[subtask.projectId]
                     ? ` [${projects[subtask.projectId]}]`
                     : '';
@@ -1751,18 +1830,18 @@
 
         // Generate report in Markdown format
         const showTotals = document.getElementById('showTotalTime')?.checked;
-        let reportText = `# Task Completion Report\n\n`;
-        reportText += `**Date Range:** ${formatDateDisplay(formatDate(startDate))} - ${formatDateDisplay(formatDate(endDate))}  \n`;
-        reportText += `**Generated:** ${new Date().toLocaleString()}  \n`;
-        reportText += `**Total Tasks:** ${totalTasks}\n`;
+        let reportText = `# ${t('reportHeader')}\n\n`;
+        reportText += `**${t('dateRangeLabel')}:** ${formatDateDisplay(formatDate(startDate))} - ${formatDateDisplay(formatDate(endDate))}  \n`;
+        reportText += `**${t('generatedLabel')}:** ${new Date().toLocaleString()}  \n`;
+        reportText += `**${t('totalTasksLabel')}:** ${totalTasks}\n`;
         if (showTotals) {
           const grandTotalMinutes = Math.round(Object.values(tasksByProject).reduce((sum, p) => sum + p.totalTime, 0) / 60000);
-          reportText += `**Total Time:** ${formatTime(grandTotalMinutes)}\n`;
+          reportText += `**${t('totalTimeLabel')}:** ${formatTime(grandTotalMinutes)}\n`;
         }
         if (excludedCountRef.count > 0) {
-          reportText += `**Excluded Work Logs:** ${excludedCountRef.count} (below ${document.getElementById('minTimeSpent').value} min threshold)\n`;
+          reportText += `**${t('excludedLogsLabel')}:** ${t('excludedLogs', { count: excludedCountRef.count, minutes: document.getElementById('minTimeSpent').value })}\n`;
         }
-        reportText += `*Note: Tasks are grouped by project. Time shown is the total across all days in the date range. Subtasks are nested under parent tasks.*\n\n`;
+        reportText += `${t('projectNote')}\n\n`;
         reportText += `---\n\n`;
 
         // Sort projects by name
@@ -1789,7 +1868,7 @@
           reportText += `## ${project.name}${totalTimeDisplay}\n\n`;
 
           if (project.tasks.length === 0) {
-            reportText += `*No tasks*\n\n`;
+            reportText += `*${t('noTasks')}*\n\n`;
           } else {
             project.tasks.forEach(task => {
               const timeMinutes = Math.round(task.totalTimeSpent / 60000);
@@ -1797,11 +1876,11 @@
               // Show status indicator for in-progress tasks or overdue tasks
               let statusIndicator = '';
               if (task.isOverdue) {
-                statusIndicator = ' OVERDUE ⚠️';
+                statusIndicator = ` ${t('statusOverdue')} ⚠️`;
               } else if (task.isInProgress) {
-                statusIndicator = ' WIP';
+                statusIndicator = ` ${t('statusWip')}`;
               } else if (task.isDone) {
-                statusIndicator = ' DONE ✅';
+                statusIndicator = ` ${t('statusDone')} ✅`;
               }
               
               // For project grouping, don't show dates. Project is already the
@@ -1822,7 +1901,7 @@
                 task.subtasks.forEach(subtask => {
                   const subtaskTimeMinutes = Math.round(subtask.totalTimeSpent / 60000);
                   const subtaskTimeSpent = (document.getElementById('showTimeSpent').checked && subtaskTimeMinutes > 0) ? ` *(${formatTime(subtaskTimeMinutes)})*` : '';
-                  const subtaskStatusIndicator = subtask.isInProgress ? ' WIP' : (subtask.isDone ? ' DONE ✅' : '');
+                  const subtaskStatusIndicator = subtask.isInProgress ? ` ${t('statusWip')}` : (subtask.isDone ? ` ${t('statusDone')} ✅` : '');
                   const subtaskTagTokens = showTags ? formatTaskTags(subtask.tagIds, tags) : '';
                   const subtaskTags = subtaskTagTokens ? ` ${subtaskTagTokens}` : '';
 
@@ -1847,14 +1926,14 @@
       async function generateReport() {
         try {
           generateBtn.disabled = true;
-          generateBtn.textContent = 'Generating...';
+          generateBtn.textContent = t('generating');
 
           const startDate = new Date(startDateInput.value + 'T00:00:00');
           const endDate = new Date(endDateInput.value + 'T23:59:59');
 
           if (startDate > endDate) {
             PluginAPI.showSnack({
-              msg: 'Start date must be before or equal to end date',
+              msg: t('dateRangeInvalid'),
               type: 'ERROR',
             });
             return;
@@ -1926,25 +2005,25 @@
           showReportModal(reportText, `${totalTasks} task${totalTasks !== 1 ? 's' : ''} completed`);
 
           PluginAPI.showSnack({
-            msg: `Report generated with ${totalTasks} tasks`,
+            msg: t('reportGenerated', { count: totalTasks }),
             type: 'SUCCESS',
           });
 
         } catch (error) {
           console.error('Error generating report:', error);
           PluginAPI.showSnack({
-            msg: 'Failed to generate report: ' + error.message,
+            msg: t('failedGenerate', { error: error.message }),
             type: 'ERROR',
           });
         } finally {
           generateBtn.disabled = false;
-          generateBtn.textContent = 'Generate Report';
+          generateBtn.textContent = t('generateReport');
         }
       }
 
       // Show report modal
       function showReportModal(reportText, subtitle = '') {
-        modalTitle.textContent = isEditingExisting ? 'Edit Saved Report' : 'Generated Report';
+        modalTitle.textContent = isEditingExisting ? t('editSavedReport') : t('generatedReport');
         if (subtitle && !isEditingExisting) {
           modalTitle.textContent += ` - ${subtitle}`;
         }
@@ -1958,7 +2037,7 @@
       // Hide report modal
       function hideReportModal() {
         if (reportHasChanges) {
-          if (!confirm('You have unsaved changes to the report. Are you sure you want to discard them?')) {
+          if (!confirm(t('unsavedReport'))) {
             return;
           }
         }
@@ -1977,14 +2056,14 @@
           await navigator.clipboard.writeText(text);
 
           PluginAPI.showSnack({
-            msg: 'Report copied to clipboard!',
+            msg: t('reportCopied'),
             type: 'SUCCESS',
             ico: 'content_copy',
           });
         } catch (error) {
           console.error('Error copying to clipboard:', error);
           PluginAPI.showSnack({
-            msg: 'Failed to copy to clipboard',
+            msg: t('failedCopy'),
             type: 'ERROR',
           });
         }
@@ -1995,8 +2074,8 @@
         const previousReports = savedReports.slice();
         try {
           const reportContent = modalReportContent.value;
-          const currentTime = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-          const reportName = reportNameInput.value.trim() || `Report ${formatDateDisplay(currentReport.startDate)} - ${formatDateDisplay(currentReport.endDate)} at ${currentTime}`;
+          const currentTime = new Date().toLocaleTimeString(preferences.language || 'en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+          const reportName = reportNameInput.value.trim() || `${t('reportHeader')} ${formatDateDisplay(currentReport.startDate)} - ${formatDateDisplay(currentReport.endDate)} ${currentTime}`;
 
           let report;
           if (isEditingExisting) {
@@ -2036,7 +2115,7 @@
           hideReportModal();
 
           PluginAPI.showSnack({
-            msg: isEditingExisting ? 'Report updated successfully!' : 'Report saved successfully!',
+            msg: isEditingExisting ? t('reportUpdated') : t('reportSaved'),
             type: 'SUCCESS',
             ico: 'save',
           });
@@ -2044,7 +2123,7 @@
           // Warn when a single report nears the per-report 256KB limit.
           if (contentSize >= MAX_PERSIST_BYTES * STORAGE_WARN_RATIO) {
             PluginAPI.showSnack({
-              msg: `This report is very large (${Math.round((contentSize / MAX_PERSIST_BYTES) * 100)}% of the 256KB per-report limit).`,
+              msg: t('reportTooLarge', { percent: Math.round((contentSize / MAX_PERSIST_BYTES) * 100) }),
               type: 'ERROR',
             });
           }
@@ -2057,7 +2136,7 @@
           PluginAPI.showSnack({
             msg: isQuotaError(error)
               ? 'This report is too large to save — it exceeds 256KB even after compression.'
-              : 'Failed to save report',
+              : t('failedSave'),
             type: 'ERROR',
           });
         }
@@ -2245,6 +2324,7 @@
         const showTimeSpentEl = document.getElementById('showTimeSpent');
         const showTotalTimeEl = document.getElementById('showTotalTime');
         const projectExclusionContainerEl = document.getElementById('projectExclusionContainer');
+        const languageEl = document.getElementById('language');
         
         if (groupByEl) groupByEl.value = preferences.groupBy;
         if (showDateEl) showDateEl.checked = preferences.showDate;
@@ -2256,6 +2336,8 @@
         if (minTimeSpentEl) minTimeSpentEl.value = preferences.minTimeSpent;
         if (showTimeSpentEl) showTimeSpentEl.checked = preferences.showTimeSpent;
         if (showTotalTimeEl) showTotalTimeEl.checked = preferences.showTotalTime;
+        if (languageEl) languageEl.value = preferences.language || 'en';
+        translateUI();
 
         // Apply table/output format preferences
         const outputFormatEl = document.getElementById('outputFormat');
@@ -2298,7 +2380,7 @@
         // of the orderable list until then
         const showTags = document.getElementById('showTags')?.checked === true;
         if (!showTags) cols = cols.filter(c => c !== 'tags');
-        const labels = { date: 'Date', project: 'Project', tags: 'Tags', title: 'Task Title', time: 'Time Spent', status: 'Status', notes: 'Notes' };
+        const labels = { date: t('date'), project: t('project'), tags: t('tags'), title: t('taskTitle'), time: t('timeSpent'), status: t('status'), notes: t('notes') };
 
         list.innerHTML = '';
         cols.forEach(key => {
@@ -2313,7 +2395,7 @@
             inner += `<input type="checkbox" class="notes-toggle" style="margin-left:auto;" ${preferences.showNotesColumn !== false ? 'checked' : ''}/>`;
             if (preferences.showNotesColumn === false) {
               li.style.opacity = '0.5';
-              li.title = 'Notes column is hidden';
+              li.title = t('notesHidden');
             }
           }
           inner += `<span style="opacity:0.5;margin-left:8px;">⋮</span>`;
@@ -2417,7 +2499,7 @@
         Object.keys(groups).forEach(groupKey => {
           let rows = groups[groupKey] || [];
           if (rows.length === 0) {
-            text += `*No tasks*\n\n`;
+            text += `*${t('noTasks')}*\n\n`;
             return;
           }
 
@@ -2441,7 +2523,7 @@
           });
 
           if (rows.length === 0) {
-            text += `*No tasks*\n\n`;
+            text += `*${t('noTasks')}*\n\n`;
             return;
           }
 
@@ -2555,25 +2637,25 @@
             if (workLogsInRange.length > 0) {
               workLogsInRange.forEach(workLogDate => {
                 const timeMinutes = Math.round((task.timeSpentOnDay && task.timeSpentOnDay[workLogDate] ? task.timeSpentOnDay[workLogDate] / 60000 : 0));
-                const status = workLogDate !== taskDateStr ? 'WIP' : 'DONE';
+                const status = workLogDate !== taskDateStr ? t('statusWip') : t('statusDone');
                 pushEntry({ date: workLogDate, project: projects[task.projectId] || '', title: task.title, timeMinutes, status, tags: formatTaskTags(task.tagIds, tags), notes: task.notes || '', taskId: task.id });
 
                 const filteredSubtasks = filterSubtasksForReport(subtasks, formatDate(startDate), formatDate(endDate), minTimeMs);
                 filteredSubtasks.forEach(subtask => {
                   const subDate = subtask.workLogDate || workLogDate;
                   const subTimeMinutes = subtask.timeSpentOnDay && subtask.timeSpentOnDay[subDate] ? Math.round(subtask.timeSpentOnDay[subDate] / 60000) : 0;
-                  pushEntry({ date: subDate, project: projects[subtask.projectId] || projects[task.projectId] || '', title: '↳ ' + subtask.title, timeMinutes: subTimeMinutes, status: subtask.isInProgress ? 'WIP' : (subtask.isDone ? 'DONE' : ''), tags: formatTaskTags(subtask.tagIds, tags), notes: subtask.notes || '', taskId: task.id });
+                  pushEntry({ date: subDate, project: projects[subtask.projectId] || projects[task.projectId] || '', title: '↳ ' + subtask.title, timeMinutes: subTimeMinutes, status: subtask.isInProgress ? t('statusWip') : (subtask.isDone ? t('statusDone') : ''), tags: formatTaskTags(subtask.tagIds, tags), notes: subtask.notes || '', taskId: task.id });
                 });
               });
             } else if ((taskDateStr >= formatDate(startDate) && taskDateStr <= formatDate(endDate)) || subtasksWithLogsInRange.length > 0) {
               const timeMinutes = (task.timeSpentOnDay && task.timeSpentOnDay[taskDateStr]) ? Math.round(task.timeSpentOnDay[taskDateStr] / 60000) : 0;
-              pushEntry({ date: taskDateStr, project: projects[task.projectId] || '', title: task.title, timeMinutes, status: 'DONE', tags: formatTaskTags(task.tagIds, tags), notes: task.notes || '', taskId: task.id });
+              pushEntry({ date: taskDateStr, project: projects[task.projectId] || '', title: task.title, timeMinutes, status: t('statusDone'), tags: formatTaskTags(task.tagIds, tags), notes: task.notes || '', taskId: task.id });
 
               const filteredSubtasks = filterSubtasksForReport(subtasks, formatDate(startDate), formatDate(endDate), minTimeMs);
               filteredSubtasks.forEach(subtask => {
                 const subDate = subtask.workLogDate || taskDateStr;
                 const subTimeMinutes = subtask.timeSpentOnDay && subtask.timeSpentOnDay[subDate] ? Math.round(subtask.timeSpentOnDay[subDate] / 60000) : 0;
-                pushEntry({ date: subDate, project: projects[subtask.projectId] || projects[task.projectId] || '', title: '↳ ' + subtask.title, timeMinutes: subTimeMinutes, status: subtask.isInProgress ? 'WIP' : (subtask.isDone ? 'DONE' : ''), tags: formatTaskTags(subtask.tagIds, tags), notes: subtask.notes || '', taskId: task.id });
+                pushEntry({ date: subDate, project: projects[subtask.projectId] || projects[task.projectId] || '', title: '↳ ' + subtask.title, timeMinutes: subTimeMinutes, status: subtask.isInProgress ? t('statusWip') : (subtask.isDone ? t('statusDone') : ''), tags: formatTaskTags(subtask.tagIds, tags), notes: subtask.notes || '', taskId: task.id });
               });
             }
           } else if (hasWorkLogs || subtasksWithLogsInRange.length > 0) {
@@ -2581,7 +2663,7 @@
               Object.keys(task.timeSpentOnDay).forEach(workLogDate => {
                 if (workLogDate >= formatDate(startDate) && workLogDate <= formatDate(endDate) && task.timeSpentOnDay[workLogDate] >= minTimeMs) {
                   const timeMinutes = Math.round(task.timeSpentOnDay[workLogDate] / 60000);
-                  pushEntry({ date: workLogDate, project: projects[task.projectId] || '', title: task.title, timeMinutes, status: 'WIP', tags: formatTaskTags(task.tagIds, tags), notes: task.notes || '', taskId: task.id });
+                  pushEntry({ date: workLogDate, project: projects[task.projectId] || '', title: task.title, timeMinutes, status: t('statusWip'), tags: formatTaskTags(task.tagIds, tags), notes: task.notes || '', taskId: task.id });
                 }
               });
             }
@@ -2592,7 +2674,7 @@
                 Object.keys(subtask.timeSpentOnDay).forEach(subDate => {
                   if (subDate >= formatDate(startDate) && subDate <= formatDate(endDate) && subtask.timeSpentOnDay[subDate] >= minTimeMs) {
                     const subTimeMinutes = Math.round(subtask.timeSpentOnDay[subDate] / 60000);
-                    pushEntry({ date: subDate, project: projects[subtask.projectId] || projects[task.projectId] || '', title: '↳ ' + subtask.title, timeMinutes: subTimeMinutes, status: subtask.isInProgress ? 'WIP' : '', tags: formatTaskTags(subtask.tagIds, tags), notes: subtask.notes || '', taskId: task.id });
+                    pushEntry({ date: subDate, project: projects[subtask.projectId] || projects[task.projectId] || '', title: '↳ ' + subtask.title, timeMinutes: subTimeMinutes, status: subtask.isInProgress ? t('statusWip') : '', tags: formatTaskTags(subtask.tagIds, tags), notes: subtask.notes || '', taskId: task.id });
                   }
                 });
               }
@@ -2608,7 +2690,7 @@
               // choose dueDay first if present, else fallback to plannedAt
               let dateKey = task.dueDay || (task.plannedAt ? formatDate(new Date(task.plannedAt)) : null);
               if (dateKey) {
-                pushEntry({ date: dateKey, project: projects[task.projectId] || '', title: task.title, timeMinutes: 0, status: 'OVERDUE', tags: formatTaskTags(task.tagIds, tags), notes: task.notes || '', taskId: task.id });
+                pushEntry({ date: dateKey, project: projects[task.projectId] || '', title: task.title, timeMinutes: 0, status: t('statusOverdue'), tags: formatTaskTags(task.tagIds, tags), notes: task.notes || '', taskId: task.id });
               }
             });
           }
@@ -2644,17 +2726,17 @@
         const cols = requestedCols.filter(c =>
           (c !== 'notes' || preferences.showNotesColumn !== false) &&
           (c !== 'tags' || showTagsColumn));
-        const headerLabel = { date: 'Date', project: 'Project', tags: 'Tags', title: 'Task Title', time: 'Time Spent', status: 'Status', notes: 'Notes' };
+        const headerLabel = { date: t('date'), project: t('project'), tags: t('tags'), title: t('taskTitle'), time: t('timeSpent'), status: t('status'), notes: t('notes') };
 
         // Build markdown table output header (rest of rows handled by helper)
         const showTotals = document.getElementById('showTotalTime')?.checked;
-        let reportText = `# Task Completion Report\n\n`;
-        reportText += `**Date Range:** ${formatDateDisplay(formatDate(startDate))} - ${formatDateDisplay(formatDate(endDate))}  \n`;
-        reportText += `**Generated:** ${new Date().toLocaleString()}  \n`;
-        reportText += `**Total Tasks:** ${processedTaskIds.size}\n`;
+        let reportText = `# ${t('reportHeader')}\n\n`;
+        reportText += `**${t('dateRangeLabel')}:** ${formatDateDisplay(formatDate(startDate))} - ${formatDateDisplay(formatDate(endDate))}  \n`;
+        reportText += `**${t('generatedLabel')}:** ${new Date().toLocaleString()}  \n`;
+        reportText += `**${t('totalTasksLabel')}:** ${processedTaskIds.size}\n`;
         if (showTotals) {
           const totalMinutes = sumRowMinutesNoDoubleCount(entries);
-          reportText += `**Total Time:** ${formatTime(totalMinutes)}\n`;
+          reportText += `**${t('totalTimeLabel')}:** ${formatTime(totalMinutes)}\n`;
         }
         reportText += `\n`;
         // delegate row construction to helper; append a Total row only when the Time column is shown
@@ -2682,7 +2764,7 @@
         );
         
         if (sortedProjects.length === 0) {
-          projectDropdown.innerHTML = '<div style="padding: 10px 12px; color: var(--text-secondary); font-size: 13px;">No projects available</div>';
+          projectDropdown.innerHTML = `<div style="padding: 10px 12px; color: var(--text-secondary); font-size: 13px;">${t('noProjects')}</div>`;
           return;
         }
         
@@ -2691,11 +2773,11 @@
           if (preferences.excludedProjects.includes(projectId)) {
             const tag = document.createElement('div');
             tag.className = 'project-tag';
-            tag.innerHTML = `
-              ${projectName}
-              <button type="button">×</button>
-            `;
-            const removeBtn = tag.querySelector('button');
+            tag.appendChild(document.createTextNode(projectName));
+            const removeBtn = document.createElement('button');
+            removeBtn.type = 'button';
+            removeBtn.textContent = '×';
+            tag.appendChild(removeBtn);
             removeBtn.addEventListener('click', () => {
               preferences.excludedProjects = preferences.excludedProjects.filter(id => id !== projectId);
               preferencesHasChanges = true;
@@ -2792,7 +2874,7 @@
       // Hide preferences modal
       function hidePreferencesModal() {
         if (preferencesHasChanges) {
-          if (!confirm('You have unsaved changes. Are you sure you want to discard them?')) {
+          if (!confirm(t('unsavedPreferences'))) {
             return;
           }
           // Restore original state if user confirms discard
@@ -2805,6 +2887,7 @@
       // Save preferences
       async function savePreferences() {
         try {
+          preferences.language = document.getElementById('language')?.value || 'en';
           preferences.groupBy = document.getElementById('groupBy').value;
           preferences.showDate = document.getElementById('showDate').checked;
           preferences.showProject = document.getElementById('showProject').checked;
@@ -2838,18 +2921,19 @@
           // excludeProjects flag is automatically true if any projects are excluded
 
           await persistReports();
+          translateUI();
           preferencesHasChanges = false;
           hidePreferencesModal();
 
           PluginAPI.showSnack({
-            msg: 'Preferences saved successfully!',
+            msg: t('preferencesSaved'),
             type: 'SUCCESS',
             ico: 'settings',
           });
         } catch (error) {
           console.error('Error saving preferences:', error);
           PluginAPI.showSnack({
-            msg: 'Failed to save preferences',
+            msg: t('failedPreferences'),
             type: 'ERROR',
           });
         }
@@ -2867,16 +2951,17 @@
       // Render saved reports list
       function renderSavedReports() {
         if (savedReports.length === 0) {
-          savedReportsList.innerHTML = '<div class="empty-state">No saved reports yet. Generate and save a report to get started.</div>';
+          savedReportsList.innerHTML = `<div class="empty-state">${t('noSavedReports')}</div>`;
           deleteSelectedBtn.style.display = 'none';
           return;
         }
 
+        const escapeHtml = value => String(value).replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
         savedReportsList.innerHTML = savedReports.map(report => `
-          <div class="saved-report-item" data-id="${report.id}">
-            <input type="checkbox" class="saved-report-checkbox" data-id="${report.id}" />
-            <div class="saved-report-info" onclick="viewReport('${report.id}')">
-              <div class="saved-report-name">${report.name}</div>
+          <div class="saved-report-item" data-id="${escapeHtml(report.id)}">
+            <input type="checkbox" class="saved-report-checkbox" data-id="${escapeHtml(report.id)}" />
+            <div class="saved-report-info">
+              <div class="saved-report-name">${escapeHtml(report.name)}</div>
               <div class="saved-report-meta">
                 ${formatDateDisplay(report.startDate)} - ${formatDateDisplay(report.endDate)} · 
                 ${report.totalTasks} task${report.totalTasks !== 1 ? 's' : ''} · 
@@ -2884,10 +2969,16 @@
               </div>
             </div>
             <div class="saved-report-actions">
-              <button class="icon-btn delete-btn" onclick="deleteReport('${report.id}')" title="Delete">🗑️</button>
+              <button class="icon-btn delete-btn" title="Delete">🗑️</button>
             </div>
           </div>
         `).join('');
+
+        savedReportsList.querySelectorAll('.saved-report-item').forEach(item => {
+          const id = item.dataset.id;
+          item.querySelector('.saved-report-info').addEventListener('click', () => viewReport(id));
+          item.querySelector('.delete-btn').addEventListener('click', () => deleteReport(id));
+        });
 
         // Update delete selected button visibility
         updateDeleteSelectedButton();
@@ -2906,7 +2997,7 @@
 
       // Delete single report
       async function deleteReport(reportId) {
-        if (!confirm('Are you sure you want to delete this report?')) {
+        if (!confirm(t('deleteConfirm'))) {
           return;
         }
 
@@ -2918,13 +3009,13 @@
           renderSavedReports();
 
           PluginAPI.showSnack({
-            msg: 'Report deleted successfully',
+            msg: t('deleted'),
             type: 'SUCCESS',
           });
         } catch (error) {
           console.error('Error deleting report:', error);
           PluginAPI.showSnack({
-            msg: 'Failed to delete report',
+            msg: t('failedDelete'),
             type: 'ERROR',
           });
         }
@@ -2958,7 +3049,7 @@
         } catch (error) {
           console.error('Error deleting reports:', error);
           PluginAPI.showSnack({
-            msg: 'Failed to delete reports',
+            msg: t('failedDelete'),
             type: 'ERROR',
           });
         }
@@ -2973,7 +3064,7 @@
 
         if (checkboxes.length < 2) {
           PluginAPI.showSnack({
-            msg: 'Please select at least 2 reports to combine',
+            msg: t('selectTwo'),
             type: 'ERROR',
           });
           return;
@@ -2992,16 +3083,16 @@
           selectedReports.sort((a, b) => new Date(a.savedAt) - new Date(b.savedAt));
           
           // Combine the reports with separators
-          let combinedContent = `# Combined Report\n\n`;
-          combinedContent += `**Combined from ${selectedReports.length} reports**  \n`;
-          combinedContent += `**Generated:** ${new Date().toLocaleString()}  \n\n`;
+          let combinedContent = `# ${t('combinedReport')}\n\n`;
+          combinedContent += `**${t('combinedFrom', { count: selectedReports.length })}**  \n`;
+          combinedContent += `**${t('generatedLabel')}:** ${new Date().toLocaleString(preferences.language || 'en-US')}  \n\n`;
           combinedContent += `---\n\n`;
           
           selectedReports.forEach((report, index) => {
             if (index > 0) {
               combinedContent += `\n---\n\n`;
             }
-            combinedContent += `## Report ${index + 1}: ${report.name}\n\n`;
+            combinedContent += `## ${t('reportNumber', { number: index + 1 })}: ${report.name}\n\n`;
             // Remove the first line (header) from each report if it starts with "# "
             const reportLines = report.content.split('\n');
             let contentStartIndex = 0;
@@ -3025,13 +3116,13 @@
           showReportModal(combinedContent, `Combined from ${selectedReports.length} reports`);
 
           PluginAPI.showSnack({
-            msg: `Combined ${selectedReports.length} reports successfully`,
+            msg: t('combined', { count: selectedReports.length }),
             type: 'SUCCESS',
           });
         } catch (error) {
           console.error('Error combining reports:', error);
           PluginAPI.showSnack({
-            msg: 'Failed to combine reports',
+            msg: t('failedCombine'),
             type: 'ERROR',
           });
         }
@@ -3075,6 +3166,7 @@
 
       // Track preference changes
       const preferenceElements = [
+        'language',
         'outputFormat',
         'groupBy',
         'showDate',

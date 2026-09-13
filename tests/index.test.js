@@ -1487,6 +1487,19 @@ describe('Date Range Reporter', () => {
       expect(reportsList.innerHTML).toContain('3 tasks');
     });
 
+    it('renders saved report names as text', async () => {
+      const reports = [{
+        id: 'report-1', name: '<img src=x onerror=alert(1)>',
+        startDate: '2024-01-15', endDate: '2024-01-17', totalTasks: 1,
+        savedAt: new Date('2024-01-18').toISOString()
+      }];
+      mockPluginAPI.loadSyncedData.mockResolvedValue(JSON.stringify({ reports }));
+      await window.loadReports();
+      const name = document.querySelector('.saved-report-name');
+      expect(name.textContent).toBe(reports[0].name);
+      expect(name.querySelector('img')).toBeNull();
+    });
+
     it('should show empty state when no saved reports', async () => {
       mockPluginAPI.loadSyncedData.mockResolvedValue(null);
       await window.loadReports();
