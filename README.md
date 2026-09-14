@@ -5,6 +5,8 @@ A plugin for [Super Productivity](https://super-productivity.com) that generates
 ## Features
 
 - 📅 Select custom date ranges for reporting
+- 📍 Set both dates to today with one click
+- 📝 Save up to five named Markdown templates and choose one for newly generated reports
 - 📊 View all tasks completed or worked on within the selected period
 - 🔀 **Group reports by Date or by Project** for different perspectives
 - 🏷️ Optionally show project names alongside tasks (Show project toggle)
@@ -40,7 +42,7 @@ A plugin for [Super Productivity](https://super-productivity.com) that generates
 ## Usage
 
 1. Click the "Task Report" button in the header (calendar icon)
-2. Select your desired start and end dates
+2. Select your desired start and end dates, or click **Today** to set both dates to the current local day
 3. **Configure display options** (click the ⚙️ settings button):
    - **Choose grouping method:**
      - **Group by Date** (default): Tasks organized by completion date, optionally showing project names
@@ -50,6 +52,7 @@ A plugin for [Super Productivity](https://super-productivity.com) that generates
    - **Show/hide total time** for projects (when grouping by project)
    - **Include task notes** in the report
    - **Include overdue tasks** to see task instances that are overdue during the date range (based on dueDay field)
+   - **Custom report templates**: enter a name and Markdown, then click **Save template**. Saved names appear below the editor. Choose one to use it, or choose **Current format** for the existing output. You can save up to five templates. Use `{{content}}` for the generated report and optional `{{startDate}}`, `{{endDate}}`, `{{generatedAt}}`, and `{{totalTasks}}` fields. Focus the editor to see field descriptions. Templates sync with preferences and apply only to newly generated reports.
 4. Click "Generate Report"
 6. The report will appear in a modal popup showing:
    - Tasks grouped by date (completed tasks and tasks with work logs)

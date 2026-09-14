@@ -762,6 +762,7 @@
             <label for="endDate" data-i18n="endDate">End Date</label>
             <input type="date" id="endDate" />
           </div>
+          <button id="todayBtn" class="secondary-btn" data-i18n="today">Today</button>
           <button id="generateBtn" data-i18n="generateReport">Generate Report</button>
         </div>
       </div>
@@ -829,6 +830,18 @@
                 <option value="simple" data-i18n="simpleFormat">Simple (current)</option>
                 <option value="table" data-i18n="tableFormat">Table (Markdown)</option>
               </select>
+            </div>
+            <div class="input-field" style="margin-bottom: 12px;">
+              <label for="reportTemplate" data-i18n="reportTemplate">Custom report template (Markdown)</label>
+              <input id="reportTemplateName" type="text" maxlength="60" data-i18n-placeholder="templateNamePlaceholder" placeholder="Template name" style="width: 100%; padding: 10px 12px; margin-bottom: 8px; border: 1px solid var(--border-light); border-radius: 4px; background: var(--bg-secondary); color: var(--text-primary);" />
+              <textarea id="reportTemplate" rows="5" aria-describedby="reportTemplateFields" style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-light); border-radius: 4px; background: var(--bg-secondary); color: var(--text-primary); font: inherit; resize: vertical;"></textarea>
+              <div data-i18n="reportTemplateHelp" style="color: var(--text-secondary); font-size: 13px; margin-top: 6px;">Save up to 5 named templates. Select one below to use it; no selection keeps the current format.</div>
+              <div id="reportTemplateFields" hidden data-i18n="reportTemplateFields" style="white-space: pre-line; color: var(--text-secondary); font-size: 13px; margin-top: 8px;">{{content}} — generated report text</div>
+              <div class="button-group" style="margin-top: 8px;">
+                <button id="saveTemplateBtn" type="button" data-i18n="saveTemplate">Save template</button>
+                <button id="newTemplateBtn" type="button" class="secondary-btn" data-i18n="newTemplate">New template</button>
+              </div>
+              <div id="reportTemplateList" style="margin-top: 12px;"></div>
             </div>
 
             <div id="tableSettingsContainer" style="display:none; margin-top: 12px;">
@@ -1038,6 +1051,7 @@
 
       const startDateInput = document.getElementById('startDate');
       const endDateInput = document.getElementById('endDate');
+      const todayBtn = document.getElementById('todayBtn');
       const generateBtn = document.getElementById('generateBtn');
       
       // Modal elements
@@ -1072,6 +1086,7 @@
       let originalLanguage = 'en';
       let reportHasChanges = false; // Track unsaved report content changes
       let originalReportContent = ''; // Track original report content for comparison
+      let templateDraftId = null;
 
       const translations = {
         en: {
@@ -1127,6 +1142,48 @@
       Object.keys(additionalTranslations).forEach(locale => {
         translations[locale] = { ...translations.en, ...additionalTranslations[locale], ...remainingTranslations[locale] };
       });
+      const templateTranslations = {
+        en: { today: 'Today', reportTemplate: 'Custom report template (Markdown)', reportTemplateHelp: 'Leave blank for the current format. Use {{content}}, {{startDate}}, {{endDate}}, {{generatedAt}}, and {{totalTasks}}.' },
+        'zh-CN': { today: '今天', reportTemplate: '自定义报告模板（Markdown）', reportTemplateHelp: '留空则使用现有格式。可用 {{content}}、{{startDate}}、{{endDate}}、{{generatedAt}}、{{totalTasks}}。' },
+        'zh-TW': { today: '今天', reportTemplate: '自訂報告範本（Markdown）', reportTemplateHelp: '留空則使用現有格式。可用 {{content}}、{{startDate}}、{{endDate}}、{{generatedAt}}、{{totalTasks}}。' },
+        ja: { today: '今日', reportTemplate: 'カスタムレポートテンプレート（Markdown）', reportTemplateHelp: '空欄なら現在の形式を使用します。{{content}}、{{startDate}}、{{endDate}}、{{generatedAt}}、{{totalTasks}} が使えます。' },
+        ko: { today: '오늘', reportTemplate: '사용자 지정 보고서 템플릿(Markdown)', reportTemplateHelp: '비워 두면 기존 형식을 사용합니다. {{content}}, {{startDate}}, {{endDate}}, {{generatedAt}}, {{totalTasks}}를 사용할 수 있습니다.' },
+        es: { today: 'Hoy', reportTemplate: 'Plantilla de informe personalizada (Markdown)', reportTemplateHelp: 'Déjalo vacío para usar el formato actual. Usa {{content}}, {{startDate}}, {{endDate}}, {{generatedAt}} y {{totalTasks}}.' },
+        fr: { today: 'Aujourd’hui', reportTemplate: 'Modèle de rapport personnalisé (Markdown)', reportTemplateHelp: 'Laissez vide pour conserver le format actuel. Utilisez {{content}}, {{startDate}}, {{endDate}}, {{generatedAt}} et {{totalTasks}}.' },
+        de: { today: 'Heute', reportTemplate: 'Eigene Berichtsvorlage (Markdown)', reportTemplateHelp: 'Leer lassen für das bisherige Format. Verwendbar: {{content}}, {{startDate}}, {{endDate}}, {{generatedAt}} und {{totalTasks}}.' }
+      };
+      Object.keys(templateTranslations).forEach(locale => Object.assign(translations[locale], templateTranslations[locale]));
+      const templateFieldTranslations = {
+        en: '{{content}} — generated report text\n{{startDate}} — range start (YYYY-MM-DD)\n{{endDate}} — range end (YYYY-MM-DD)\n{{generatedAt}} — generation time\n{{totalTasks}} — task count',
+        'zh-CN': '{{content}} — 原报告正文\n{{startDate}} — 开始日期（YYYY-MM-DD）\n{{endDate}} — 结束日期（YYYY-MM-DD）\n{{generatedAt}} — 生成时间\n{{totalTasks}} — 任务总数',
+        'zh-TW': '{{content}} — 原報告正文\n{{startDate}} — 開始日期（YYYY-MM-DD）\n{{endDate}} — 結束日期（YYYY-MM-DD）\n{{generatedAt}} — 產生時間\n{{totalTasks}} — 任務總數',
+        ja: '{{content}} — 元のレポート本文\n{{startDate}} — 開始日（YYYY-MM-DD）\n{{endDate}} — 終了日（YYYY-MM-DD）\n{{generatedAt}} — 生成日時\n{{totalTasks}} — タスク数',
+        ko: '{{content}} — 기존 보고서 본문\n{{startDate}} — 시작일(YYYY-MM-DD)\n{{endDate}} — 종료일(YYYY-MM-DD)\n{{generatedAt}} — 생성 시간\n{{totalTasks}} — 작업 수',
+        es: '{{content}} — texto del informe original\n{{startDate}} — fecha inicial (AAAA-MM-DD)\n{{endDate}} — fecha final (AAAA-MM-DD)\n{{generatedAt}} — hora de generación\n{{totalTasks}} — número de tareas',
+        fr: '{{content}} — texte du rapport initial\n{{startDate}} — date de début (AAAA-MM-JJ)\n{{endDate}} — date de fin (AAAA-MM-JJ)\n{{generatedAt}} — date de génération\n{{totalTasks}} — nombre de tâches',
+        de: '{{content}} — bisheriger Berichtstext\n{{startDate}} — Startdatum (JJJJ-MM-TT)\n{{endDate}} — Enddatum (JJJJ-MM-TT)\n{{generatedAt}} — Erstellungszeit\n{{totalTasks}} — Anzahl der Aufgaben'
+      };
+      Object.keys(templateFieldTranslations).forEach(locale => { translations[locale].reportTemplateFields = templateFieldTranslations[locale]; });
+      const namedTemplateTranslations = {
+        en: { reportTemplateHelp: 'Save up to 5 named templates. Select one below to use it; no selection keeps the current format. Available fields: {{content}}, {{startDate}}, {{endDate}}, {{generatedAt}}, {{totalTasks}}.', templateNamePlaceholder: 'Template name', saveTemplate: 'Save template', newTemplate: 'New template', noTemplates: 'No templates saved', templateActive: 'Active', templateUse: 'Use', templateDelete: 'Delete', templateSaved: 'Template saved', templateDeleted: 'Template deleted', templateInvalid: 'Enter a name and template content', templateLimit: 'You can save up to 5 templates', templateSaveFailed: 'Could not save template' },
+        'zh-CN': { reportTemplateHelp: '最多保存 5 个具名模板。选择下方模板即可使用；未选择时保留现有格式。可用字段：{{content}}、{{startDate}}、{{endDate}}、{{generatedAt}}、{{totalTasks}}。', templateNamePlaceholder: '模板名称', saveTemplate: '保存模板', newTemplate: '新建模板', noTemplates: '暂无已保存模板', templateActive: '使用中', templateUse: '使用', templateDelete: '删除', templateSaved: '模板已保存', templateDeleted: '模板已删除', templateInvalid: '请填写模板名称和内容', templateLimit: '最多保存 5 个模板', templateSaveFailed: '保存模板失败' },
+        'zh-TW': { reportTemplateHelp: '最多儲存 5 個具名範本。選擇下方範本即可使用；未選擇時保留現有格式。可用欄位：{{content}}、{{startDate}}、{{endDate}}、{{generatedAt}}、{{totalTasks}}。', templateNamePlaceholder: '範本名稱', saveTemplate: '儲存範本', newTemplate: '新增範本', noTemplates: '尚無已儲存範本', templateActive: '使用中', templateUse: '使用', templateDelete: '刪除', templateSaved: '範本已儲存', templateDeleted: '範本已刪除', templateInvalid: '請填寫範本名稱和內容', templateLimit: '最多儲存 5 個範本', templateSaveFailed: '儲存範本失敗' },
+        ja: { reportTemplateHelp: '名前付きテンプレートは最大 5 件保存できます。下から選択すると適用され、未選択なら従来の形式を使います。{{content}}、{{startDate}}、{{endDate}}、{{generatedAt}}、{{totalTasks}} が使えます。', templateNamePlaceholder: 'テンプレート名', saveTemplate: 'テンプレートを保存', newTemplate: '新しいテンプレート', noTemplates: '保存済みテンプレートなし', templateActive: '使用中', templateUse: '使用', templateDelete: '削除', templateSaved: 'テンプレートを保存しました', templateDeleted: 'テンプレートを削除しました', templateInvalid: '名前と内容を入力してください', templateLimit: '最大 5 件まで保存できます', templateSaveFailed: 'テンプレートを保存できませんでした' },
+        ko: { reportTemplateHelp: '이름 있는 템플릿을 최대 5개 저장할 수 있습니다. 아래에서 선택하면 적용되며 선택하지 않으면 기존 형식을 사용합니다. {{content}}, {{startDate}}, {{endDate}}, {{generatedAt}}, {{totalTasks}}를 사용할 수 있습니다.', templateNamePlaceholder: '템플릿 이름', saveTemplate: '템플릿 저장', newTemplate: '새 템플릿', noTemplates: '저장된 템플릿 없음', templateActive: '사용 중', templateUse: '사용', templateDelete: '삭제', templateSaved: '템플릿을 저장했습니다', templateDeleted: '템플릿을 삭제했습니다', templateInvalid: '이름과 내용을 입력하세요', templateLimit: '템플릿은 최대 5개까지 저장할 수 있습니다', templateSaveFailed: '템플릿 저장 실패' },
+        es: { reportTemplateHelp: 'Guarda hasta 5 plantillas con nombre. Selecciona una abajo para usarla; sin selección se conserva el formato actual. Campos: {{content}}, {{startDate}}, {{endDate}}, {{generatedAt}}, {{totalTasks}}.', templateNamePlaceholder: 'Nombre de la plantilla', saveTemplate: 'Guardar plantilla', newTemplate: 'Nueva plantilla', noTemplates: 'No hay plantillas guardadas', templateActive: 'En uso', templateUse: 'Usar', templateDelete: 'Eliminar', templateSaved: 'Plantilla guardada', templateDeleted: 'Plantilla eliminada', templateInvalid: 'Escribe un nombre y el contenido', templateLimit: 'Puedes guardar hasta 5 plantillas', templateSaveFailed: 'No se pudo guardar la plantilla' },
+        fr: { reportTemplateHelp: 'Enregistrez jusqu’à 5 modèles nommés. Sélectionnez-en un ci-dessous ; sans sélection, le format actuel reste utilisé. Champs : {{content}}, {{startDate}}, {{endDate}}, {{generatedAt}}, {{totalTasks}}.', templateNamePlaceholder: 'Nom du modèle', saveTemplate: 'Enregistrer le modèle', newTemplate: 'Nouveau modèle', noTemplates: 'Aucun modèle enregistré', templateActive: 'Utilisé', templateUse: 'Utiliser', templateDelete: 'Supprimer', templateSaved: 'Modèle enregistré', templateDeleted: 'Modèle supprimé', templateInvalid: 'Saisissez un nom et un contenu', templateLimit: 'Vous pouvez enregistrer 5 modèles au maximum', templateSaveFailed: 'Enregistrement du modèle impossible' },
+        de: { reportTemplateHelp: 'Bis zu 5 benannte Vorlagen speichern. Wählen Sie unten eine aus; ohne Auswahl bleibt das bisherige Format. Felder: {{content}}, {{startDate}}, {{endDate}}, {{generatedAt}}, {{totalTasks}}.', templateNamePlaceholder: 'Vorlagenname', saveTemplate: 'Vorlage speichern', newTemplate: 'Neue Vorlage', noTemplates: 'Keine Vorlagen gespeichert', templateActive: 'Aktiv', templateUse: 'Verwenden', templateDelete: 'Löschen', templateSaved: 'Vorlage gespeichert', templateDeleted: 'Vorlage gelöscht', templateInvalid: 'Name und Inhalt eingeben', templateLimit: 'Sie können bis zu 5 Vorlagen speichern', templateSaveFailed: 'Vorlage konnte nicht gespeichert werden' }
+      };
+      Object.keys(namedTemplateTranslations).forEach(locale => Object.assign(translations[locale], namedTemplateTranslations[locale]));
+      const templateManagementText = {
+        en: ['Current format', 'Delete this template?'], 'zh-CN': ['现有格式', '确定删除此模板吗？'], 'zh-TW': ['現有格式', '確定刪除此範本嗎？'],
+        ja: ['現在の形式', 'このテンプレートを削除しますか？'], ko: ['기존 형식', '이 템플릿을 삭제하시겠습니까?'],
+        es: ['Formato actual', '¿Eliminar esta plantilla?'], fr: ['Format actuel', 'Supprimer ce modèle ?'], de: ['Bisheriges Format', 'Diese Vorlage löschen?']
+      };
+      Object.keys(templateManagementText).forEach(locale => {
+        translations[locale].templateDefault = templateManagementText[locale][0];
+        translations[locale].deleteTemplateConfirm = templateManagementText[locale][1];
+      });
 
       function t(key, values = {}) {
         const language = translations[preferences.language] ? preferences.language : 'en';
@@ -1144,6 +1201,7 @@
         if (language) language.value = preferences.language;
         renderTableColumnsUI();
         renderSavedReports();
+        renderReportTemplateList();
       }
       // Exposed globally so tests can inspect/update preferences via `window.preferences`
       var preferences = {
@@ -1163,7 +1221,9 @@
         outputFormat: 'simple', // 'simple' | 'table'
         tableColumns: ['date','project','title','time','status','notes'],
         tableSort: { column: 'date', direction: 'asc' },
-        language: 'en'
+        language: 'en',
+        reportTemplates: [],
+        activeReportTemplateId: null
       };
 
       // Set default dates to past seven days (including today)
@@ -1180,6 +1240,19 @@
         const month = String(date.getMonth() + 1).padStart(2, '0');
         const day = String(date.getDate()).padStart(2, '0');
         return `${year}-${month}-${day}`;
+      }
+
+      function applyReportTemplate(content, totalTasks, generatedAt) {
+        const template = (preferences.reportTemplates || []).find(item => item.id === preferences.activeReportTemplateId)?.content;
+        if (!template || !template.trim()) return content;
+        const values = {
+          content,
+          startDate: startDateInput.value,
+          endDate: endDateInput.value,
+          generatedAt: generatedAt.toLocaleString(preferences.language || 'en-US'),
+          totalTasks: String(totalTasks)
+        };
+        return template.replace(/\{\{(content|startDate|endDate|generatedAt|totalTasks)\}\}/g, (_, key) => values[key]);
       }
 
       // Format date for display (e.g., "Monday, January 1, 2024")
@@ -2003,17 +2076,20 @@
             totalTasks = result.totalTasks;
           }
 
+          const generatedAt = new Date();
+          reportText = applyReportTemplate(reportText, totalTasks, generatedAt);
+
           // Store report data and show modal
           currentReport = {
             content: reportText,
             startDate: startDateInput.value,
             endDate: endDateInput.value,
             totalTasks: totalTasks,
-            generatedAt: new Date().toISOString()
+            generatedAt: generatedAt.toISOString()
           };
 
           isEditingExisting = false;
-          showReportModal(reportText, `${totalTasks} task${totalTasks !== 1 ? 's' : ''} completed`);
+          showReportModal(reportText, t('tasksCompleted', { count: totalTasks }));
 
           PluginAPI.showSnack({
             msg: t('reportGenerated', { count: totalTasks }),
@@ -2322,6 +2398,112 @@
         return report.content;
       }
 
+      function renderReportTemplateList() {
+        const list = document.getElementById('reportTemplateList');
+        list.replaceChildren();
+        const defaultButton = document.createElement('button');
+        defaultButton.type = 'button';
+        defaultButton.className = 'secondary-btn';
+        defaultButton.textContent = `${preferences.activeReportTemplateId ? '' : '✓ '}${t('templateDefault')}`;
+        defaultButton.addEventListener('click', () => selectReportTemplate(null));
+        list.appendChild(defaultButton);
+
+        const templates = preferences.reportTemplates || [];
+        if (templates.length === 0) {
+          const empty = document.createElement('div');
+          empty.textContent = t('noTemplates');
+          empty.style.cssText = 'margin-top:8px;color:var(--text-secondary);font-size:13px;';
+          list.appendChild(empty);
+        }
+        templates.forEach(item => {
+          const row = document.createElement('div');
+          row.style.cssText = 'display:flex;align-items:center;gap:8px;margin-top:8px;';
+          const name = document.createElement('span');
+          name.textContent = item.name;
+          name.style.cssText = 'flex:1;overflow-wrap:anywhere;';
+          const use = document.createElement('button');
+          use.type = 'button';
+          use.className = 'secondary-btn';
+          use.textContent = item.id === preferences.activeReportTemplateId ? t('templateActive') : t('templateUse');
+          use.addEventListener('click', () => selectReportTemplate(item.id));
+          const remove = document.createElement('button');
+          remove.type = 'button';
+          remove.className = 'danger-btn';
+          remove.textContent = t('templateDelete');
+          remove.addEventListener('click', () => deleteReportTemplate(item.id));
+          row.append(name, use, remove);
+          list.appendChild(row);
+        });
+      }
+
+      async function selectReportTemplate(id) {
+        const previousId = preferences.activeReportTemplateId;
+        preferences.activeReportTemplateId = id;
+        try {
+          await persistReports();
+          const selected = (preferences.reportTemplates || []).find(item => item.id === id);
+          templateDraftId = selected?.id || null;
+          document.getElementById('reportTemplateName').value = selected?.name || '';
+          document.getElementById('reportTemplate').value = selected?.content || '';
+          renderReportTemplateList();
+        } catch (error) {
+          preferences.activeReportTemplateId = previousId;
+          PluginAPI.showSnack({ msg: t('templateSaveFailed'), type: 'ERROR' });
+        }
+      }
+
+      async function saveReportTemplate() {
+        const name = document.getElementById('reportTemplateName').value.trim();
+        const content = document.getElementById('reportTemplate').value;
+        if (!name || !content.trim()) {
+          PluginAPI.showSnack({ msg: t('templateInvalid'), type: 'ERROR' });
+          return;
+        }
+        const previousTemplates = preferences.reportTemplates || [];
+        if (!templateDraftId && previousTemplates.length >= 5) {
+          PluginAPI.showSnack({ msg: t('templateLimit'), type: 'ERROR' });
+          return;
+        }
+        const id = templateDraftId || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        preferences.reportTemplates = templateDraftId
+          ? previousTemplates.map(item => item.id === id ? { id, name, content } : item)
+          : [...previousTemplates, { id, name, content }];
+        const previousActiveId = preferences.activeReportTemplateId;
+        preferences.activeReportTemplateId = id;
+        try {
+          await persistReports();
+          templateDraftId = id;
+          renderReportTemplateList();
+          PluginAPI.showSnack({ msg: t('templateSaved'), type: 'SUCCESS' });
+        } catch (error) {
+          preferences.reportTemplates = previousTemplates;
+          preferences.activeReportTemplateId = previousActiveId;
+          PluginAPI.showSnack({ msg: t('templateSaveFailed'), type: 'ERROR' });
+        }
+      }
+
+      async function deleteReportTemplate(id) {
+        if (!confirm(t('deleteTemplateConfirm'))) return;
+        const previousTemplates = preferences.reportTemplates || [];
+        const previousActiveId = preferences.activeReportTemplateId;
+        preferences.reportTemplates = previousTemplates.filter(item => item.id !== id);
+        if (previousActiveId === id) preferences.activeReportTemplateId = null;
+        try {
+          await persistReports();
+          if (templateDraftId === id) {
+            templateDraftId = null;
+            document.getElementById('reportTemplateName').value = '';
+            document.getElementById('reportTemplate').value = '';
+          }
+          renderReportTemplateList();
+          PluginAPI.showSnack({ msg: t('templateDeleted'), type: 'SUCCESS' });
+        } catch (error) {
+          preferences.reportTemplates = previousTemplates;
+          preferences.activeReportTemplateId = previousActiveId;
+          PluginAPI.showSnack({ msg: t('templateSaveFailed'), type: 'ERROR' });
+        }
+      }
+
       // Load preferences and apply to UI
       function applyPreferences() {
         const groupByEl = document.getElementById('groupBy');
@@ -2348,6 +2530,10 @@
         if (showTimeSpentEl) showTimeSpentEl.checked = preferences.showTimeSpent;
         if (showTotalTimeEl) showTotalTimeEl.checked = preferences.showTotalTime;
         if (languageEl) languageEl.value = preferences.language || 'en';
+        const activeTemplate = (preferences.reportTemplates || []).find(item => item.id === preferences.activeReportTemplateId);
+        templateDraftId = activeTemplate?.id || null;
+        document.getElementById('reportTemplateName').value = activeTemplate?.name || '';
+        document.getElementById('reportTemplate').value = activeTemplate?.content || '';
         translateUI();
 
         // Apply table/output format preferences
@@ -3164,6 +3350,11 @@
 
       // Event listeners
       generateBtn.addEventListener('click', generateReport);
+      todayBtn.addEventListener('click', () => {
+        const date = formatDate(new Date());
+        startDateInput.value = date;
+        endDateInput.value = date;
+      });
       closeModalBtn.addEventListener('click', hideReportModal);
       modalCopyBtn.addEventListener('click', copyFromModal);
       modalSaveBtn.addEventListener('click', saveReport);
@@ -3180,6 +3371,17 @@
       closePreferencesBtn.addEventListener('click', hidePreferencesModal);
       cancelPreferencesBtn.addEventListener('click', cancelPreferences);
       savePreferencesBtn.addEventListener('click', savePreferences);
+      const reportTemplateInput = document.getElementById('reportTemplate');
+      const reportTemplateFields = document.getElementById('reportTemplateFields');
+      reportTemplateInput.addEventListener('focus', () => { reportTemplateFields.hidden = false; });
+      reportTemplateInput.addEventListener('blur', () => { reportTemplateFields.hidden = true; });
+      document.getElementById('saveTemplateBtn').addEventListener('click', saveReportTemplate);
+      document.getElementById('newTemplateBtn').addEventListener('click', () => {
+        templateDraftId = null;
+        document.getElementById('reportTemplateName').value = '';
+        reportTemplateInput.value = '';
+        document.getElementById('reportTemplateName').focus();
+      });
       document.getElementById('language').addEventListener('change', (event) => {
         preferences.language = event.target.value;
         preferencesHasChanges = true;
@@ -3349,6 +3551,7 @@
       window.renderTableColumnsUI = renderTableColumnsUI;
 
       document.addEventListener("DOMContentLoaded", function() {
+        applyPreferences();
         // Load saved reports on initialization
         loadReports();
       });

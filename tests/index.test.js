@@ -124,9 +124,83 @@ describe('Date Range Reporter', () => {
       expect(range).toHaveLength(4);
       expect(range).toEqual(['2024-01-30', '2024-01-31', '2024-02-01', '2024-02-02']);
     });
+
+    it('sets both date inputs to the local day with the Today button', () => {
+      document.getElementById('startDate').value = '2024-01-01';
+      document.getElementById('endDate').value = '2024-01-07';
+      document.getElementById('todayBtn').click();
+      const today = window.formatDate(new Date());
+      expect(document.getElementById('startDate').value).toBe(today);
+      expect(document.getElementById('endDate').value).toBe(today);
+    });
   });
 
   describe('Report Generation', () => {
+    it('applies a saved Markdown template to generated reports', async () => {
+      const template = '# Daily summary\n{{startDate}} to {{endDate}}: {{totalTasks}}\n{{content}}\n{{generatedAt}}';
+      mockPluginAPI.loadSyncedData.mockResolvedValue(JSON.stringify({ reports: [], preferences: {
+        reportTemplates: [{ id: 'daily', name: 'Daily summary', content: template }], activeReportTemplateId: 'daily'
+      } }));
+      await window.loadReports();
+      document.getElementById('startDate').value = '2024-01-15';
+      document.getElementById('endDate').value = '2024-01-15';
+      await window.generateReport();
+      const report = document.getElementById('modalReportContent').value;
+      expect(report).toContain('# Daily summary\n2024-01-15 to 2024-01-15: 0');
+      expect(report).toContain('# Task Completion Report');
+      expect(report).not.toContain('{{generatedAt}}');
+    });
+
+    it('shows field descriptions while editing the template', () => {
+      const input = document.getElementById('reportTemplate');
+      const fields = document.getElementById('reportTemplateFields');
+      expect(fields.hidden).toBe(true);
+      input.focus();
+      expect(fields.hidden).toBe(false);
+      expect(fields.textContent).toContain('{{content}}');
+      input.blur();
+      expect(fields.hidden).toBe(true);
+    });
+
+    it('saves a named template and displays its name below the editor', async () => {
+      document.getElementById('settingsBtn').click();
+      document.getElementById('reportTemplateName').value = 'Daily summary';
+      const input = document.getElementById('reportTemplate');
+      input.value = 'Summary: {{totalTasks}}\n{{content}}';
+      document.getElementById('saveTemplateBtn').click();
+      await vi.waitFor(() => expect(persistedIndex()?.preferences.reportTemplates[0].content).toBe(input.value));
+      await vi.waitFor(() => expect(document.getElementById('reportTemplateList').textContent).toContain('Daily summary'));
+      expect(persistedIndex().preferences.activeReportTemplateId).toBe(persistedIndex().preferences.reportTemplates[0].id);
+    });
+
+    it('limits saved report templates to five', async () => {
+      const templates = Array.from({ length: 5 }, (_, index) => ({ id: String(index), name: `Template ${index}`, content: '{{content}}' }));
+      mockPluginAPI.loadSyncedData.mockResolvedValue(JSON.stringify({ reports: [], preferences: { reportTemplates: templates } }));
+      await window.loadReports();
+      document.getElementById('reportTemplateName').value = 'Sixth';
+      document.getElementById('reportTemplate').value = '{{content}}';
+      document.getElementById('saveTemplateBtn').click();
+      expect(mockPluginAPI.showSnack).toHaveBeenCalledWith({ msg: 'You can save up to 5 templates', type: 'ERROR' });
+      expect(window.preferences.reportTemplates).toHaveLength(5);
+    });
+
+    it('uses the selected named template and can return to the current format', async () => {
+      const templates = [{ id: 'one', name: 'Short', content: 'Short: {{totalTasks}}' }];
+      mockPluginAPI.loadSyncedData.mockResolvedValue(JSON.stringify({ reports: [], preferences: { reportTemplates: templates } }));
+      await window.loadReports();
+      document.getElementById('startDate').value = '2024-01-15';
+      document.getElementById('endDate').value = '2024-01-15';
+      document.querySelectorAll('#reportTemplateList button')[1].click();
+      await vi.waitFor(() => expect(persistedIndex()?.preferences.activeReportTemplateId).toBe('one'));
+      await window.generateReport();
+      expect(document.getElementById('modalReportContent').value).toBe('Short: 0');
+
+      document.querySelector('#reportTemplateList button').click();
+      await vi.waitFor(() => expect(persistedIndex()?.preferences.activeReportTemplateId).toBeNull());
+      await window.generateReport();
+      expect(document.getElementById('modalReportContent').value).toContain('# Task Completion Report');
+    });
+
     it('should call PluginAPI when generating report', async () => {
       const startInput = document.getElementById('startDate');
       const endInput = document.getElementById('endDate');
