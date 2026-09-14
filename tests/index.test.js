@@ -1511,6 +1511,23 @@ describe('Date Range Reporter', () => {
       expect(deleteBtn.style.display).toBe('none');
     });
 
+    it('updates the empty saved-reports message when the language changes', async () => {
+      mockPluginAPI.loadSyncedData.mockResolvedValue(JSON.stringify({
+        reports: [], preferences: { language: 'zh-CN' }
+      }));
+      await window.loadReports();
+      expect(document.querySelector('.empty-state').textContent).toContain('暂无已保存报告');
+
+      document.getElementById('settingsBtn').click();
+      const language = document.getElementById('language');
+      language.value = 'en';
+      language.dispatchEvent(new window.Event('change', { bubbles: true }));
+      expect(document.querySelector('.empty-state').textContent).toContain('No saved reports yet');
+
+      document.getElementById('cancelPreferencesBtn').click();
+      expect(document.querySelector('.empty-state').textContent).toContain('暂无已保存报告');
+    });
+
     it('should view a saved report and open modal', async () => {
       const mockReports = [
         {

@@ -813,8 +813,8 @@
             <div class="input-field" style="margin-bottom: 12px;">
               <label for="language" data-i18n="language">Language</label>
               <select id="language" style="width: 220px; padding: 8px; border-radius: 4px; border: 1px solid var(--border-light); background: var(--bg-secondary); color: var(--text-primary);">
-                <option value="en" data-i18n="english">English</option>
-                <option value="zh-CN" data-i18n="simplifiedChinese">简体中文</option>
+                <option value="en">English</option>
+                <option value="zh-CN">简体中文</option>
                 <option value="zh-TW">繁體中文</option>
                 <option value="ja">日本語</option>
                 <option value="ko">한국어</option>
@@ -1069,6 +1069,7 @@
       let allProjects = {}; // Track all available projects
       let preferencesHasChanges = false; // Track unsaved preference changes
       let originalExcludedProjects = []; // Track original excluded projects for cancel/discard
+      let originalLanguage = 'en';
       let reportHasChanges = false; // Track unsaved report content changes
       let originalReportContent = ''; // Track original report content for comparison
 
@@ -1080,7 +1081,7 @@
           reportFormat: 'Report Format', language: 'Language', english: 'English', simplifiedChinese: 'Simplified Chinese', outputFormat: 'Output format', simpleFormat: 'Simple (current)', tableFormat: 'Table (Markdown)', tableColumns: 'Columns (drag to reorder)', sortBy: 'Sort by', date: 'Date', project: 'Project', taskTitle: 'Task Title', timeSpent: 'Time Spent', status: 'Status', direction: 'Direction', ascending: 'Asc', descending: 'Desc',
           viewOrganization: 'View Organization', groupBy: 'Group by', displayOptions: 'Display Options', showCompletionDate: 'Show completion date', showProject: 'Show project', showTags: 'Show tags', showTaskNotes: 'Show task notes', includeOverdue: 'Include overdue tasks', showTimeSpent: 'Show time spent', showTotals: 'Show totals', filteringLogic: 'Filtering Logic', hideEmptyProjects: 'Hide empty projects', minimumDuration: 'Minimum duration to include: ', minutes: 'minutes', exclusions: 'Exclusions', excludeProjects: 'Exclude projects:', searchProjects: 'Search or select projects...', cancel: 'Cancel', savePreferences: 'Save Preferences',
           generating: 'Generating...', dateRangeInvalid: 'Start date must be before or equal to end date', reportGenerated: 'Report generated with {count} tasks', failedGenerate: 'Failed to generate report: {error}', editSavedReport: 'Edit Saved Report', tasksCompleted: '{count} task(s) completed', reportCopied: 'Report copied to clipboard!', failedCopy: 'Failed to copy to clipboard', reportUpdated: 'Report updated successfully!', reportSaved: 'Report saved successfully!', reportTooLarge: 'This report is very large ({percent}% of the 256KB per-report limit).', failedSave: 'Failed to save report', reportTooLargeError: 'This report is too large to save - it exceeds 256KB even after compression.',
-          noProjects: 'No projects available', notesHidden: 'Notes column is hidden', deleteConfirm: 'Are you sure you want to delete this report?', deleted: 'Report deleted successfully', failedDelete: 'Failed to delete report', deleteManyConfirm: 'Are you sure you want to delete {count} report(s)?', deletedMany: '{count} report(s) deleted successfully', selectTwo: 'Please select at least 2 reports to combine', combined: 'Combined {count} reports successfully', failedCombine: 'Failed to combine reports', unsavedReport: 'You have unsaved changes to the report. Are you sure you want to discard them?', unsavedPreferences: 'You have unsaved changes. Are you sure you want to discard them?', preferencesSaved: 'Preferences saved successfully!', failedPreferences: 'Failed to save preferences',
+          noProjects: 'No projects available', notesHidden: 'Notes column is hidden', deleteConfirm: 'Are you sure you want to delete this report?', deleted: 'Report deleted successfully', failedDelete: 'Failed to delete report', deleteManyConfirm: 'Are you sure you want to delete {count} report(s)?', deletedMany: '{count} report(s) deleted successfully', savedMeta: 'Saved {date}', taskCount: '{count} tasks', taskCountOne: '{count} task', deleteTitle: 'Delete', selectTwo: 'Please select at least 2 reports to combine', combined: 'Combined {count} reports successfully', failedCombine: 'Failed to combine reports', unsavedReport: 'You have unsaved changes to the report. Are you sure you want to discard them?', unsavedPreferences: 'You have unsaved changes. Are you sure you want to discard them?', preferencesSaved: 'Preferences saved successfully!', failedPreferences: 'Failed to save preferences',
           reportHeader: 'Task Completion Report', dateRangeLabel: 'Date Range', generatedLabel: 'Generated', totalTasksLabel: 'Total Tasks', totalTimeLabel: 'Total Time', excludedLogsLabel: 'Excluded Work Logs', excludedLogs: '{count} (below {minutes} min threshold)', noTasks: 'No tasks', combinedReport: 'Combined Report', combinedFrom: 'Combined from {count} reports', reportNumber: 'Report {number}', total: 'Total', notes: 'Notes', tags: 'Tags',
           statusOverdue: 'OVERDUE', statusWip: 'WIP', statusDone: 'DONE', noProject: 'No Project', hourUnit: 'h', minuteUnit: 'm', simpleNote: '*Note: Individual work log entries are shown for tasks with multiple work logs. WIP indicates work in progress. DONE indicates a completed task. Subtasks are nested under parent tasks.*', projectNote: '*Note: Tasks are grouped by project. Time shown is the total across all days in the date range. Subtasks are nested under parent tasks.*'
         },
@@ -1091,7 +1092,7 @@
           reportFormat: '报告格式', language: '语言', english: 'English', simplifiedChinese: '简体中文', outputFormat: '输出格式', simpleFormat: '简单格式（当前）', tableFormat: '表格（Markdown）', tableColumns: '列（拖动排序）', sortBy: '排序依据', date: '日期', project: '项目', taskTitle: '任务标题', timeSpent: '耗时', status: '状态', direction: '方向', ascending: '升序', descending: '降序',
           viewOrganization: '视图组织', groupBy: '分组依据', displayOptions: '显示选项', showCompletionDate: '显示完成日期', showProject: '显示项目', showTags: '显示标签', showTaskNotes: '显示任务备注', includeOverdue: '包含逾期任务', showTimeSpent: '显示耗时', showTotals: '显示总计', filteringLogic: '筛选逻辑', hideEmptyProjects: '隐藏空项目', minimumDuration: '纳入的最短时长：', minutes: '分钟', exclusions: '排除项', excludeProjects: '排除项目：', searchProjects: '搜索或选择项目……', cancel: '取消', savePreferences: '保存设置',
           generating: '生成中……', dateRangeInvalid: '开始日期必须早于或等于结束日期', reportGenerated: '已生成 {count} 个任务的报告', failedGenerate: '生成报告失败：{error}', editSavedReport: '编辑已保存报告', tasksCompleted: '已完成 {count} 个任务', reportCopied: '报告已复制到剪贴板！', failedCopy: '复制到剪贴板失败', reportUpdated: '报告更新成功！', reportSaved: '报告保存成功！', reportTooLarge: '报告较大（已达到单个报告 256KB 限制的 {percent}%）。', failedSave: '保存报告失败', reportTooLargeError: '报告过大，无法保存：即使压缩后仍超过 256KB。',
-          noProjects: '没有可用项目', notesHidden: '备注列已隐藏', deleteConfirm: '确定要删除此报告吗？', deleted: '报告删除成功', failedDelete: '删除报告失败', deleteManyConfirm: '确定要删除 {count} 个报告吗？', deletedMany: '已成功删除 {count} 个报告', selectTwo: '请至少选择 2 个报告进行合并', combined: '已成功合并 {count} 个报告', failedCombine: '合并报告失败', unsavedReport: '报告有未保存的更改。确定要放弃吗？', unsavedPreferences: '设置有未保存的更改。确定要放弃吗？', preferencesSaved: '设置保存成功！', failedPreferences: '保存设置失败',
+          noProjects: '没有可用项目', notesHidden: '备注列已隐藏', deleteConfirm: '确定要删除此报告吗？', deleted: '报告删除成功', failedDelete: '删除报告失败', deleteManyConfirm: '确定要删除 {count} 个报告吗？', deletedMany: '已成功删除 {count} 个报告', savedMeta: '保存于 {date}', taskCount: '{count} 个任务', deleteTitle: '删除', selectTwo: '请至少选择 2 个报告进行合并', combined: '已成功合并 {count} 个报告', failedCombine: '合并报告失败', unsavedReport: '报告有未保存的更改。确定要放弃吗？', unsavedPreferences: '设置有未保存的更改。确定要放弃吗？', preferencesSaved: '设置保存成功！', failedPreferences: '保存设置失败',
           reportHeader: '任务完成报告', dateRangeLabel: '日期范围', generatedLabel: '生成时间', totalTasksLabel: '任务总数', totalTimeLabel: '总耗时', excludedLogsLabel: '排除的工作记录', excludedLogs: '{count}（低于 {minutes} 分钟阈值）', noTasks: '无任务', combinedReport: '合并报告', combinedFrom: '合并自 {count} 个报告', reportNumber: '报告 {number}', total: '总计', notes: '备注', tags: '标签',
           statusOverdue: '逾期', statusWip: '进行中', statusDone: '已完成', noProject: '无项目', hourUnit: '小时', minuteUnit: '分钟', simpleNote: '*说明：有多条工作记录的任务会按记录分别显示。进行中表示任务尚未完成，已完成表示任务已经完成。子任务会嵌套在父任务下。*', projectNote: '*说明：任务按项目分组。耗时为日期范围内所有日期的总和。子任务会嵌套在父任务下。*'
         }
@@ -1114,8 +1115,17 @@
         fr: { appTitle: 'Rapport de tâches par période', filterSettings: 'Paramètres des filtres', dateRangeHint: 'Sélectionnez une période pour créer un rapport des tâches terminées ou travaillées pendant cette période.', startDate: 'Date de début', endDate: 'Date de fin', generateReport: 'Générer le rapport', savedReports: 'Rapports enregistrés', combineSelected: 'Combiner la sélection', deleteSelected: 'Supprimer la sélection', generatedReport: 'Rapport généré', reportNamePlaceholder: 'Nom du rapport (facultatif)', copyToClipboard: 'Copier dans le presse-papiers', saveReport: 'Enregistrer le rapport', reportFormat: 'Format du rapport', language: 'Langue', outputFormat: 'Format de sortie', simpleFormat: 'Format simple', tableFormat: 'Tableau (Markdown)', tableColumns: 'Colonnes (glisser pour réorganiser)', sortBy: 'Trier par', date: 'Date', project: 'Projet', taskTitle: 'Titre de la tâche', timeSpent: 'Temps passé', status: 'Statut', direction: 'Direction', ascending: 'Croissant', descending: 'Décroissant', viewOrganization: 'Organisation', groupBy: 'Regrouper par', displayOptions: 'Options d’affichage', showCompletionDate: 'Afficher la date de fin', showProject: 'Afficher le projet', showTags: 'Afficher les tags', showTaskNotes: 'Afficher les notes', includeOverdue: 'Inclure les tâches en retard', showTimeSpent: 'Afficher le temps passé', showTotals: 'Afficher les totaux', filteringLogic: 'Filtres', hideEmptyProjects: 'Masquer les projets vides', minimumDuration: 'Durée minimale : ', minutes: 'minutes', exclusions: 'Exclusions', excludeProjects: 'Exclure les projets :', searchProjects: 'Rechercher ou sélectionner des projets…', cancel: 'Annuler', savePreferences: 'Enregistrer les préférences', generating: 'Génération…', dateRangeInvalid: 'La date de début doit être antérieure ou égale à la date de fin', reportGenerated: 'Rapport généré avec {count} tâches', reportCopied: 'Rapport copié dans le presse-papiers !', failedCopy: 'Échec de la copie', reportUpdated: 'Rapport mis à jour !', reportSaved: 'Rapport enregistré !', failedSave: 'Échec de l’enregistrement', deleted: 'Rapport supprimé', failedDelete: 'Échec de la suppression', selectTwo: 'Sélectionnez au moins 2 rapports à combiner', combined: '{count} rapports combinés', failedCombine: 'Échec de la combinaison', preferencesSaved: 'Préférences enregistrées !', failedPreferences: 'Échec de l’enregistrement des préférences', reportHeader: 'Rapport des tâches terminées', dateRangeLabel: 'Période', generatedLabel: 'Généré', totalTasksLabel: 'Nombre total de tâches', totalTimeLabel: 'Temps total', excludedLogsLabel: 'Journaux exclus', excludedLogs: '{count} (moins de {minutes} min)', noTasks: 'Aucune tâche', combinedReport: 'Rapport combiné', combinedFrom: 'Combiné à partir de {count} rapports', reportNumber: 'Rapport {number}', total: 'Total', notes: 'Notes', tags: 'Tags', statusOverdue: 'EN RETARD', statusWip: 'EN COURS', statusDone: 'TERMINÉ', noProject: 'Sans projet', simpleNote: '*Remarque : les entrées multiples sont affichées séparément. Les sous-tâches apparaissent sous leur tâche parent.*', projectNote: '*Remarque : les tâches sont regroupées par projet.*', hourUnit: 'h', minuteUnit: 'min' },
         de: { appTitle: 'Aufgabenbericht nach Zeitraum', filterSettings: 'Filtereinstellungen', dateRangeHint: 'Wählen Sie einen Zeitraum für einen Bericht über erledigte oder bearbeitete Aufgaben.', startDate: 'Startdatum', endDate: 'Enddatum', generateReport: 'Bericht erstellen', savedReports: 'Gespeicherte Berichte', combineSelected: 'Auswahl zusammenführen', deleteSelected: 'Auswahl löschen', generatedReport: 'Erstellter Bericht', reportNamePlaceholder: 'Berichtsname (optional)', copyToClipboard: 'In Zwischenablage kopieren', saveReport: 'Bericht speichern', reportFormat: 'Berichtsformat', language: 'Sprache', outputFormat: 'Ausgabeformat', simpleFormat: 'Einfaches Format', tableFormat: 'Tabelle (Markdown)', tableColumns: 'Spalten (ziehen zum Sortieren)', sortBy: 'Sortieren nach', date: 'Datum', project: 'Projekt', taskTitle: 'Aufgabentitel', timeSpent: 'Zeitaufwand', status: 'Status', direction: 'Richtung', ascending: 'Aufsteigend', descending: 'Absteigend', viewOrganization: 'Ansicht', groupBy: 'Gruppieren nach', displayOptions: 'Anzeigeoptionen', showCompletionDate: 'Abschlussdatum anzeigen', showProject: 'Projekt anzeigen', showTags: 'Tags anzeigen', showTaskNotes: 'Notizen anzeigen', includeOverdue: 'Überfällige Aufgaben einbeziehen', showTimeSpent: 'Zeitaufwand anzeigen', showTotals: 'Summen anzeigen', filteringLogic: 'Filterlogik', hideEmptyProjects: 'Leere Projekte ausblenden', minimumDuration: 'Mindestdauer: ', minutes: 'Minuten', exclusions: 'Ausschlüsse', excludeProjects: 'Projekte ausschließen:', searchProjects: 'Projekte suchen oder auswählen…', cancel: 'Abbrechen', savePreferences: 'Einstellungen speichern', generating: 'Wird erstellt…', dateRangeInvalid: 'Das Startdatum muss vor oder gleich dem Enddatum liegen', reportGenerated: 'Bericht mit {count} Aufgaben erstellt', reportCopied: 'Bericht in die Zwischenablage kopiert!', failedCopy: 'Kopieren fehlgeschlagen', reportUpdated: 'Bericht aktualisiert!', reportSaved: 'Bericht gespeichert!', failedSave: 'Bericht konnte nicht gespeichert werden', deleted: 'Bericht gelöscht', failedDelete: 'Löschen fehlgeschlagen', selectTwo: 'Wählen Sie mindestens 2 Berichte zum Zusammenführen aus', combined: '{count} Berichte zusammengeführt', failedCombine: 'Zusammenführen fehlgeschlagen', preferencesSaved: 'Einstellungen gespeichert!', failedPreferences: 'Einstellungen konnten nicht gespeichert werden', reportHeader: 'Aufgabenabschlussbericht', dateRangeLabel: 'Zeitraum', generatedLabel: 'Erstellt', totalTasksLabel: 'Aufgaben gesamt', totalTimeLabel: 'Gesamtzeit', excludedLogsLabel: 'Ausgeschlossene Arbeitsprotokolle', excludedLogs: '{count} (unter {minutes} Min.)', noTasks: 'Keine Aufgaben', combinedReport: 'Zusammengeführter Bericht', combinedFrom: 'Aus {count} Berichten zusammengeführt', reportNumber: 'Bericht {number}', total: 'Gesamt', notes: 'Notizen', tags: 'Tags', statusOverdue: 'ÜBERFÄLLIG', statusWip: 'IN ARBEIT', statusDone: 'ERLEDIGT', noProject: 'Kein Projekt', simpleNote: '*Hinweis: Mehrere Arbeitsprotokolle werden einzeln angezeigt. Unteraufgaben stehen unter der übergeordneten Aufgabe.*', projectNote: '*Hinweis: Aufgaben werden nach Projekt gruppiert.*', hourUnit: 'Std.', minuteUnit: 'Min.' }
       };
+      // Text added after the first localization pass, including saved-report actions.
+      const remainingTranslations = {
+        'zh-TW': { noSavedReports: '尚無已儲存的報告。請先產生並儲存報告。', failedGenerate: '產生報告失敗：{error}', editSavedReport: '編輯已儲存報告', tasksCompleted: '已完成 {count} 個任務', reportTooLarge: '報告較大（已達單筆報告 256KB 限制的 {percent}%）。', reportTooLargeError: '報告過大，壓縮後仍超過 256KB，無法儲存。', noProjects: '沒有可用的專案', notesHidden: '備註欄已隱藏', deleteConfirm: '確定要刪除此報告嗎？', deleteManyConfirm: '確定要刪除 {count} 個報告嗎？', deletedMany: '已刪除 {count} 個報告', unsavedReport: '報告有未儲存的變更。確定要捨棄嗎？', unsavedPreferences: '設定有未儲存的變更。確定要捨棄嗎？', savedMeta: '儲存於 {date}', taskCount: '{count} 個任務', deleteTitle: '刪除' },
+        ja: { noSavedReports: '保存済みのレポートはありません。レポートを作成して保存してください。', failedGenerate: 'レポートの生成に失敗しました：{error}', editSavedReport: '保存済みレポートを編集', tasksCompleted: '{count} 件のタスクが完了', reportTooLarge: 'レポートが大きくなっています（1 件あたり 256KB の上限の {percent}%）。', reportTooLargeError: 'レポートが大きすぎます。圧縮後も 256KB を超えるため保存できません。', noProjects: '利用できるプロジェクトがありません', notesHidden: 'メモ列は非表示です', deleteConfirm: 'このレポートを削除しますか？', deleteManyConfirm: '{count} 件のレポートを削除しますか？', deletedMany: '{count} 件のレポートを削除しました', unsavedReport: 'レポートに未保存の変更があります。破棄しますか？', unsavedPreferences: '設定に未保存の変更があります。破棄しますか？', savedMeta: '保存日：{date}', taskCount: '{count} 件のタスク', deleteTitle: '削除' },
+        ko: { noSavedReports: '저장된 보고서가 없습니다. 보고서를 생성하고 저장해 주세요.', failedGenerate: '보고서 생성 실패: {error}', editSavedReport: '저장된 보고서 편집', tasksCompleted: '{count}개 작업 완료', reportTooLarge: '보고서가 큽니다(보고서당 256KB 제한의 {percent}%).', reportTooLargeError: '보고서가 너무 커서 저장할 수 없습니다. 압축 후에도 256KB를 초과합니다.', noProjects: '사용 가능한 프로젝트가 없습니다', notesHidden: '메모 열이 숨겨져 있습니다', deleteConfirm: '이 보고서를 삭제하시겠습니까?', deleteManyConfirm: '보고서 {count}개를 삭제하시겠습니까?', deletedMany: '보고서 {count}개를 삭제했습니다', unsavedReport: '보고서에 저장하지 않은 변경 사항이 있습니다. 버리시겠습니까?', unsavedPreferences: '설정에 저장하지 않은 변경 사항이 있습니다. 버리시겠습니까?', savedMeta: '저장일: {date}', taskCount: '작업 {count}개', deleteTitle: '삭제' },
+        es: { noSavedReports: 'Todavía no hay informes guardados. Genera y guarda un informe para comenzar.', failedGenerate: 'No se pudo generar el informe: {error}', editSavedReport: 'Editar informe guardado', tasksCompleted: '{count} tareas completadas', reportTooLarge: 'Este informe es grande ({percent}% del límite de 256 KB por informe).', reportTooLargeError: 'El informe es demasiado grande para guardarlo: supera los 256 KB incluso comprimido.', noProjects: 'No hay proyectos disponibles', notesHidden: 'La columna de notas está oculta', deleteConfirm: '¿Quieres eliminar este informe?', deleteManyConfirm: '¿Quieres eliminar {count} informes?', deletedMany: 'Se eliminaron {count} informes', unsavedReport: 'Hay cambios sin guardar en el informe. ¿Quieres descartarlos?', unsavedPreferences: 'Hay cambios sin guardar. ¿Quieres descartarlos?', savedMeta: 'Guardado el {date}', taskCount: '{count} tareas', deleteTitle: 'Eliminar' },
+        fr: { noSavedReports: 'Aucun rapport enregistré. Générez et enregistrez un rapport pour commencer.', failedGenerate: 'Échec de la création du rapport : {error}', editSavedReport: 'Modifier le rapport enregistré', tasksCompleted: '{count} tâches terminées', reportTooLarge: 'Ce rapport est volumineux ({percent} % de la limite de 256 Ko par rapport).', reportTooLargeError: 'Ce rapport est trop volumineux pour être enregistré : il dépasse 256 Ko même après compression.', noProjects: 'Aucun projet disponible', notesHidden: 'La colonne des notes est masquée', deleteConfirm: 'Voulez-vous supprimer ce rapport ?', deleteManyConfirm: 'Voulez-vous supprimer {count} rapports ?', deletedMany: '{count} rapports supprimés', unsavedReport: 'Le rapport contient des modifications non enregistrées. Les abandonner ?', unsavedPreferences: 'Des modifications ne sont pas enregistrées. Les abandonner ?', savedMeta: 'Enregistré le {date}', taskCount: '{count} tâches', deleteTitle: 'Supprimer' },
+        de: { noSavedReports: 'Noch keine Berichte gespeichert. Erstellen und speichern Sie einen Bericht.', failedGenerate: 'Bericht konnte nicht erstellt werden: {error}', editSavedReport: 'Gespeicherten Bericht bearbeiten', tasksCompleted: '{count} Aufgaben erledigt', reportTooLarge: 'Dieser Bericht ist groß ({percent} % des Limits von 256 KB pro Bericht).', reportTooLargeError: 'Der Bericht kann nicht gespeichert werden: Er überschreitet auch nach der Komprimierung 256 KB.', noProjects: 'Keine Projekte verfügbar', notesHidden: 'Die Notizenspalte ist ausgeblendet', deleteConfirm: 'Diesen Bericht wirklich löschen?', deleteManyConfirm: '{count} Berichte wirklich löschen?', deletedMany: '{count} Berichte gelöscht', unsavedReport: 'Der Bericht enthält nicht gespeicherte Änderungen. Verwerfen?', unsavedPreferences: 'Es gibt nicht gespeicherte Änderungen. Verwerfen?', savedMeta: 'Gespeichert am {date}', taskCount: '{count} Aufgaben', deleteTitle: 'Löschen' }
+      };
       Object.keys(additionalTranslations).forEach(locale => {
-        translations[locale] = { ...translations.en, ...additionalTranslations[locale] };
+        translations[locale] = { ...translations.en, ...additionalTranslations[locale], ...remainingTranslations[locale] };
       });
 
       function t(key, values = {}) {
@@ -1133,6 +1143,7 @@
         const language = document.getElementById('language');
         if (language) language.value = preferences.language;
         renderTableColumnsUI();
+        renderSavedReports();
       }
       // Exposed globally so tests can inspect/update preferences via `window.preferences`
       var preferences = {
@@ -1617,7 +1628,7 @@
         // Generate report in Markdown format
         let reportText = `# ${t('reportHeader')}\n\n`;
         reportText += `**${t('dateRangeLabel')}:** ${formatDateDisplay(formatDate(startDate))} - ${formatDateDisplay(formatDate(endDate))}  \n`;
-        reportText += `**${t('generatedLabel')}:** ${new Date().toLocaleString()}  \n`;
+        reportText += `**${t('generatedLabel')}:** ${new Date().toLocaleString(preferences.language || 'en-US')}  \n`;
         reportText += `**${t('totalTasksLabel')}:** ${totalTasks}\n`;
         if (showTotals) {
           const grandTotalMs = Object.keys(tasksByDate).reduce((sum, dateStr) => sum + sumDateGroupMs(tasksByDate[dateStr], dateStr), 0);
@@ -1752,7 +1763,7 @@
           
           if ((totalTimeSpent > 0 || isCompletedInRange || subtasksWithLogsInRange.length > 0) && !processedTasks.has(task.id)) {
             const projectId = task.projectId || 'no-project';
-            const projectName = projects[projectId] || 'No Project';
+            const projectName = projects[projectId] || t('noProject');
             
             if (!tasksByProject[projectId]) {
               tasksByProject[projectId] = {
@@ -1807,7 +1818,7 @@
           overdueTasks.forEach(task => {
             // only include if planned date within range (getOverdueTasks already filters)
             const projectId = task.projectId || 'no-project';
-            const projectName = projects[projectId] || 'No Project';
+            const projectName = projects[projectId] || t('noProject');
             
             // Create project entry if it doesn't exist
             if (!tasksByProject[projectId]) {
@@ -1832,7 +1843,7 @@
         const showTotals = document.getElementById('showTotalTime')?.checked;
         let reportText = `# ${t('reportHeader')}\n\n`;
         reportText += `**${t('dateRangeLabel')}:** ${formatDateDisplay(formatDate(startDate))} - ${formatDateDisplay(formatDate(endDate))}  \n`;
-        reportText += `**${t('generatedLabel')}:** ${new Date().toLocaleString()}  \n`;
+        reportText += `**${t('generatedLabel')}:** ${new Date().toLocaleString(preferences.language || 'en-US')}  \n`;
         reportText += `**${t('totalTasksLabel')}:** ${totalTasks}\n`;
         if (showTotals) {
           const grandTotalMinutes = Math.round(Object.values(tasksByProject).reduce((sum, p) => sum + p.totalTime, 0) / 60000);
@@ -2135,7 +2146,7 @@
           console.error('Error saving report:', error);
           PluginAPI.showSnack({
             msg: isQuotaError(error)
-              ? 'This report is too large to save — it exceeds 256KB even after compression.'
+              ? t('reportTooLargeError')
               : t('failedSave'),
             type: 'ERROR',
           });
@@ -2534,7 +2545,7 @@
               if (c === 'project') return r.project || '';
               if (c === 'tags') return escapeCell(r.tags || '');
               if (c === 'title') return r.title;
-              if (c === 'time') return (showTimeSpent && r.timeMinutes) ? formatTime(r.timeMinutes) : (showTimeSpent ? '0m' : '');
+              if (c === 'time') return (showTimeSpent && r.timeMinutes) ? formatTime(r.timeMinutes) : (showTimeSpent ? formatTime(0) : '');
               if (c === 'status') return r.status || '';
               if (c === 'notes') return escapeCell(r.notes || '');
               return '';
@@ -2548,7 +2559,7 @@
             const labelIdx = cols.findIndex(c => c !== 'time');
             totalCells = cols.map((c, i) => {
               if (c === 'time') return `**${formatTime(totalMinutes)}**`;
-              if (i === labelIdx) return '**Total**';
+              if (i === labelIdx) return `**${t('total')}**`;
               return '';
             });
           }
@@ -2573,7 +2584,7 @@
               else if (c === 'project') val = r.project || '';
               else if (c === 'tags') val = escapeCell(r.tags || '');
               else if (c === 'title') val = r.title;
-              else if (c === 'time') val = (showTimeSpent && r.timeMinutes) ? formatTime(r.timeMinutes) : (showTimeSpent ? '0m' : '');
+              else if (c === 'time') val = (showTimeSpent && r.timeMinutes) ? formatTime(r.timeMinutes) : (showTimeSpent ? formatTime(0) : '');
               else if (c === 'status') val = r.status || '';
               else if (c === 'notes') val = escapeCell(r.notes || '');
               return padded(val, widths[i]);
@@ -2732,7 +2743,7 @@
         const showTotals = document.getElementById('showTotalTime')?.checked;
         let reportText = `# ${t('reportHeader')}\n\n`;
         reportText += `**${t('dateRangeLabel')}:** ${formatDateDisplay(formatDate(startDate))} - ${formatDateDisplay(formatDate(endDate))}  \n`;
-        reportText += `**${t('generatedLabel')}:** ${new Date().toLocaleString()}  \n`;
+        reportText += `**${t('generatedLabel')}:** ${new Date().toLocaleString(preferences.language || 'en-US')}  \n`;
         reportText += `**${t('totalTasksLabel')}:** ${processedTaskIds.size}\n`;
         if (showTotals) {
           const totalMinutes = sumRowMinutesNoDoubleCount(entries);
@@ -2833,6 +2844,7 @@
       function showPreferencesModal() {
         // Save the original state before any changes
         originalExcludedProjects = [...preferences.excludedProjects];
+        originalLanguage = preferences.language;
         
         // Apply current saved preferences to UI
         applyPreferences();
@@ -2879,6 +2891,8 @@
           }
           // Restore original state if user confirms discard
           preferences.excludedProjects = [...originalExcludedProjects];
+          preferences.language = originalLanguage;
+          translateUI();
         }
         preferencesModal.classList.remove('show');
         preferencesHasChanges = false;
@@ -2943,6 +2957,7 @@
       function cancelPreferences() {
         // Restore original excluded projects state
         preferences.excludedProjects = [...originalExcludedProjects];
+        preferences.language = originalLanguage;
         applyPreferences();
         preferencesHasChanges = false;
         hidePreferencesModal();
@@ -2950,6 +2965,7 @@
 
       // Render saved reports list
       function renderSavedReports() {
+        const selectedIds = new Set(Array.from(savedReportsList.querySelectorAll('.saved-report-checkbox:checked'), checkbox => checkbox.dataset.id));
         if (savedReports.length === 0) {
           savedReportsList.innerHTML = `<div class="empty-state">${t('noSavedReports')}</div>`;
           deleteSelectedBtn.style.display = 'none';
@@ -2964,18 +2980,19 @@
               <div class="saved-report-name">${escapeHtml(report.name)}</div>
               <div class="saved-report-meta">
                 ${formatDateDisplay(report.startDate)} - ${formatDateDisplay(report.endDate)} · 
-                ${report.totalTasks} task${report.totalTasks !== 1 ? 's' : ''} · 
-                Saved ${new Date(report.savedAt).toLocaleDateString()}
+                ${t(report.totalTasks === 1 && preferences.language === 'en' ? 'taskCountOne' : 'taskCount', { count: report.totalTasks })} ·
+                ${t('savedMeta', { date: new Date(report.savedAt).toLocaleDateString(preferences.language || 'en-US') })}
               </div>
             </div>
             <div class="saved-report-actions">
-              <button class="icon-btn delete-btn" title="Delete">🗑️</button>
+              <button class="icon-btn delete-btn" title="${t('deleteTitle')}">🗑️</button>
             </div>
           </div>
         `).join('');
 
         savedReportsList.querySelectorAll('.saved-report-item').forEach(item => {
           const id = item.dataset.id;
+          item.querySelector('.saved-report-checkbox').checked = selectedIds.has(id);
           item.querySelector('.saved-report-info').addEventListener('click', () => viewReport(id));
           item.querySelector('.delete-btn').addEventListener('click', () => deleteReport(id));
         });
@@ -3028,7 +3045,7 @@
           return;
         }
 
-        if (!confirm(`Are you sure you want to delete ${checkboxes.length} report${checkboxes.length !== 1 ? 's' : ''}?`)) {
+        if (!confirm(t('deleteManyConfirm', { count: checkboxes.length }))) {
           return;
         }
 
@@ -3043,7 +3060,7 @@
           renderSavedReports();
 
           PluginAPI.showSnack({
-            msg: `${checkboxes.length} report${checkboxes.length !== 1 ? 's' : ''} deleted successfully`,
+            msg: t('deletedMany', { count: checkboxes.length }),
             type: 'SUCCESS',
           });
         } catch (error) {
@@ -3113,7 +3130,7 @@
           };
 
           isEditingExisting = false;
-          showReportModal(combinedContent, `Combined from ${selectedReports.length} reports`);
+          showReportModal(combinedContent, t('combinedFrom', { count: selectedReports.length }));
 
           PluginAPI.showSnack({
             msg: t('combined', { count: selectedReports.length }),
@@ -3163,6 +3180,11 @@
       closePreferencesBtn.addEventListener('click', hidePreferencesModal);
       cancelPreferencesBtn.addEventListener('click', cancelPreferences);
       savePreferencesBtn.addEventListener('click', savePreferences);
+      document.getElementById('language').addEventListener('change', (event) => {
+        preferences.language = event.target.value;
+        preferencesHasChanges = true;
+        translateUI();
+      });
 
       // Track preference changes
       const preferenceElements = [
