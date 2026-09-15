@@ -6,6 +6,7 @@
 - Add up to five named, synced Markdown report templates with generated content, date, time, and task-count fields; select the current format to preserve the existing output.
 - Show field descriptions while editing the template.
 - Finish localization of saved-report controls, messages, and generated labels, including immediate refresh when changing languages.
+- Split translations into a separate plugin file and enforce a 100KB limit for the built HTML.
 
 ## 1.13.0 - 2026-09-14
 

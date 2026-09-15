@@ -29,7 +29,10 @@ describe('Date Range Reporter', () => {
 
     // Load the actual HTML file from date-range-reporter/
     const htmlPath = join(process.cwd(), 'date-range-reporter', 'index.html');
-    const html = readFileSync(htmlPath, 'utf-8');
+    const translationsPath = join(process.cwd(), 'date-range-reporter', 'translations.js');
+    const translations = readFileSync(translationsPath, 'utf-8');
+    const html = readFileSync(htmlPath, 'utf-8')
+      .replace('<script src="translations.js"></script>', `<script>${translations}</script>`);
 
     // Create JSDOM instance with the actual HTML
     dom = new JSDOM(html, {

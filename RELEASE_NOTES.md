@@ -4,4 +4,6 @@ Click **Today** to set both date fields to the current local day. In **Filter Se
 
 Saved-report text and other previously untranslated labels now refresh when you change languages. Canceling preferences restores the previous language. Existing saved reports keep their original content.
 
+The language dictionary is packaged separately so `index.html` remains below 100KB. The build now fails if that limit is exceeded.
+
 Install the release archive through Super Productivity's plugin settings after v1.14.0 is published.
