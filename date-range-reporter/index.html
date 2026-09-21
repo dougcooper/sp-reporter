@@ -1003,7 +1003,7 @@
           <div class="input-field" style="margin-top: 12px;">
             <label for="templateContentInput" data-i18n="reportTemplate">Template content (Markdown)</label>
             <textarea id="templateContentInput" rows="8" aria-describedby="templateFieldsHelp" style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-light); border-radius: 4px; background: var(--bg-secondary); color: var(--text-primary); font: inherit; resize: vertical;"></textarea>
-            <div id="templateFieldsHelp" hidden data-i18n="reportTemplateFields" style="white-space: pre-line; color: var(--text-secondary); font-size: 13px; margin-top: 8px;">{{content}} — generated report text</div>
+            <div id="templateFieldsHelp" data-i18n="reportTemplateFields" style="white-space: pre-line; color: var(--text-secondary); font-size: 13px; margin-top: 8px;">{{content}} — generated report text</div>
           </div>
         </div>
         <div class="modal-footer">
@@ -2382,7 +2382,6 @@
         document.getElementById('templateModalTitle').textContent = template ? t('templateEditTitle') : t('newTemplate');
         document.getElementById('templateNameInput').value = template?.name || '';
         document.getElementById('templateContentInput').value = template?.content || '';
-        document.getElementById('templateFieldsHelp').hidden = true;
         templateModal.classList.add('show');
         document.getElementById('templateNameInput').focus();
       }
@@ -3309,10 +3308,6 @@
       document.getElementById('closeTemplateModalBtn').addEventListener('click', hideTemplateModal);
       document.getElementById('cancelTemplateBtn').addEventListener('click', hideTemplateModal);
       document.getElementById('saveTemplateBtn').addEventListener('click', saveReportTemplate);
-      const templateContentInput = document.getElementById('templateContentInput');
-      const templateFieldsHelp = document.getElementById('templateFieldsHelp');
-      templateContentInput.addEventListener('focus', () => { templateFieldsHelp.hidden = false; });
-      templateContentInput.addEventListener('blur', () => { templateFieldsHelp.hidden = true; });
       document.getElementById('language').addEventListener('change', (event) => {
         preferences.language = event.target.value;
         preferencesHasChanges = true;

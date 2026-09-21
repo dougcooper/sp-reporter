@@ -154,17 +154,14 @@ describe('Date Range Reporter', () => {
       expect(report).not.toContain('{{generatedAt}}');
     });
 
-    it('shows field descriptions while editing the template', () => {
+    it('always shows field descriptions in the template dialog', () => {
       document.getElementById('settingsBtn').click();
       document.getElementById('newTemplateBtn').click();
-      const input = document.getElementById('templateContentInput');
       const fields = document.getElementById('templateFieldsHelp');
-      expect(fields.hidden).toBe(true);
-      input.focus();
       expect(fields.hidden).toBe(false);
       expect(fields.textContent).toContain('{{content}}');
-      input.blur();
-      expect(fields.hidden).toBe(true);
+      document.getElementById('templateContentInput').focus();
+      expect(fields.hidden).toBe(false);
     });
 
     it('saves a named template via the dialog and displays its name in the list', async () => {

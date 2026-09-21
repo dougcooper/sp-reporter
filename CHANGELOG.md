@@ -4,6 +4,7 @@
 
 - Move template creation and editing into a dedicated dialog opened from the **New template** button, with the Save button on the dialog and an Edit action on each saved template.
 - Toggle templates on/off by clicking the template name (✓ marks the active one); the separate "Current format" row was removed.
+- Always show the template field descriptions in the template dialog instead of only while the content field is focused.
 
 - Fix "Cannot read properties of undefined (reading 'en')" when opening the plugin: Super Productivity renders plugin `index.html` inside an iframe via `srcdoc`, so the external `translations.js` companion file was never loaded. Translations are now merged and LZString-compressed into `index.html` at build time, staying under the 100KB limit.
 
