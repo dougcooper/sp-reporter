@@ -762,6 +762,7 @@
             <label for="endDate" data-i18n="endDate">End Date</label>
             <input type="date" id="endDate" />
           </div>
+          <button id="todayBtn" class="secondary-btn" data-i18n="today">Today</button>
           <button id="generateBtn" data-i18n="generateReport">Generate Report</button>
         </div>
       </div>
@@ -813,8 +814,8 @@
             <div class="input-field" style="margin-bottom: 12px;">
               <label for="language" data-i18n="language">Language</label>
               <select id="language" style="width: 220px; padding: 8px; border-radius: 4px; border: 1px solid var(--border-light); background: var(--bg-secondary); color: var(--text-primary);">
-                <option value="en" data-i18n="english">English</option>
-                <option value="zh-CN" data-i18n="simplifiedChinese">简体中文</option>
+                <option value="en">English</option>
+                <option value="zh-CN">简体中文</option>
                 <option value="zh-TW">繁體中文</option>
                 <option value="ja">日本語</option>
                 <option value="ko">한국어</option>
@@ -829,6 +830,14 @@
                 <option value="simple" data-i18n="simpleFormat">Simple (current)</option>
                 <option value="table" data-i18n="tableFormat">Table (Markdown)</option>
               </select>
+            </div>
+            <div class="input-field">
+              <label data-i18n="reportTemplates">Report templates</label>
+              <div data-i18n="reportTemplateHelp" style="color: var(--text-secondary); font-size: 13px; margin-top: 6px;">Save up to 5 named templates. Select one to use it for new reports; click it again to stop using it.</div>
+              <div id="reportTemplateList" style="margin-top: 12px;"></div>
+              <div class="button-group" style="margin-top: 8px;">
+                <button id="newTemplateBtn" type="button" data-i18n="newTemplate">New template</button>
+              </div>
             </div>
 
             <div id="tableSettingsContainer" style="display:none; margin-top: 12px;">
@@ -979,6 +988,32 @@
       </div>
     </div>
 
+    <!-- Template Editor Modal -->
+    <div class="modal-overlay" id="templateModal">
+      <div class="modal" style="max-width: 640px;">
+        <div class="modal-header">
+          <h3 class="modal-title">📝 <span id="templateModalTitle">New template</span></h3>
+          <button class="modal-close" id="closeTemplateModalBtn">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="input-field">
+            <label for="templateNameInput" data-i18n="templateNameLabel">Template name</label>
+            <input id="templateNameInput" type="text" maxlength="60" data-i18n-placeholder="templateNamePlaceholder" placeholder="Template name" style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-light); border-radius: 4px; background: var(--bg-secondary); color: var(--text-primary);" />
+          </div>
+          <div class="input-field" style="margin-top: 12px;">
+            <label for="templateContentInput" data-i18n="reportTemplate">Template content (Markdown)</label>
+            <textarea id="templateContentInput" rows="8" aria-describedby="templateFieldsHelp" style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-light); border-radius: 4px; background: var(--bg-secondary); color: var(--text-primary); font: inherit; resize: vertical;"></textarea>
+            <div id="templateFieldsHelp" data-i18n="reportTemplateFields" style="white-space: pre-line; color: var(--text-secondary); font-size: 13px; margin-top: 8px;">{{content}} — generated report text</div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button id="cancelTemplateBtn" class="secondary-btn" data-i18n="cancel">Cancel</button>
+          <button id="saveTemplateBtn" data-i18n="saveTemplate">Save template</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="translations.js"></script>
     <script>
       // --- Vendored: lz-string 1.5.0 (MIT License, © 2013 pieroxy) ---
       // https://github.com/pieroxy/lz-string — inlined because the plugin is a
@@ -1038,6 +1073,7 @@
 
       const startDateInput = document.getElementById('startDate');
       const endDateInput = document.getElementById('endDate');
+      const todayBtn = document.getElementById('todayBtn');
       const generateBtn = document.getElementById('generateBtn');
       
       // Modal elements
@@ -1055,6 +1091,9 @@
       const cancelPreferencesBtn = document.getElementById('cancelPreferencesBtn');
       const savePreferencesBtn = document.getElementById('savePreferencesBtn');
       const settingsBtn = document.getElementById('settingsBtn');
+
+      // Template modal elements
+      const templateModal = document.getElementById('templateModal');
       
       // Saved reports elements
       const savedReportsSection = document.getElementById('savedReportsSection');
@@ -1069,54 +1108,12 @@
       let allProjects = {}; // Track all available projects
       let preferencesHasChanges = false; // Track unsaved preference changes
       let originalExcludedProjects = []; // Track original excluded projects for cancel/discard
+      let originalLanguage = 'en';
       let reportHasChanges = false; // Track unsaved report content changes
       let originalReportContent = ''; // Track original report content for comparison
+      let templateDraftId = null;
 
-      const translations = {
-        en: {
-          appTitle: 'Date Range Task Reporter', filterSettings: 'Filter Settings', dateRangeHint: 'Select a date range to generate a report of all tasks completed or worked on during that period.',
-          startDate: 'Start Date', endDate: 'End Date', generateReport: 'Generate Report', savedReports: 'Saved Reports', combineSelected: 'Combine Selected', deleteSelected: 'Delete Selected',
-          noSavedReports: 'No saved reports yet. Generate and save a report to get started.', generatedReport: 'Generated Report', reportNamePlaceholder: 'Report name (optional)', copyToClipboard: 'Copy to Clipboard', saveReport: 'Save Report',
-          reportFormat: 'Report Format', language: 'Language', english: 'English', simplifiedChinese: 'Simplified Chinese', outputFormat: 'Output format', simpleFormat: 'Simple (current)', tableFormat: 'Table (Markdown)', tableColumns: 'Columns (drag to reorder)', sortBy: 'Sort by', date: 'Date', project: 'Project', taskTitle: 'Task Title', timeSpent: 'Time Spent', status: 'Status', direction: 'Direction', ascending: 'Asc', descending: 'Desc',
-          viewOrganization: 'View Organization', groupBy: 'Group by', displayOptions: 'Display Options', showCompletionDate: 'Show completion date', showProject: 'Show project', showTags: 'Show tags', showTaskNotes: 'Show task notes', includeOverdue: 'Include overdue tasks', showTimeSpent: 'Show time spent', showTotals: 'Show totals', filteringLogic: 'Filtering Logic', hideEmptyProjects: 'Hide empty projects', minimumDuration: 'Minimum duration to include: ', minutes: 'minutes', exclusions: 'Exclusions', excludeProjects: 'Exclude projects:', searchProjects: 'Search or select projects...', cancel: 'Cancel', savePreferences: 'Save Preferences',
-          generating: 'Generating...', dateRangeInvalid: 'Start date must be before or equal to end date', reportGenerated: 'Report generated with {count} tasks', failedGenerate: 'Failed to generate report: {error}', editSavedReport: 'Edit Saved Report', tasksCompleted: '{count} task(s) completed', reportCopied: 'Report copied to clipboard!', failedCopy: 'Failed to copy to clipboard', reportUpdated: 'Report updated successfully!', reportSaved: 'Report saved successfully!', reportTooLarge: 'This report is very large ({percent}% of the 256KB per-report limit).', failedSave: 'Failed to save report', reportTooLargeError: 'This report is too large to save - it exceeds 256KB even after compression.',
-          noProjects: 'No projects available', notesHidden: 'Notes column is hidden', deleteConfirm: 'Are you sure you want to delete this report?', deleted: 'Report deleted successfully', failedDelete: 'Failed to delete report', deleteManyConfirm: 'Are you sure you want to delete {count} report(s)?', deletedMany: '{count} report(s) deleted successfully', selectTwo: 'Please select at least 2 reports to combine', combined: 'Combined {count} reports successfully', failedCombine: 'Failed to combine reports', unsavedReport: 'You have unsaved changes to the report. Are you sure you want to discard them?', unsavedPreferences: 'You have unsaved changes. Are you sure you want to discard them?', preferencesSaved: 'Preferences saved successfully!', failedPreferences: 'Failed to save preferences',
-          reportHeader: 'Task Completion Report', dateRangeLabel: 'Date Range', generatedLabel: 'Generated', totalTasksLabel: 'Total Tasks', totalTimeLabel: 'Total Time', excludedLogsLabel: 'Excluded Work Logs', excludedLogs: '{count} (below {minutes} min threshold)', noTasks: 'No tasks', combinedReport: 'Combined Report', combinedFrom: 'Combined from {count} reports', reportNumber: 'Report {number}', total: 'Total', notes: 'Notes', tags: 'Tags',
-          statusOverdue: 'OVERDUE', statusWip: 'WIP', statusDone: 'DONE', noProject: 'No Project', hourUnit: 'h', minuteUnit: 'm', simpleNote: '*Note: Individual work log entries are shown for tasks with multiple work logs. WIP indicates work in progress. DONE indicates a completed task. Subtasks are nested under parent tasks.*', projectNote: '*Note: Tasks are grouped by project. Time shown is the total across all days in the date range. Subtasks are nested under parent tasks.*'
-        },
-        'zh-CN': {
-          appTitle: '日期范围任务报告', filterSettings: '筛选设置', dateRangeHint: '选择日期范围，生成该期间完成或处理过的所有任务报告。',
-          startDate: '开始日期', endDate: '结束日期', generateReport: '生成报告', savedReports: '已保存报告', combineSelected: '合并选中项', deleteSelected: '删除选中项',
-          noSavedReports: '暂无已保存报告。生成并保存报告后，它们会显示在这里。', generatedReport: '生成的报告', reportNamePlaceholder: '报告名称（可选）', copyToClipboard: '复制到剪贴板', saveReport: '保存报告',
-          reportFormat: '报告格式', language: '语言', english: 'English', simplifiedChinese: '简体中文', outputFormat: '输出格式', simpleFormat: '简单格式（当前）', tableFormat: '表格（Markdown）', tableColumns: '列（拖动排序）', sortBy: '排序依据', date: '日期', project: '项目', taskTitle: '任务标题', timeSpent: '耗时', status: '状态', direction: '方向', ascending: '升序', descending: '降序',
-          viewOrganization: '视图组织', groupBy: '分组依据', displayOptions: '显示选项', showCompletionDate: '显示完成日期', showProject: '显示项目', showTags: '显示标签', showTaskNotes: '显示任务备注', includeOverdue: '包含逾期任务', showTimeSpent: '显示耗时', showTotals: '显示总计', filteringLogic: '筛选逻辑', hideEmptyProjects: '隐藏空项目', minimumDuration: '纳入的最短时长：', minutes: '分钟', exclusions: '排除项', excludeProjects: '排除项目：', searchProjects: '搜索或选择项目……', cancel: '取消', savePreferences: '保存设置',
-          generating: '生成中……', dateRangeInvalid: '开始日期必须早于或等于结束日期', reportGenerated: '已生成 {count} 个任务的报告', failedGenerate: '生成报告失败：{error}', editSavedReport: '编辑已保存报告', tasksCompleted: '已完成 {count} 个任务', reportCopied: '报告已复制到剪贴板！', failedCopy: '复制到剪贴板失败', reportUpdated: '报告更新成功！', reportSaved: '报告保存成功！', reportTooLarge: '报告较大（已达到单个报告 256KB 限制的 {percent}%）。', failedSave: '保存报告失败', reportTooLargeError: '报告过大，无法保存：即使压缩后仍超过 256KB。',
-          noProjects: '没有可用项目', notesHidden: '备注列已隐藏', deleteConfirm: '确定要删除此报告吗？', deleted: '报告删除成功', failedDelete: '删除报告失败', deleteManyConfirm: '确定要删除 {count} 个报告吗？', deletedMany: '已成功删除 {count} 个报告', selectTwo: '请至少选择 2 个报告进行合并', combined: '已成功合并 {count} 个报告', failedCombine: '合并报告失败', unsavedReport: '报告有未保存的更改。确定要放弃吗？', unsavedPreferences: '设置有未保存的更改。确定要放弃吗？', preferencesSaved: '设置保存成功！', failedPreferences: '保存设置失败',
-          reportHeader: '任务完成报告', dateRangeLabel: '日期范围', generatedLabel: '生成时间', totalTasksLabel: '任务总数', totalTimeLabel: '总耗时', excludedLogsLabel: '排除的工作记录', excludedLogs: '{count}（低于 {minutes} 分钟阈值）', noTasks: '无任务', combinedReport: '合并报告', combinedFrom: '合并自 {count} 个报告', reportNumber: '报告 {number}', total: '总计', notes: '备注', tags: '标签',
-          statusOverdue: '逾期', statusWip: '进行中', statusDone: '已完成', noProject: '无项目', hourUnit: '小时', minuteUnit: '分钟', simpleNote: '*说明：有多条工作记录的任务会按记录分别显示。进行中表示任务尚未完成，已完成表示任务已经完成。子任务会嵌套在父任务下。*', projectNote: '*说明：任务按项目分组。耗时为日期范围内所有日期的总和。子任务会嵌套在父任务下。*'
-        }
-      };
-
-      // Keep all supported locales on the same key contract.  The English
-      // dictionary remains the fallback for older saved preferences and any
-      // future keys added to the UI.
-      const additionalTranslations = {
-        'zh-TW': {
-          appTitle: '日期範圍任務報告', filterSettings: '篩選設定', dateRangeHint: '選擇日期範圍，產生期間內完成或處理過的所有任務報告。', startDate: '開始日期', endDate: '結束日期', generateReport: '產生報告', savedReports: '已儲存報告', combineSelected: '合併選取項目', deleteSelected: '刪除選取項目', generatedReport: '產生的報告', reportNamePlaceholder: '報告名稱（選填）', copyToClipboard: '複製到剪貼簿', saveReport: '儲存報告', reportFormat: '報告格式', language: '語言', simplifiedChinese: '簡體中文', outputFormat: '輸出格式', simpleFormat: '簡單格式', tableFormat: '表格（Markdown）', tableColumns: '欄位（拖曳排序）', sortBy: '排序依據', date: '日期', project: '專案', taskTitle: '任務標題', timeSpent: '耗時', status: '狀態', direction: '方向', ascending: '升冪', descending: '降冪', viewOrganization: '檢視組織', groupBy: '分組依據', displayOptions: '顯示選項', showCompletionDate: '顯示完成日期', showProject: '顯示專案', showTags: '顯示標籤', showTaskNotes: '顯示任務備註', includeOverdue: '包含逾期任務', showTimeSpent: '顯示耗時', showTotals: '顯示總計', filteringLogic: '篩選邏輯', hideEmptyProjects: '隱藏空專案', minimumDuration: '納入的最短時長：', minutes: '分鐘', exclusions: '排除項目', excludeProjects: '排除專案：', searchProjects: '搜尋或選取專案……', cancel: '取消', savePreferences: '儲存設定', generating: '產生中……', dateRangeInvalid: '開始日期必須早於或等於結束日期', reportGenerated: '已產生 {count} 個任務的報告', reportCopied: '報告已複製到剪貼簿！', failedCopy: '複製到剪貼簿失敗', reportUpdated: '報告更新成功！', reportSaved: '報告儲存成功！', failedSave: '報告儲存失敗', deleted: '報告刪除成功', failedDelete: '報告刪除失敗', selectTwo: '請至少選取 2 個報告進行合併', combined: '已成功合併 {count} 個報告', failedCombine: '報告合併失敗', preferencesSaved: '設定儲存成功！', failedPreferences: '設定儲存失敗', reportHeader: '任務完成報告', dateRangeLabel: '日期範圍', generatedLabel: '產生時間', totalTasksLabel: '任務總數', totalTimeLabel: '總耗時', excludedLogsLabel: '排除的工作記錄', excludedLogs: '{count}（低於 {minutes} 分鐘門檻）', noTasks: '無任務', combinedReport: '合併報告', combinedFrom: '合併自 {count} 個報告', reportNumber: '報告 {number}', total: '總計', notes: '備註', tags: '標籤', statusOverdue: '逾期', statusWip: '進行中', statusDone: '已完成', noProject: '無專案', simpleNote: '*說明：有多筆工作記錄的任務會分別顯示。子任務會嵌套在父任務下。*', projectNote: '*說明：任務按專案分組，耗時為日期範圍內所有日期的總和。子任務會嵌套在父任務下。*', hourUnit: '小時', minuteUnit: '分'
-        },
-        ja: {
-          appTitle: '日付範囲タスクレポート', filterSettings: 'フィルター設定', dateRangeHint: '期間を選択して、その期間に完了または作業したタスクのレポートを作成します。', startDate: '開始日', endDate: '終了日', generateReport: 'レポートを生成', savedReports: '保存済みレポート', combineSelected: '選択項目を結合', deleteSelected: '選択項目を削除', generatedReport: '生成されたレポート', reportNamePlaceholder: 'レポート名（任意）', copyToClipboard: 'クリップボードにコピー', saveReport: 'レポートを保存', reportFormat: 'レポート形式', language: '言語', simplifiedChinese: '簡体字中国語', outputFormat: '出力形式', simpleFormat: 'シンプル形式', tableFormat: '表（Markdown）', tableColumns: '列（ドラッグして並べ替え）', sortBy: '並べ替え', date: '日付', project: 'プロジェクト', taskTitle: 'タスク名', timeSpent: '作業時間', status: 'ステータス', direction: '方向', ascending: '昇順', descending: '降順', viewOrganization: '表示構成', groupBy: 'グループ化', displayOptions: '表示オプション', showCompletionDate: '完了日を表示', showProject: 'プロジェクトを表示', showTags: 'タグを表示', showTaskNotes: 'タスクメモを表示', includeOverdue: '期限超過タスクを含める', showTimeSpent: '作業時間を表示', showTotals: '合計を表示', filteringLogic: 'フィルター条件', hideEmptyProjects: '空のプロジェクトを隠す', minimumDuration: '含める最小時間：', minutes: '分', exclusions: '除外', excludeProjects: '除外するプロジェクト：', searchProjects: 'プロジェクトを検索または選択……', cancel: 'キャンセル', savePreferences: '設定を保存', generating: '生成中……', dateRangeInvalid: '開始日は終了日以前にしてください', reportGenerated: '{count} 件のタスクのレポートを生成しました', reportCopied: 'レポートをコピーしました！', failedCopy: 'コピーに失敗しました', reportUpdated: 'レポートを更新しました！', reportSaved: 'レポートを保存しました！', failedSave: 'レポートの保存に失敗しました', deleted: 'レポートを削除しました', failedDelete: '削除に失敗しました', selectTwo: '結合するには 2 件以上選択してください', combined: '{count} 件のレポートを結合しました', failedCombine: '結合に失敗しました', preferencesSaved: '設定を保存しました！', failedPreferences: '設定の保存に失敗しました', reportHeader: 'タスク完了レポート', dateRangeLabel: '期間', generatedLabel: '生成日時', totalTasksLabel: 'タスク数', totalTimeLabel: '合計時間', excludedLogsLabel: '除外した作業記録', excludedLogs: '{count}（{minutes} 分未満）', noTasks: 'タスクなし', combinedReport: '結合レポート', combinedFrom: '{count} 件のレポートから結合', reportNumber: 'レポート {number}', total: '合計', notes: 'メモ', tags: 'タグ', statusOverdue: '期限超過', statusWip: '作業中', statusDone: '完了', noProject: 'プロジェクトなし', simpleNote: '*注：複数の作業記録は個別に表示されます。子タスクは親タスクの下に表示されます。*', projectNote: '*注：タスクはプロジェクト別に表示されます。*', hourUnit: '時間', minuteUnit: '分'
-        },
-        ko: {
-          appTitle: '날짜 범위 작업 보고서', filterSettings: '필터 설정', dateRangeHint: '기간을 선택하여 해당 기간에 완료했거나 작업한 모든 작업의 보고서를 만듭니다.', startDate: '시작일', endDate: '종료일', generateReport: '보고서 생성', savedReports: '저장된 보고서', combineSelected: '선택 항목 결합', deleteSelected: '선택 항목 삭제', generatedReport: '생성된 보고서', reportNamePlaceholder: '보고서 이름(선택 사항)', copyToClipboard: '클립보드에 복사', saveReport: '보고서 저장', reportFormat: '보고서 형식', language: '언어', simplifiedChinese: '중국어 간체', outputFormat: '출력 형식', simpleFormat: '간단한 형식', tableFormat: '표(Markdown)', tableColumns: '열(드래그하여 정렬)', sortBy: '정렬 기준', date: '날짜', project: '프로젝트', taskTitle: '작업 제목', timeSpent: '소요 시간', status: '상태', direction: '방향', ascending: '오름차순', descending: '내림차순', viewOrganization: '보기 구성', groupBy: '그룹 기준', displayOptions: '표시 옵션', showCompletionDate: '완료 날짜 표시', showProject: '프로젝트 표시', showTags: '태그 표시', showTaskNotes: '작업 메모 표시', includeOverdue: '기한 초과 작업 포함', showTimeSpent: '소요 시간 표시', showTotals: '합계 표시', filteringLogic: '필터 조건', hideEmptyProjects: '빈 프로젝트 숨기기', minimumDuration: '포함할 최소 시간: ', minutes: '분', exclusions: '제외', excludeProjects: '제외할 프로젝트:', searchProjects: '프로젝트 검색 또는 선택……', cancel: '취소', savePreferences: '설정 저장', generating: '생성 중……', dateRangeInvalid: '시작일은 종료일 이전이어야 합니다', reportGenerated: '{count}개 작업 보고서를 생성했습니다', reportCopied: '보고서를 클립보드에 복사했습니다!', failedCopy: '클립보드 복사 실패', reportUpdated: '보고서를 업데이트했습니다!', reportSaved: '보고서를 저장했습니다!', failedSave: '보고서 저장 실패', deleted: '보고서를 삭제했습니다', failedDelete: '보고서 삭제 실패', selectTwo: '결합할 보고서를 2개 이상 선택하세요', combined: '{count}개 보고서를 결합했습니다', failedCombine: '보고서 결합 실패', preferencesSaved: '설정을 저장했습니다!', failedPreferences: '설정 저장 실패', reportHeader: '작업 완료 보고서', dateRangeLabel: '날짜 범위', generatedLabel: '생성 시간', totalTasksLabel: '전체 작업', totalTimeLabel: '총 시간', excludedLogsLabel: '제외된 작업 기록', excludedLogs: '{count}개({minutes}분 미만)', noTasks: '작업 없음', combinedReport: '결합 보고서', combinedFrom: '{count}개 보고서에서 결합', reportNumber: '보고서 {number}', total: '합계', notes: '메모', tags: '태그', statusOverdue: '기한 초과', statusWip: '진행 중', statusDone: '완료', noProject: '프로젝트 없음', simpleNote: '*참고: 여러 작업 기록은 개별 항목으로 표시됩니다. 하위 작업은 상위 작업 아래에 표시됩니다.*', projectNote: '*참고: 작업은 프로젝트별로 그룹화됩니다.*', hourUnit: '시간', minuteUnit: '분'
-        },
-        es: { appTitle: 'Informe de tareas por fechas', filterSettings: 'Configuración de filtros', dateRangeHint: 'Selecciona un intervalo para crear un informe de las tareas completadas o trabajadas durante ese periodo.', startDate: 'Fecha inicial', endDate: 'Fecha final', generateReport: 'Generar informe', savedReports: 'Informes guardados', combineSelected: 'Combinar seleccionados', deleteSelected: 'Eliminar seleccionados', generatedReport: 'Informe generado', reportNamePlaceholder: 'Nombre del informe (opcional)', copyToClipboard: 'Copiar al portapapeles', saveReport: 'Guardar informe', reportFormat: 'Formato del informe', language: 'Idioma', outputFormat: 'Formato de salida', simpleFormat: 'Formato simple', tableFormat: 'Tabla (Markdown)', tableColumns: 'Columnas (arrastrar para ordenar)', sortBy: 'Ordenar por', date: 'Fecha', project: 'Proyecto', taskTitle: 'Título de tarea', timeSpent: 'Tiempo empleado', status: 'Estado', direction: 'Dirección', ascending: 'Ascendente', descending: 'Descendente', viewOrganization: 'Organización', groupBy: 'Agrupar por', displayOptions: 'Opciones de visualización', showCompletionDate: 'Mostrar fecha de finalización', showProject: 'Mostrar proyecto', showTags: 'Mostrar etiquetas', showTaskNotes: 'Mostrar notas', includeOverdue: 'Incluir tareas vencidas', showTimeSpent: 'Mostrar tiempo empleado', showTotals: 'Mostrar totales', filteringLogic: 'Lógica de filtrado', hideEmptyProjects: 'Ocultar proyectos vacíos', minimumDuration: 'Duración mínima: ', minutes: 'minutos', exclusions: 'Exclusiones', excludeProjects: 'Excluir proyectos:', searchProjects: 'Buscar o seleccionar proyectos…', cancel: 'Cancelar', savePreferences: 'Guardar preferencias', generating: 'Generando…', dateRangeInvalid: 'La fecha inicial debe ser anterior o igual a la final', reportGenerated: 'Informe generado con {count} tareas', reportCopied: '¡Informe copiado al portapapeles!', failedCopy: 'No se pudo copiar', reportUpdated: '¡Informe actualizado!', reportSaved: '¡Informe guardado!', failedSave: 'No se pudo guardar el informe', deleted: 'Informe eliminado', failedDelete: 'No se pudo eliminar el informe', selectTwo: 'Selecciona al menos 2 informes para combinar', combined: '{count} informes combinados', failedCombine: 'No se pudieron combinar los informes', preferencesSaved: '¡Preferencias guardadas!', failedPreferences: 'No se pudieron guardar las preferencias', reportHeader: 'Informe de tareas completadas', dateRangeLabel: 'Intervalo de fechas', generatedLabel: 'Generado', totalTasksLabel: 'Total de tareas', totalTimeLabel: 'Tiempo total', excludedLogsLabel: 'Registros excluidos', excludedLogs: '{count} (menos de {minutes} min)', noTasks: 'Sin tareas', combinedReport: 'Informe combinado', combinedFrom: 'Combinado desde {count} informes', reportNumber: 'Informe {number}', total: 'Total', notes: 'Notas', tags: 'Etiquetas', statusOverdue: 'VENCIDA', statusWip: 'EN CURSO', statusDone: 'COMPLETADA', noProject: 'Sin proyecto', simpleNote: '*Nota: las entradas de trabajo múltiples se muestran por separado. Las subtareas aparecen bajo sus tareas principales.*', projectNote: '*Nota: las tareas se agrupan por proyecto.*', hourUnit: 'h', minuteUnit: 'min' },
-        fr: { appTitle: 'Rapport de tâches par période', filterSettings: 'Paramètres des filtres', dateRangeHint: 'Sélectionnez une période pour créer un rapport des tâches terminées ou travaillées pendant cette période.', startDate: 'Date de début', endDate: 'Date de fin', generateReport: 'Générer le rapport', savedReports: 'Rapports enregistrés', combineSelected: 'Combiner la sélection', deleteSelected: 'Supprimer la sélection', generatedReport: 'Rapport généré', reportNamePlaceholder: 'Nom du rapport (facultatif)', copyToClipboard: 'Copier dans le presse-papiers', saveReport: 'Enregistrer le rapport', reportFormat: 'Format du rapport', language: 'Langue', outputFormat: 'Format de sortie', simpleFormat: 'Format simple', tableFormat: 'Tableau (Markdown)', tableColumns: 'Colonnes (glisser pour réorganiser)', sortBy: 'Trier par', date: 'Date', project: 'Projet', taskTitle: 'Titre de la tâche', timeSpent: 'Temps passé', status: 'Statut', direction: 'Direction', ascending: 'Croissant', descending: 'Décroissant', viewOrganization: 'Organisation', groupBy: 'Regrouper par', displayOptions: 'Options d’affichage', showCompletionDate: 'Afficher la date de fin', showProject: 'Afficher le projet', showTags: 'Afficher les tags', showTaskNotes: 'Afficher les notes', includeOverdue: 'Inclure les tâches en retard', showTimeSpent: 'Afficher le temps passé', showTotals: 'Afficher les totaux', filteringLogic: 'Filtres', hideEmptyProjects: 'Masquer les projets vides', minimumDuration: 'Durée minimale : ', minutes: 'minutes', exclusions: 'Exclusions', excludeProjects: 'Exclure les projets :', searchProjects: 'Rechercher ou sélectionner des projets…', cancel: 'Annuler', savePreferences: 'Enregistrer les préférences', generating: 'Génération…', dateRangeInvalid: 'La date de début doit être antérieure ou égale à la date de fin', reportGenerated: 'Rapport généré avec {count} tâches', reportCopied: 'Rapport copié dans le presse-papiers !', failedCopy: 'Échec de la copie', reportUpdated: 'Rapport mis à jour !', reportSaved: 'Rapport enregistré !', failedSave: 'Échec de l’enregistrement', deleted: 'Rapport supprimé', failedDelete: 'Échec de la suppression', selectTwo: 'Sélectionnez au moins 2 rapports à combiner', combined: '{count} rapports combinés', failedCombine: 'Échec de la combinaison', preferencesSaved: 'Préférences enregistrées !', failedPreferences: 'Échec de l’enregistrement des préférences', reportHeader: 'Rapport des tâches terminées', dateRangeLabel: 'Période', generatedLabel: 'Généré', totalTasksLabel: 'Nombre total de tâches', totalTimeLabel: 'Temps total', excludedLogsLabel: 'Journaux exclus', excludedLogs: '{count} (moins de {minutes} min)', noTasks: 'Aucune tâche', combinedReport: 'Rapport combiné', combinedFrom: 'Combiné à partir de {count} rapports', reportNumber: 'Rapport {number}', total: 'Total', notes: 'Notes', tags: 'Tags', statusOverdue: 'EN RETARD', statusWip: 'EN COURS', statusDone: 'TERMINÉ', noProject: 'Sans projet', simpleNote: '*Remarque : les entrées multiples sont affichées séparément. Les sous-tâches apparaissent sous leur tâche parent.*', projectNote: '*Remarque : les tâches sont regroupées par projet.*', hourUnit: 'h', minuteUnit: 'min' },
-        de: { appTitle: 'Aufgabenbericht nach Zeitraum', filterSettings: 'Filtereinstellungen', dateRangeHint: 'Wählen Sie einen Zeitraum für einen Bericht über erledigte oder bearbeitete Aufgaben.', startDate: 'Startdatum', endDate: 'Enddatum', generateReport: 'Bericht erstellen', savedReports: 'Gespeicherte Berichte', combineSelected: 'Auswahl zusammenführen', deleteSelected: 'Auswahl löschen', generatedReport: 'Erstellter Bericht', reportNamePlaceholder: 'Berichtsname (optional)', copyToClipboard: 'In Zwischenablage kopieren', saveReport: 'Bericht speichern', reportFormat: 'Berichtsformat', language: 'Sprache', outputFormat: 'Ausgabeformat', simpleFormat: 'Einfaches Format', tableFormat: 'Tabelle (Markdown)', tableColumns: 'Spalten (ziehen zum Sortieren)', sortBy: 'Sortieren nach', date: 'Datum', project: 'Projekt', taskTitle: 'Aufgabentitel', timeSpent: 'Zeitaufwand', status: 'Status', direction: 'Richtung', ascending: 'Aufsteigend', descending: 'Absteigend', viewOrganization: 'Ansicht', groupBy: 'Gruppieren nach', displayOptions: 'Anzeigeoptionen', showCompletionDate: 'Abschlussdatum anzeigen', showProject: 'Projekt anzeigen', showTags: 'Tags anzeigen', showTaskNotes: 'Notizen anzeigen', includeOverdue: 'Überfällige Aufgaben einbeziehen', showTimeSpent: 'Zeitaufwand anzeigen', showTotals: 'Summen anzeigen', filteringLogic: 'Filterlogik', hideEmptyProjects: 'Leere Projekte ausblenden', minimumDuration: 'Mindestdauer: ', minutes: 'Minuten', exclusions: 'Ausschlüsse', excludeProjects: 'Projekte ausschließen:', searchProjects: 'Projekte suchen oder auswählen…', cancel: 'Abbrechen', savePreferences: 'Einstellungen speichern', generating: 'Wird erstellt…', dateRangeInvalid: 'Das Startdatum muss vor oder gleich dem Enddatum liegen', reportGenerated: 'Bericht mit {count} Aufgaben erstellt', reportCopied: 'Bericht in die Zwischenablage kopiert!', failedCopy: 'Kopieren fehlgeschlagen', reportUpdated: 'Bericht aktualisiert!', reportSaved: 'Bericht gespeichert!', failedSave: 'Bericht konnte nicht gespeichert werden', deleted: 'Bericht gelöscht', failedDelete: 'Löschen fehlgeschlagen', selectTwo: 'Wählen Sie mindestens 2 Berichte zum Zusammenführen aus', combined: '{count} Berichte zusammengeführt', failedCombine: 'Zusammenführen fehlgeschlagen', preferencesSaved: 'Einstellungen gespeichert!', failedPreferences: 'Einstellungen konnten nicht gespeichert werden', reportHeader: 'Aufgabenabschlussbericht', dateRangeLabel: 'Zeitraum', generatedLabel: 'Erstellt', totalTasksLabel: 'Aufgaben gesamt', totalTimeLabel: 'Gesamtzeit', excludedLogsLabel: 'Ausgeschlossene Arbeitsprotokolle', excludedLogs: '{count} (unter {minutes} Min.)', noTasks: 'Keine Aufgaben', combinedReport: 'Zusammengeführter Bericht', combinedFrom: 'Aus {count} Berichten zusammengeführt', reportNumber: 'Bericht {number}', total: 'Gesamt', notes: 'Notizen', tags: 'Tags', statusOverdue: 'ÜBERFÄLLIG', statusWip: 'IN ARBEIT', statusDone: 'ERLEDIGT', noProject: 'Kein Projekt', simpleNote: '*Hinweis: Mehrere Arbeitsprotokolle werden einzeln angezeigt. Unteraufgaben stehen unter der übergeordneten Aufgabe.*', projectNote: '*Hinweis: Aufgaben werden nach Projekt gruppiert.*', hourUnit: 'Std.', minuteUnit: 'Min.' }
-      };
-      Object.keys(additionalTranslations).forEach(locale => {
-        translations[locale] = { ...translations.en, ...additionalTranslations[locale] };
-      });
+      const translations = window.reporterTranslations;
 
       function t(key, values = {}) {
         const language = translations[preferences.language] ? preferences.language : 'en';
@@ -1133,6 +1130,8 @@
         const language = document.getElementById('language');
         if (language) language.value = preferences.language;
         renderTableColumnsUI();
+        renderSavedReports();
+        renderReportTemplateList();
       }
       // Exposed globally so tests can inspect/update preferences via `window.preferences`
       var preferences = {
@@ -1152,7 +1151,9 @@
         outputFormat: 'simple', // 'simple' | 'table'
         tableColumns: ['date','project','title','time','status','notes'],
         tableSort: { column: 'date', direction: 'asc' },
-        language: 'en'
+        language: 'en',
+        reportTemplates: [],
+        activeReportTemplateId: null
       };
 
       // Set default dates to past seven days (including today)
@@ -1169,6 +1170,19 @@
         const month = String(date.getMonth() + 1).padStart(2, '0');
         const day = String(date.getDate()).padStart(2, '0');
         return `${year}-${month}-${day}`;
+      }
+
+      function applyReportTemplate(content, totalTasks, generatedAt) {
+        const template = (preferences.reportTemplates || []).find(item => item.id === preferences.activeReportTemplateId)?.content;
+        if (!template || !template.trim()) return content;
+        const values = {
+          content,
+          startDate: startDateInput.value,
+          endDate: endDateInput.value,
+          generatedAt: generatedAt.toLocaleString(preferences.language || 'en-US'),
+          totalTasks: String(totalTasks)
+        };
+        return template.replace(/\{\{(content|startDate|endDate|generatedAt|totalTasks)\}\}/g, (_, key) => values[key]);
       }
 
       // Format date for display (e.g., "Monday, January 1, 2024")
@@ -1617,7 +1631,7 @@
         // Generate report in Markdown format
         let reportText = `# ${t('reportHeader')}\n\n`;
         reportText += `**${t('dateRangeLabel')}:** ${formatDateDisplay(formatDate(startDate))} - ${formatDateDisplay(formatDate(endDate))}  \n`;
-        reportText += `**${t('generatedLabel')}:** ${new Date().toLocaleString()}  \n`;
+        reportText += `**${t('generatedLabel')}:** ${new Date().toLocaleString(preferences.language || 'en-US')}  \n`;
         reportText += `**${t('totalTasksLabel')}:** ${totalTasks}\n`;
         if (showTotals) {
           const grandTotalMs = Object.keys(tasksByDate).reduce((sum, dateStr) => sum + sumDateGroupMs(tasksByDate[dateStr], dateStr), 0);
@@ -1752,7 +1766,7 @@
           
           if ((totalTimeSpent > 0 || isCompletedInRange || subtasksWithLogsInRange.length > 0) && !processedTasks.has(task.id)) {
             const projectId = task.projectId || 'no-project';
-            const projectName = projects[projectId] || 'No Project';
+            const projectName = projects[projectId] || t('noProject');
             
             if (!tasksByProject[projectId]) {
               tasksByProject[projectId] = {
@@ -1807,7 +1821,7 @@
           overdueTasks.forEach(task => {
             // only include if planned date within range (getOverdueTasks already filters)
             const projectId = task.projectId || 'no-project';
-            const projectName = projects[projectId] || 'No Project';
+            const projectName = projects[projectId] || t('noProject');
             
             // Create project entry if it doesn't exist
             if (!tasksByProject[projectId]) {
@@ -1832,7 +1846,7 @@
         const showTotals = document.getElementById('showTotalTime')?.checked;
         let reportText = `# ${t('reportHeader')}\n\n`;
         reportText += `**${t('dateRangeLabel')}:** ${formatDateDisplay(formatDate(startDate))} - ${formatDateDisplay(formatDate(endDate))}  \n`;
-        reportText += `**${t('generatedLabel')}:** ${new Date().toLocaleString()}  \n`;
+        reportText += `**${t('generatedLabel')}:** ${new Date().toLocaleString(preferences.language || 'en-US')}  \n`;
         reportText += `**${t('totalTasksLabel')}:** ${totalTasks}\n`;
         if (showTotals) {
           const grandTotalMinutes = Math.round(Object.values(tasksByProject).reduce((sum, p) => sum + p.totalTime, 0) / 60000);
@@ -1992,17 +2006,20 @@
             totalTasks = result.totalTasks;
           }
 
+          const generatedAt = new Date();
+          reportText = applyReportTemplate(reportText, totalTasks, generatedAt);
+
           // Store report data and show modal
           currentReport = {
             content: reportText,
             startDate: startDateInput.value,
             endDate: endDateInput.value,
             totalTasks: totalTasks,
-            generatedAt: new Date().toISOString()
+            generatedAt: generatedAt.toISOString()
           };
 
           isEditingExisting = false;
-          showReportModal(reportText, `${totalTasks} task${totalTasks !== 1 ? 's' : ''} completed`);
+          showReportModal(reportText, t('tasksCompleted', { count: totalTasks }));
 
           PluginAPI.showSnack({
             msg: t('reportGenerated', { count: totalTasks }),
@@ -2135,7 +2152,7 @@
           console.error('Error saving report:', error);
           PluginAPI.showSnack({
             msg: isQuotaError(error)
-              ? 'This report is too large to save — it exceeds 256KB even after compression.'
+              ? t('reportTooLargeError')
               : t('failedSave'),
             type: 'ERROR',
           });
@@ -2311,6 +2328,117 @@
         return report.content;
       }
 
+      function renderReportTemplateList() {
+        const list = document.getElementById('reportTemplateList');
+        list.replaceChildren();
+
+        const templates = preferences.reportTemplates || [];
+        if (templates.length === 0) {
+          const empty = document.createElement('div');
+          empty.textContent = t('noTemplates');
+          empty.style.cssText = 'margin-top:8px;color:var(--text-secondary);font-size:13px;';
+          list.appendChild(empty);
+        }
+        templates.forEach(item => {
+          const row = document.createElement('div');
+          const isActive = item.id === preferences.activeReportTemplateId;
+          row.style.cssText = 'display:flex;align-items:center;gap:8px;margin-top:8px;';
+          // Name doubles as the Use/Stop toggle; ✓ marks the active template
+          const name = document.createElement('button');
+          name.type = 'button';
+          name.className = 'secondary-btn';
+          name.textContent = `${isActive ? '✓ ' : ''}${item.name}`;
+          name.style.cssText = 'flex:1;overflow-wrap:anywhere;text-align:left;';
+          name.addEventListener('click', () => selectReportTemplate(isActive ? null : item.id));
+          const edit = document.createElement('button');
+          edit.type = 'button';
+          edit.className = 'secondary-btn';
+          edit.textContent = t('templateEdit');
+          edit.addEventListener('click', () => showTemplateModal(item));
+          const remove = document.createElement('button');
+          remove.type = 'button';
+          remove.className = 'danger-btn';
+          remove.textContent = t('templateDelete');
+          remove.addEventListener('click', () => deleteReportTemplate(item.id));
+          row.append(name, edit, remove);
+          list.appendChild(row);
+        });
+      }
+
+      async function selectReportTemplate(id) {
+        const previousId = preferences.activeReportTemplateId;
+        preferences.activeReportTemplateId = id;
+        try {
+          await persistReports();
+          renderReportTemplateList();
+        } catch (error) {
+          preferences.activeReportTemplateId = previousId;
+          PluginAPI.showSnack({ msg: t('templateSaveFailed'), type: 'ERROR' });
+        }
+      }
+
+      function showTemplateModal(template = null) {
+        templateDraftId = template?.id || null;
+        document.getElementById('templateModalTitle').textContent = template ? t('templateEditTitle') : t('newTemplate');
+        document.getElementById('templateNameInput').value = template?.name || '';
+        document.getElementById('templateContentInput').value = template?.content || '';
+        templateModal.classList.add('show');
+        document.getElementById('templateNameInput').focus();
+      }
+
+      function hideTemplateModal() {
+        templateModal.classList.remove('show');
+        templateDraftId = null;
+      }
+
+      async function saveReportTemplate() {
+        const name = document.getElementById('templateNameInput').value.trim();
+        const content = document.getElementById('templateContentInput').value;
+        if (!name || !content.trim()) {
+          PluginAPI.showSnack({ msg: t('templateInvalid'), type: 'ERROR' });
+          return;
+        }
+        const previousTemplates = preferences.reportTemplates || [];
+        if (!templateDraftId && previousTemplates.length >= 5) {
+          PluginAPI.showSnack({ msg: t('templateLimit'), type: 'ERROR' });
+          return;
+        }
+        const id = templateDraftId || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        preferences.reportTemplates = templateDraftId
+          ? previousTemplates.map(item => item.id === id ? { id, name, content } : item)
+          : [...previousTemplates, { id, name, content }];
+        const previousActiveId = preferences.activeReportTemplateId;
+        preferences.activeReportTemplateId = id;
+        try {
+          await persistReports();
+          templateDraftId = id;
+          hideTemplateModal();
+          renderReportTemplateList();
+          PluginAPI.showSnack({ msg: t('templateSaved'), type: 'SUCCESS' });
+        } catch (error) {
+          preferences.reportTemplates = previousTemplates;
+          preferences.activeReportTemplateId = previousActiveId;
+          PluginAPI.showSnack({ msg: t('templateSaveFailed'), type: 'ERROR' });
+        }
+      }
+
+      async function deleteReportTemplate(id) {
+        if (!confirm(t('deleteTemplateConfirm'))) return;
+        const previousTemplates = preferences.reportTemplates || [];
+        const previousActiveId = preferences.activeReportTemplateId;
+        preferences.reportTemplates = previousTemplates.filter(item => item.id !== id);
+        if (previousActiveId === id) preferences.activeReportTemplateId = null;
+        try {
+          await persistReports();
+          renderReportTemplateList();
+          PluginAPI.showSnack({ msg: t('templateDeleted'), type: 'SUCCESS' });
+        } catch (error) {
+          preferences.reportTemplates = previousTemplates;
+          preferences.activeReportTemplateId = previousActiveId;
+          PluginAPI.showSnack({ msg: t('templateSaveFailed'), type: 'ERROR' });
+        }
+      }
+
       // Load preferences and apply to UI
       function applyPreferences() {
         const groupByEl = document.getElementById('groupBy');
@@ -2337,6 +2465,7 @@
         if (showTimeSpentEl) showTimeSpentEl.checked = preferences.showTimeSpent;
         if (showTotalTimeEl) showTotalTimeEl.checked = preferences.showTotalTime;
         if (languageEl) languageEl.value = preferences.language || 'en';
+        renderReportTemplateList();
         translateUI();
 
         // Apply table/output format preferences
@@ -2534,7 +2663,7 @@
               if (c === 'project') return r.project || '';
               if (c === 'tags') return escapeCell(r.tags || '');
               if (c === 'title') return r.title;
-              if (c === 'time') return (showTimeSpent && r.timeMinutes) ? formatTime(r.timeMinutes) : (showTimeSpent ? '0m' : '');
+              if (c === 'time') return (showTimeSpent && r.timeMinutes) ? formatTime(r.timeMinutes) : (showTimeSpent ? formatTime(0) : '');
               if (c === 'status') return r.status || '';
               if (c === 'notes') return escapeCell(r.notes || '');
               return '';
@@ -2548,7 +2677,7 @@
             const labelIdx = cols.findIndex(c => c !== 'time');
             totalCells = cols.map((c, i) => {
               if (c === 'time') return `**${formatTime(totalMinutes)}**`;
-              if (i === labelIdx) return '**Total**';
+              if (i === labelIdx) return `**${t('total')}**`;
               return '';
             });
           }
@@ -2573,7 +2702,7 @@
               else if (c === 'project') val = r.project || '';
               else if (c === 'tags') val = escapeCell(r.tags || '');
               else if (c === 'title') val = r.title;
-              else if (c === 'time') val = (showTimeSpent && r.timeMinutes) ? formatTime(r.timeMinutes) : (showTimeSpent ? '0m' : '');
+              else if (c === 'time') val = (showTimeSpent && r.timeMinutes) ? formatTime(r.timeMinutes) : (showTimeSpent ? formatTime(0) : '');
               else if (c === 'status') val = r.status || '';
               else if (c === 'notes') val = escapeCell(r.notes || '');
               return padded(val, widths[i]);
@@ -2732,7 +2861,7 @@
         const showTotals = document.getElementById('showTotalTime')?.checked;
         let reportText = `# ${t('reportHeader')}\n\n`;
         reportText += `**${t('dateRangeLabel')}:** ${formatDateDisplay(formatDate(startDate))} - ${formatDateDisplay(formatDate(endDate))}  \n`;
-        reportText += `**${t('generatedLabel')}:** ${new Date().toLocaleString()}  \n`;
+        reportText += `**${t('generatedLabel')}:** ${new Date().toLocaleString(preferences.language || 'en-US')}  \n`;
         reportText += `**${t('totalTasksLabel')}:** ${processedTaskIds.size}\n`;
         if (showTotals) {
           const totalMinutes = sumRowMinutesNoDoubleCount(entries);
@@ -2833,6 +2962,7 @@
       function showPreferencesModal() {
         // Save the original state before any changes
         originalExcludedProjects = [...preferences.excludedProjects];
+        originalLanguage = preferences.language;
         
         // Apply current saved preferences to UI
         applyPreferences();
@@ -2879,6 +3009,8 @@
           }
           // Restore original state if user confirms discard
           preferences.excludedProjects = [...originalExcludedProjects];
+          preferences.language = originalLanguage;
+          translateUI();
         }
         preferencesModal.classList.remove('show');
         preferencesHasChanges = false;
@@ -2943,6 +3075,7 @@
       function cancelPreferences() {
         // Restore original excluded projects state
         preferences.excludedProjects = [...originalExcludedProjects];
+        preferences.language = originalLanguage;
         applyPreferences();
         preferencesHasChanges = false;
         hidePreferencesModal();
@@ -2950,6 +3083,7 @@
 
       // Render saved reports list
       function renderSavedReports() {
+        const selectedIds = new Set(Array.from(savedReportsList.querySelectorAll('.saved-report-checkbox:checked'), checkbox => checkbox.dataset.id));
         if (savedReports.length === 0) {
           savedReportsList.innerHTML = `<div class="empty-state">${t('noSavedReports')}</div>`;
           deleteSelectedBtn.style.display = 'none';
@@ -2964,18 +3098,19 @@
               <div class="saved-report-name">${escapeHtml(report.name)}</div>
               <div class="saved-report-meta">
                 ${formatDateDisplay(report.startDate)} - ${formatDateDisplay(report.endDate)} · 
-                ${report.totalTasks} task${report.totalTasks !== 1 ? 's' : ''} · 
-                Saved ${new Date(report.savedAt).toLocaleDateString()}
+                ${t(report.totalTasks === 1 && preferences.language === 'en' ? 'taskCountOne' : 'taskCount', { count: report.totalTasks })} ·
+                ${t('savedMeta', { date: new Date(report.savedAt).toLocaleDateString(preferences.language || 'en-US') })}
               </div>
             </div>
             <div class="saved-report-actions">
-              <button class="icon-btn delete-btn" title="Delete">🗑️</button>
+              <button class="icon-btn delete-btn" title="${t('deleteTitle')}">🗑️</button>
             </div>
           </div>
         `).join('');
 
         savedReportsList.querySelectorAll('.saved-report-item').forEach(item => {
           const id = item.dataset.id;
+          item.querySelector('.saved-report-checkbox').checked = selectedIds.has(id);
           item.querySelector('.saved-report-info').addEventListener('click', () => viewReport(id));
           item.querySelector('.delete-btn').addEventListener('click', () => deleteReport(id));
         });
@@ -3028,7 +3163,7 @@
           return;
         }
 
-        if (!confirm(`Are you sure you want to delete ${checkboxes.length} report${checkboxes.length !== 1 ? 's' : ''}?`)) {
+        if (!confirm(t('deleteManyConfirm', { count: checkboxes.length }))) {
           return;
         }
 
@@ -3043,7 +3178,7 @@
           renderSavedReports();
 
           PluginAPI.showSnack({
-            msg: `${checkboxes.length} report${checkboxes.length !== 1 ? 's' : ''} deleted successfully`,
+            msg: t('deletedMany', { count: checkboxes.length }),
             type: 'SUCCESS',
           });
         } catch (error) {
@@ -3113,7 +3248,7 @@
           };
 
           isEditingExisting = false;
-          showReportModal(combinedContent, `Combined from ${selectedReports.length} reports`);
+          showReportModal(combinedContent, t('combinedFrom', { count: selectedReports.length }));
 
           PluginAPI.showSnack({
             msg: t('combined', { count: selectedReports.length }),
@@ -3147,6 +3282,11 @@
 
       // Event listeners
       generateBtn.addEventListener('click', generateReport);
+      todayBtn.addEventListener('click', () => {
+        const date = formatDate(new Date());
+        startDateInput.value = date;
+        endDateInput.value = date;
+      });
       closeModalBtn.addEventListener('click', hideReportModal);
       modalCopyBtn.addEventListener('click', copyFromModal);
       modalSaveBtn.addEventListener('click', saveReport);
@@ -3163,6 +3303,16 @@
       closePreferencesBtn.addEventListener('click', hidePreferencesModal);
       cancelPreferencesBtn.addEventListener('click', cancelPreferences);
       savePreferencesBtn.addEventListener('click', savePreferences);
+      // Template dialog event listeners
+      document.getElementById('newTemplateBtn').addEventListener('click', () => showTemplateModal());
+      document.getElementById('closeTemplateModalBtn').addEventListener('click', hideTemplateModal);
+      document.getElementById('cancelTemplateBtn').addEventListener('click', hideTemplateModal);
+      document.getElementById('saveTemplateBtn').addEventListener('click', saveReportTemplate);
+      document.getElementById('language').addEventListener('change', (event) => {
+        preferences.language = event.target.value;
+        preferencesHasChanges = true;
+        translateUI();
+      });
 
       // Track preference changes
       const preferenceElements = [
@@ -3327,6 +3477,7 @@
       window.renderTableColumnsUI = renderTableColumnsUI;
 
       document.addEventListener("DOMContentLoaded", function() {
+        applyPreferences();
         // Load saved reports on initialization
         loadReports();
       });

@@ -1,9 +1,24 @@
 # Changelog
 
+## Unreleased
+
+- Move template creation and editing into a dedicated dialog opened from the **New template** button, with the Save button on the dialog and an Edit action on each saved template.
+- Toggle templates on/off by clicking the template name (✓ marks the active one); the separate "Current format" row was removed.
+- Always show the template field descriptions in the template dialog instead of only while the content field is focused.
+
+- Fix "Cannot read properties of undefined (reading 'en')" when opening the plugin: Super Productivity renders plugin `index.html` inside an iframe via `srcdoc`, so the external `translations.js` companion file was never loaded. Translations are now merged and LZString-compressed into `index.html` at build time, staying under the 100KB limit.
+
+## 1.14.0 - 2026-09-15
+
+- Add a Today button that sets both date fields to the current local day.
+- Add up to five named, synced Markdown report templates with generated content, date, time, and task-count fields; select the current format to preserve the existing output.
+- Show field descriptions while editing the template.
+- Finish localization of saved-report controls, messages, and generated labels, including immediate refresh when changing languages.
+- Split translations into a separate plugin file and enforce a 100KB limit for the built HTML.
+
 ## 1.13.0 - 2026-09-14
 
 - Add language selection for the reporter UI and generated reports: English, Simplified and Traditional Chinese, Japanese, Korean, Spanish, French, and German.
 - Preserve the selected language in synced preferences.
 - Render saved report names and excluded project names safely as text, including names with HTML characters.
 - Sync package and lockfile versions and correct the release link and build instructions.
-
