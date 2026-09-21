@@ -302,7 +302,7 @@ gh release upload v1.0.0 date-range-reporter.zip --clobber
 
 - `manifest.json` - Plugin configuration
 - `plugin.js` - Header button registration
-- `index.html` - Report UI interface
+- `index.html` - Report UI interface (translations are inlined at build time — Super Productivity renders plugin HTML via iframe `srcdoc`, so external companion scripts are never fetched)
 - `icon.svg` - Plugin icon
 - `README.md` - This documentation
 

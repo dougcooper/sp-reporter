@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Fix "Cannot read properties of undefined (reading 'en')" when opening the plugin: Super Productivity renders plugin `index.html` inside an iframe via `srcdoc`, so the external `translations.js` companion file was never loaded. Translations are now merged and LZString-compressed into `index.html` at build time, staying under the 100KB limit.
+
 ## 1.14.0 - 2026-09-15
 
 - Add a Today button that sets both date fields to the current local day.

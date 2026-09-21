@@ -20,6 +20,9 @@ build: clean
 		sed -e "s/{{VERSION}}/$$VERSION/g" -e "s|{{DESCRIPTION}}|$$DESCRIPTION|g" \
 		$(PLUGIN_DIR)/manifest.json.template > build/$(PLUGIN_DIR)/manifest.json'
 	@rm -f build/$(PLUGIN_DIR)/manifest.json.template
+	@# translations.js is inlined into index.html at build time (SP serves the
+	@# plugin UI via iframe srcdoc, so external companion scripts never load).
+	@rm -f build/$(PLUGIN_DIR)/translations.js
 	@echo "Minifying HTML (inline CSS/JS preserved) -> build/$(PLUGIN_DIR)/index.html"
 	@npm run build:min
 	@cd build/$(PLUGIN_DIR) && zip -r ../../$(ZIP_FILE) . -x "manifest.json.template"
