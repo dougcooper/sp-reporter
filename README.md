@@ -6,7 +6,7 @@ A plugin for [Super Productivity](https://super-productivity.com) that generates
 
 - 📅 Select custom date ranges for reporting
 - 📍 Set both dates to today with one click
-- 📝 Save up to five named Markdown templates and choose one for newly generated reports
+- 📝 Save up to five named Markdown templates in a dialog and toggle them for newly generated reports
 - 📊 View all tasks completed or worked on within the selected period
 - 🔀 **Group reports by Date or by Project** for different perspectives
 - 🏷️ Optionally show project names alongside tasks (Show project toggle)

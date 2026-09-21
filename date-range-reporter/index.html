@@ -831,17 +831,13 @@
                 <option value="table" data-i18n="tableFormat">Table (Markdown)</option>
               </select>
             </div>
-            <div class="input-field" style="margin-bottom: 12px;">
-              <label for="reportTemplate" data-i18n="reportTemplate">Custom report template (Markdown)</label>
-              <input id="reportTemplateName" type="text" maxlength="60" data-i18n-placeholder="templateNamePlaceholder" placeholder="Template name" style="width: 100%; padding: 10px 12px; margin-bottom: 8px; border: 1px solid var(--border-light); border-radius: 4px; background: var(--bg-secondary); color: var(--text-primary);" />
-              <textarea id="reportTemplate" rows="5" aria-describedby="reportTemplateFields" style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-light); border-radius: 4px; background: var(--bg-secondary); color: var(--text-primary); font: inherit; resize: vertical;"></textarea>
-              <div data-i18n="reportTemplateHelp" style="color: var(--text-secondary); font-size: 13px; margin-top: 6px;">Save up to 5 named templates. Select one below to use it; no selection keeps the current format.</div>
-              <div id="reportTemplateFields" hidden data-i18n="reportTemplateFields" style="white-space: pre-line; color: var(--text-secondary); font-size: 13px; margin-top: 8px;">{{content}} — generated report text</div>
-              <div class="button-group" style="margin-top: 8px;">
-                <button id="saveTemplateBtn" type="button" data-i18n="saveTemplate">Save template</button>
-                <button id="newTemplateBtn" type="button" class="secondary-btn" data-i18n="newTemplate">New template</button>
-              </div>
+            <div class="input-field">
+              <label data-i18n="reportTemplates">Report templates</label>
+              <div data-i18n="reportTemplateHelp" style="color: var(--text-secondary); font-size: 13px; margin-top: 6px;">Save up to 5 named templates. Select one to use it for new reports; click it again to stop using it.</div>
               <div id="reportTemplateList" style="margin-top: 12px;"></div>
+              <div class="button-group" style="margin-top: 8px;">
+                <button id="newTemplateBtn" type="button" data-i18n="newTemplate">New template</button>
+              </div>
             </div>
 
             <div id="tableSettingsContainer" style="display:none; margin-top: 12px;">
@@ -992,6 +988,31 @@
       </div>
     </div>
 
+    <!-- Template Editor Modal -->
+    <div class="modal-overlay" id="templateModal">
+      <div class="modal" style="max-width: 640px;">
+        <div class="modal-header">
+          <h3 class="modal-title">📝 <span id="templateModalTitle">New template</span></h3>
+          <button class="modal-close" id="closeTemplateModalBtn">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="input-field">
+            <label for="templateNameInput" data-i18n="templateNameLabel">Template name</label>
+            <input id="templateNameInput" type="text" maxlength="60" data-i18n-placeholder="templateNamePlaceholder" placeholder="Template name" style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-light); border-radius: 4px; background: var(--bg-secondary); color: var(--text-primary);" />
+          </div>
+          <div class="input-field" style="margin-top: 12px;">
+            <label for="templateContentInput" data-i18n="reportTemplate">Template content (Markdown)</label>
+            <textarea id="templateContentInput" rows="8" aria-describedby="templateFieldsHelp" style="width: 100%; padding: 10px 12px; border: 1px solid var(--border-light); border-radius: 4px; background: var(--bg-secondary); color: var(--text-primary); font: inherit; resize: vertical;"></textarea>
+            <div id="templateFieldsHelp" hidden data-i18n="reportTemplateFields" style="white-space: pre-line; color: var(--text-secondary); font-size: 13px; margin-top: 8px;">{{content}} — generated report text</div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button id="cancelTemplateBtn" class="secondary-btn" data-i18n="cancel">Cancel</button>
+          <button id="saveTemplateBtn" data-i18n="saveTemplate">Save template</button>
+        </div>
+      </div>
+    </div>
+
     <script src="translations.js"></script>
     <script>
       // --- Vendored: lz-string 1.5.0 (MIT License, © 2013 pieroxy) ---
@@ -1070,6 +1091,9 @@
       const cancelPreferencesBtn = document.getElementById('cancelPreferencesBtn');
       const savePreferencesBtn = document.getElementById('savePreferencesBtn');
       const settingsBtn = document.getElementById('settingsBtn');
+
+      // Template modal elements
+      const templateModal = document.getElementById('templateModal');
       
       // Saved reports elements
       const savedReportsSection = document.getElementById('savedReportsSection');
@@ -2307,12 +2331,6 @@
       function renderReportTemplateList() {
         const list = document.getElementById('reportTemplateList');
         list.replaceChildren();
-        const defaultButton = document.createElement('button');
-        defaultButton.type = 'button';
-        defaultButton.className = 'secondary-btn';
-        defaultButton.textContent = `${preferences.activeReportTemplateId ? '' : '✓ '}${t('templateDefault')}`;
-        defaultButton.addEventListener('click', () => selectReportTemplate(null));
-        list.appendChild(defaultButton);
 
         const templates = preferences.reportTemplates || [];
         if (templates.length === 0) {
@@ -2323,21 +2341,26 @@
         }
         templates.forEach(item => {
           const row = document.createElement('div');
+          const isActive = item.id === preferences.activeReportTemplateId;
           row.style.cssText = 'display:flex;align-items:center;gap:8px;margin-top:8px;';
-          const name = document.createElement('span');
-          name.textContent = item.name;
-          name.style.cssText = 'flex:1;overflow-wrap:anywhere;';
-          const use = document.createElement('button');
-          use.type = 'button';
-          use.className = 'secondary-btn';
-          use.textContent = item.id === preferences.activeReportTemplateId ? t('templateActive') : t('templateUse');
-          use.addEventListener('click', () => selectReportTemplate(item.id));
+          // Name doubles as the Use/Stop toggle; ✓ marks the active template
+          const name = document.createElement('button');
+          name.type = 'button';
+          name.className = 'secondary-btn';
+          name.textContent = `${isActive ? '✓ ' : ''}${item.name}`;
+          name.style.cssText = 'flex:1;overflow-wrap:anywhere;text-align:left;';
+          name.addEventListener('click', () => selectReportTemplate(isActive ? null : item.id));
+          const edit = document.createElement('button');
+          edit.type = 'button';
+          edit.className = 'secondary-btn';
+          edit.textContent = t('templateEdit');
+          edit.addEventListener('click', () => showTemplateModal(item));
           const remove = document.createElement('button');
           remove.type = 'button';
           remove.className = 'danger-btn';
           remove.textContent = t('templateDelete');
           remove.addEventListener('click', () => deleteReportTemplate(item.id));
-          row.append(name, use, remove);
+          row.append(name, edit, remove);
           list.appendChild(row);
         });
       }
@@ -2347,10 +2370,6 @@
         preferences.activeReportTemplateId = id;
         try {
           await persistReports();
-          const selected = (preferences.reportTemplates || []).find(item => item.id === id);
-          templateDraftId = selected?.id || null;
-          document.getElementById('reportTemplateName').value = selected?.name || '';
-          document.getElementById('reportTemplate').value = selected?.content || '';
           renderReportTemplateList();
         } catch (error) {
           preferences.activeReportTemplateId = previousId;
@@ -2358,9 +2377,24 @@
         }
       }
 
+      function showTemplateModal(template = null) {
+        templateDraftId = template?.id || null;
+        document.getElementById('templateModalTitle').textContent = template ? t('templateEditTitle') : t('newTemplate');
+        document.getElementById('templateNameInput').value = template?.name || '';
+        document.getElementById('templateContentInput').value = template?.content || '';
+        document.getElementById('templateFieldsHelp').hidden = true;
+        templateModal.classList.add('show');
+        document.getElementById('templateNameInput').focus();
+      }
+
+      function hideTemplateModal() {
+        templateModal.classList.remove('show');
+        templateDraftId = null;
+      }
+
       async function saveReportTemplate() {
-        const name = document.getElementById('reportTemplateName').value.trim();
-        const content = document.getElementById('reportTemplate').value;
+        const name = document.getElementById('templateNameInput').value.trim();
+        const content = document.getElementById('templateContentInput').value;
         if (!name || !content.trim()) {
           PluginAPI.showSnack({ msg: t('templateInvalid'), type: 'ERROR' });
           return;
@@ -2379,6 +2413,7 @@
         try {
           await persistReports();
           templateDraftId = id;
+          hideTemplateModal();
           renderReportTemplateList();
           PluginAPI.showSnack({ msg: t('templateSaved'), type: 'SUCCESS' });
         } catch (error) {
@@ -2396,11 +2431,6 @@
         if (previousActiveId === id) preferences.activeReportTemplateId = null;
         try {
           await persistReports();
-          if (templateDraftId === id) {
-            templateDraftId = null;
-            document.getElementById('reportTemplateName').value = '';
-            document.getElementById('reportTemplate').value = '';
-          }
           renderReportTemplateList();
           PluginAPI.showSnack({ msg: t('templateDeleted'), type: 'SUCCESS' });
         } catch (error) {
@@ -2436,10 +2466,7 @@
         if (showTimeSpentEl) showTimeSpentEl.checked = preferences.showTimeSpent;
         if (showTotalTimeEl) showTotalTimeEl.checked = preferences.showTotalTime;
         if (languageEl) languageEl.value = preferences.language || 'en';
-        const activeTemplate = (preferences.reportTemplates || []).find(item => item.id === preferences.activeReportTemplateId);
-        templateDraftId = activeTemplate?.id || null;
-        document.getElementById('reportTemplateName').value = activeTemplate?.name || '';
-        document.getElementById('reportTemplate').value = activeTemplate?.content || '';
+        renderReportTemplateList();
         translateUI();
 
         // Apply table/output format preferences
@@ -3277,17 +3304,15 @@
       closePreferencesBtn.addEventListener('click', hidePreferencesModal);
       cancelPreferencesBtn.addEventListener('click', cancelPreferences);
       savePreferencesBtn.addEventListener('click', savePreferences);
-      const reportTemplateInput = document.getElementById('reportTemplate');
-      const reportTemplateFields = document.getElementById('reportTemplateFields');
-      reportTemplateInput.addEventListener('focus', () => { reportTemplateFields.hidden = false; });
-      reportTemplateInput.addEventListener('blur', () => { reportTemplateFields.hidden = true; });
+      // Template dialog event listeners
+      document.getElementById('newTemplateBtn').addEventListener('click', () => showTemplateModal());
+      document.getElementById('closeTemplateModalBtn').addEventListener('click', hideTemplateModal);
+      document.getElementById('cancelTemplateBtn').addEventListener('click', hideTemplateModal);
       document.getElementById('saveTemplateBtn').addEventListener('click', saveReportTemplate);
-      document.getElementById('newTemplateBtn').addEventListener('click', () => {
-        templateDraftId = null;
-        document.getElementById('reportTemplateName').value = '';
-        reportTemplateInput.value = '';
-        document.getElementById('reportTemplateName').focus();
-      });
+      const templateContentInput = document.getElementById('templateContentInput');
+      const templateFieldsHelp = document.getElementById('templateFieldsHelp');
+      templateContentInput.addEventListener('focus', () => { templateFieldsHelp.hidden = false; });
+      templateContentInput.addEventListener('blur', () => { templateFieldsHelp.hidden = true; });
       document.getElementById('language').addEventListener('change', (event) => {
         preferences.language = event.target.value;
         preferencesHasChanges = true;

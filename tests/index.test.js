@@ -155,8 +155,10 @@ describe('Date Range Reporter', () => {
     });
 
     it('shows field descriptions while editing the template', () => {
-      const input = document.getElementById('reportTemplate');
-      const fields = document.getElementById('reportTemplateFields');
+      document.getElementById('settingsBtn').click();
+      document.getElementById('newTemplateBtn').click();
+      const input = document.getElementById('templateContentInput');
+      const fields = document.getElementById('templateFieldsHelp');
       expect(fields.hidden).toBe(true);
       input.focus();
       expect(fields.hidden).toBe(false);
@@ -165,23 +167,55 @@ describe('Date Range Reporter', () => {
       expect(fields.hidden).toBe(true);
     });
 
-    it('saves a named template and displays its name below the editor', async () => {
+    it('saves a named template via the dialog and displays its name in the list', async () => {
       document.getElementById('settingsBtn').click();
-      document.getElementById('reportTemplateName').value = 'Daily summary';
-      const input = document.getElementById('reportTemplate');
+      document.getElementById('newTemplateBtn').click();
+      expect(document.getElementById('templateModal').classList.contains('show')).toBe(true);
+      expect(document.getElementById('templateModalTitle').textContent).toBe('New template');
+      document.getElementById('templateNameInput').value = 'Daily summary';
+      const input = document.getElementById('templateContentInput');
       input.value = 'Summary: {{totalTasks}}\n{{content}}';
       document.getElementById('saveTemplateBtn').click();
       await vi.waitFor(() => expect(persistedIndex()?.preferences.reportTemplates[0].content).toBe(input.value));
       await vi.waitFor(() => expect(document.getElementById('reportTemplateList').textContent).toContain('Daily summary'));
+      expect(document.getElementById('templateModal').classList.contains('show')).toBe(false);
       expect(persistedIndex().preferences.activeReportTemplateId).toBe(persistedIndex().preferences.reportTemplates[0].id);
+    });
+
+    it('edits an existing template through the dialog', async () => {
+      const templates = [{ id: 'one', name: 'Short', content: 'Short: {{totalTasks}}' }];
+      mockPluginAPI.loadSyncedData.mockResolvedValue(JSON.stringify({ reports: [], preferences: { reportTemplates: templates } }));
+      await window.loadReports();
+      document.getElementById('settingsBtn').click();
+      document.getElementById('reportTemplateList').querySelectorAll('button')[1].click(); // Edit
+      expect(document.getElementById('templateModal').classList.contains('show')).toBe(true);
+      expect(document.getElementById('templateModalTitle').textContent).toBe('Edit template');
+      expect(document.getElementById('templateNameInput').value).toBe('Short');
+      expect(document.getElementById('templateContentInput').value).toBe('Short: {{totalTasks}}');
+      document.getElementById('templateNameInput').value = 'Renamed';
+      document.getElementById('saveTemplateBtn').click();
+      await vi.waitFor(() => expect(persistedIndex()?.preferences.reportTemplates[0].name).toBe('Renamed'));
+      expect(persistedIndex().preferences.reportTemplates[0].content).toBe('Short: {{totalTasks}}');
+    });
+
+    it('cancels the template dialog without saving', async () => {
+      document.getElementById('settingsBtn').click();
+      document.getElementById('newTemplateBtn').click();
+      document.getElementById('templateNameInput').value = 'Draft';
+      document.getElementById('templateContentInput').value = '{{content}}';
+      document.getElementById('cancelTemplateBtn').click();
+      expect(document.getElementById('templateModal').classList.contains('show')).toBe(false);
+      expect(window.preferences.reportTemplates).toHaveLength(0);
     });
 
     it('limits saved report templates to five', async () => {
       const templates = Array.from({ length: 5 }, (_, index) => ({ id: String(index), name: `Template ${index}`, content: '{{content}}' }));
       mockPluginAPI.loadSyncedData.mockResolvedValue(JSON.stringify({ reports: [], preferences: { reportTemplates: templates } }));
       await window.loadReports();
-      document.getElementById('reportTemplateName').value = 'Sixth';
-      document.getElementById('reportTemplate').value = '{{content}}';
+      document.getElementById('settingsBtn').click();
+      document.getElementById('newTemplateBtn').click();
+      document.getElementById('templateNameInput').value = 'Sixth';
+      document.getElementById('templateContentInput').value = '{{content}}';
       document.getElementById('saveTemplateBtn').click();
       expect(mockPluginAPI.showSnack).toHaveBeenCalledWith({ msg: 'You can save up to 5 templates', type: 'ERROR' });
       expect(window.preferences.reportTemplates).toHaveLength(5);
@@ -193,12 +227,14 @@ describe('Date Range Reporter', () => {
       await window.loadReports();
       document.getElementById('startDate').value = '2024-01-15';
       document.getElementById('endDate').value = '2024-01-15';
-      document.querySelectorAll('#reportTemplateList button')[1].click();
+      // First button in the list is the template name (toggle); clicking applies it
+      document.querySelectorAll('#reportTemplateList button')[0].click();
       await vi.waitFor(() => expect(persistedIndex()?.preferences.activeReportTemplateId).toBe('one'));
       await window.generateReport();
       expect(document.getElementById('modalReportContent').value).toBe('Short: 0');
 
-      document.querySelector('#reportTemplateList button').click();
+      // Clicking the active template's name again stops using it
+      document.querySelectorAll('#reportTemplateList button')[0].click();
       await vi.waitFor(() => expect(persistedIndex()?.preferences.activeReportTemplateId).toBeNull());
       await window.generateReport();
       expect(document.getElementById('modalReportContent').value).toContain('# Task Completion Report');
